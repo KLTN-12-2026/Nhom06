@@ -56,8 +56,20 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Xuất kho',
     items: [
-      { label: 'Đơn đại lý', path: '/orders', requiredPermission: 'orders.read' },
-      { label: 'Phiếu xuất', path: '/outbound', requiredPermission: 'outbound.read' },
+      {
+        label: 'Đơn đại lý',
+        path: '/orders',
+        requiredPermission: 'orders.read',
+        pageTitle: 'Đơn đặt hàng đại lý',
+        pageDescription: 'Tạo đơn không làm giảm tồn kho',
+      },
+      {
+        label: 'Phiếu xuất',
+        path: '/outbound',
+        requiredPermission: 'outbound.read',
+        pageTitle: 'Phiếu xuất kho',
+        pageDescription: 'Chỉ hiển thị phiếu đã xác nhận; tồn kho đã giảm theo từng lô',
+      },
     ],
   },
   {
