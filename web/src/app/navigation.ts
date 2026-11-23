@@ -130,7 +130,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Khác',
     items: [
-      { label: 'Báo cáo', path: '/reports', requiredPermission: 'reports.read' },
+      {
+        label: 'Báo cáo',
+        path: '/reports',
+        requiredPermission: 'reports.read',
+        pageTitle: 'Báo cáo nhập — xuất — tồn',
+        pageDescription: 'Chỉ tính chứng từ kho đã xác nhận',
+      },
       {
         label: 'Tài khoản',
         path: '/users',

@@ -1,13 +1,12 @@
 import { apiFetch } from '@/lib/api';
+import { type DashboardResponse, type DependencyStatus, type HealthResponse } from './types';
 
-export type DependencyStatus = 'up' | 'down';
-
-export interface HealthResponse {
-  status: 'ok' | 'degraded';
-  db: DependencyStatus;
-  ml: DependencyStatus;
-}
+export type { DependencyStatus, HealthResponse };
 
 export function fetchHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>('/health');
+}
+
+export function fetchDashboard(): Promise<DashboardResponse> {
+  return apiFetch<DashboardResponse>('/reports/dashboard');
 }

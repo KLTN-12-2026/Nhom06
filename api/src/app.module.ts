@@ -14,6 +14,7 @@ import { HealthModule } from './modules/health/health.module';
 import { InboundModule } from './modules/inbound/inbound.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { OutboundModule } from './modules/outbound/outbound.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -34,6 +35,7 @@ import { PrismaModule } from './prisma/prisma.module';
     OutboundModule,
     ExpiryModule,
     AiModule,
+    ReportsModule,
   ],
   providers: [
     {
