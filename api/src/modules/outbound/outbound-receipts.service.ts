@@ -438,6 +438,7 @@ export class OutboundReceiptsService {
     orderId: string,
     dto: ConfirmOrderOutboundDto,
     actorUserId: string,
+    internalOptions?: { confirmedAt?: Date },
   ): Promise<ConfirmOrderOutboundResponse> {
     const { validItems, errors: payloadErrors } = validateOutboundItems(dto.items);
     if (payloadErrors.length > 0) {
@@ -447,7 +448,7 @@ export class OutboundReceiptsService {
       });
     }
 
-    const confirmedAt = new Date();
+    const confirmedAt = internalOptions?.confirmedAt ?? new Date();
     const evaluationDateStr = getVnTodayDateString(confirmedAt);
     const minDeliveryDays = await this.expiryThresholdsService.getMinDeliveryDays(evaluationDateStr);
     const outboundPrefix = buildOutboundNoPrefix(evaluationDateStr);
