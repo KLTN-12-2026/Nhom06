@@ -1,5 +1,7 @@
 # Nhom06 - Quản lý kho tích hợp AI
 
+[![CI](https://github.com/KLTN-12-2026/Nhom06/actions/workflows/ci.yml/badge.svg)](https://github.com/KLTN-12-2026/Nhom06/actions/workflows/ci.yml)
+
 Xây dựng hệ thống quản lý kho thông minh tích hợp AI đề xuất xử lý hàng cận hạn.
 GVHD: ThS. Trần Bàn Thạch
 
