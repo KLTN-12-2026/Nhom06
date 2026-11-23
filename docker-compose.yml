@@ -1,0 +1,88 @@
+# Môi trường DEV cho KHO-AI. Chạy: cp .env.example .env && docker compose up -d --build
+name: kho-ai
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kho_ai}
+      POSTGRES_USER: ${POSTGRES_USER:-kho_ai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kho_ai_dev}
+      TZ: UTC
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ml:
+    build:
+      context: ./ml
+    restart: unless-stopped
+    environment:
+      MODEL_DIR: /app/models
+    ports:
+      - "${ML_PORT:-8000}:8000"
+    volumes:
+      - ./ml:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./api
+      target: dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kho_ai}:${POSTGRES_PASSWORD:-kho_ai_dev}@db:5432/${POSTGRES_DB:-kho_ai}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      ML_SERVICE_URL: http://ml:8000
+      LLM_PROVIDER: ${LLM_PROVIDER:-none}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-20000}
+      CORS_ORIGIN: http://localhost:${WEB_PORT:-5173}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - ./api:/app
+      - api_node_modules:/app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+      ml:
+        condition: service_started
+    command: sh -c "npx prisma migrate deploy && npm run start:dev"
+
+  web:
+    build:
+      context: ./web
+      target: dev
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:${API_PORT:-3000}/api
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    volumes:
+      - ./web:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - api
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+
+volumes:
+  pgdata:
+  api_node_modules:
+  web_node_modules:
