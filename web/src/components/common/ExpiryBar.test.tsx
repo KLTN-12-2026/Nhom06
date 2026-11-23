@@ -19,6 +19,6 @@ describe('ExpiryBar (AC8)', () => {
     rerender(<ExpiryBar daysRemaining={20} severity="warning" maxDays={30} />);
     const warnLabel = screen.getByText('còn 20 ngày');
     expect(warnLabel).toBeInTheDocument();
-    expect(warnLabel.className).toContain('var(--risk-medium-bar)');
+    expect(warnLabel.className).toContain('var(--risk-medium-fg)');
   });
 });

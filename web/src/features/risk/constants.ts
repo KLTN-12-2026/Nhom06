@@ -1,13 +1,8 @@
 import { type ExpiryBarSeverity } from '@/components/common/ExpiryBar';
-import { type StatusTone } from '@/components/common/StatusBadge';
+import { RISK_LEVEL_BADGE_META } from '@/components/common/risk-status-meta';
 import { type AnalysisTriggerType, type RiskLevel } from './types';
 
-export const RISK_BADGE_META: Record<RiskLevel, { tone: StatusTone; label: string }> = {
-  critical: { tone: 'neutral', label: 'Hết hạn' },
-  high: { tone: 'critical', label: 'Nguy cấp' },
-  medium: { tone: 'warning', label: 'Trung bình' },
-  low: { tone: 'active', label: 'Thấp' },
-};
+export const RISK_BADGE_META = RISK_LEVEL_BADGE_META;
 
 export const TRIGGER_LABELS: Record<AnalysisTriggerType, string> = {
   MANUAL: 'Thủ công',

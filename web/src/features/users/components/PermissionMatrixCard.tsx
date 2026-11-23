@@ -9,6 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { type PermissionMatrixResponse } from '../types';
+import { groupPermissionsForMatrix } from './permission-matrix-groups';
 
 const SHORT_ROLE_LABELS: Record<string, string> = {
   ADMIN: 'Quản trị',
@@ -35,12 +36,14 @@ export function PermissionMatrixCard({
     permSet: new Set(role.permissionCodes),
   }));
 
+  const groupedRows = data ? groupPermissionsForMatrix(data.permissions) : [];
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-border py-4">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b border-border py-4">
         <CardTitle className="text-lg">Ma trận quyền</CardTitle>
-        <span className="text-xs text-[var(--text-muted)]">
-          {data ? `${data.permissions.length} quyền thao tác` : 'Đang tải...'}
+        <span className="text-xs tabular-nums text-[var(--text-muted)]">
+          {data ? `${groupedRows.length} quyền thao tác` : 'Đang tải...'}
         </span>
       </CardHeader>
 
@@ -64,37 +67,39 @@ export function PermissionMatrixCard({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Quyền</TableHead>
+                <TableHead className="min-w-[200px]">Quyền</TableHead>
                 {roleSets.map((role) => (
-                  <TableHead key={role.code} className="w-28 text-center">
+                  <TableHead key={role.code} className="w-28 whitespace-nowrap text-center">
                     {role.shortLabel}
                   </TableHead>
                 ))}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.permissions.map((perm) => (
-                <TableRow key={perm.code}>
+              {groupedRows.map((row) => (
+                <TableRow key={row.key}>
                   <TableCell>
-                    <div className="text-sm text-[var(--text)]">
-                      {perm.description || perm.code}
+                    <div
+                      className="text-sm text-[var(--text)]"
+                      title={`Mã quyền DB: ${row.codes.join(', ')}`}
+                    >
+                      {row.label}
                     </div>
-                    <div className="text-xs text-[var(--text-muted)]">{perm.code}</div>
                   </TableCell>
                   {roleSets.map((role) => {
-                    const allowed = role.permSet.has(perm.code);
+                    const allowed = row.codes.every((code) => role.permSet.has(code));
                     return (
                       <TableCell key={role.code} className="text-center">
                         {allowed ? (
                           <span
-                            aria-label={`${role.shortLabel} có quyền ${perm.code}`}
+                            aria-label={`${role.shortLabel} có quyền ${row.label}`}
                             className="inline-flex items-center justify-center text-[var(--primary)]"
                           >
                             <Check className="h-4 w-4" strokeWidth={2.5} />
                           </span>
                         ) : (
                           <span
-                            aria-label={`${role.shortLabel} không có quyền ${perm.code}`}
+                            aria-label={`${role.shortLabel} không có quyền ${row.label}`}
                             className="inline-block h-1 w-1 rounded-full bg-[var(--track)]"
                           />
                         )}

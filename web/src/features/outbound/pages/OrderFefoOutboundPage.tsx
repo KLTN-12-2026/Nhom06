@@ -421,7 +421,7 @@ export function OrderFefoOutboundPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full min-w-[700px] border-collapse text-sm">
                       <thead>
-                        <tr className="border-b border-border bg-[var(--surface-muted)] text-left font-medium text-[var(--text)]">
+                        <tr className="border-b border-border bg-[var(--surface-muted)] text-left font-medium text-[var(--text-muted)]">
                           <th className="w-12 px-4 py-3 text-center">#</th>
                           <th className="px-4 py-3">Mã lô</th>
                           <th className="px-4 py-3">Hạn sử dụng</th>

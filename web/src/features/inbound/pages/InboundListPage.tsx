@@ -176,7 +176,7 @@ export function InboundListPage() {
             />
           </FilterBar>
         </div>
-        <p className="shrink-0 text-sm text-[var(--text-muted)]">
+        <p className="shrink-0 text-sm tabular-nums text-[var(--text-muted)]">
           {total > 0 ? `${total} phiếu nhập` : '0 phiếu nhập'}
         </p>
       </div>

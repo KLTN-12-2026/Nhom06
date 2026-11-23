@@ -69,7 +69,7 @@ export function StockLedgerTab({ appliedFilters, onApplyFilters }: StockLedgerTa
       {/* Bộ lọc kỳ báo cáo & nhóm hàng (bám mockup 28) */}
       <form onSubmit={handleSubmit} className="space-y-2">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-[170px]">
+          <div className="w-full sm:w-[170px]">
             <label
               htmlFor="nxt-from"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -84,7 +84,7 @@ export function StockLedgerTab({ appliedFilters, onApplyFilters }: StockLedgerTa
             />
           </div>
 
-          <div className="w-[170px]">
+          <div className="w-full sm:w-[170px]">
             <label
               htmlFor="nxt-to"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -99,7 +99,7 @@ export function StockLedgerTab({ appliedFilters, onApplyFilters }: StockLedgerTa
             />
           </div>
 
-          <div className="w-[220px]">
+          <div className="w-full sm:w-[220px]">
             <label
               htmlFor="nxt-group"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"

@@ -9,15 +9,15 @@ export function FefoStepBar() {
   return (
     <div
       aria-label="Các bước phân bổ FEFO"
-      className="flex flex-wrap items-center gap-6 border-b border-[var(--border)] text-sm"
+      className="flex items-center gap-5 overflow-x-auto whitespace-nowrap border-b border-[var(--border)] text-sm sm:gap-6"
     >
       {FEFO_STEPS.map((step) => {
         const cls =
           step.state === 'active'
-            ? 'border-b-2 border-[var(--brand)] pb-3 font-semibold text-[var(--text)]'
+            ? 'shrink-0 border-b-2 border-[var(--brand)] pb-3 font-semibold text-[var(--text)]'
             : step.state === 'done'
-              ? 'pb-3 font-medium text-[var(--risk-low-fg)]'
-              : 'pb-3 text-[var(--text-muted)]';
+              ? 'shrink-0 pb-3 font-medium text-[var(--risk-low-fg)]'
+              : 'shrink-0 pb-3 text-[var(--text-muted)]';
         return (
           <div key={step.id} className={cls}>
             {step.label}

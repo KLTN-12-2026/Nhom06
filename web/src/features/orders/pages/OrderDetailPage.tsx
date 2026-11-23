@@ -286,38 +286,44 @@ export function OrderDetailPage() {
               <CardTitle>Thông tin đơn</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 pt-4 text-sm">
-              <dl className="grid grid-cols-[110px_1fr] gap-y-3">
+              <dl className="grid grid-cols-[110px_1fr] gap-x-3 gap-y-3">
                 <dt className="text-[var(--text-muted)]">Số đơn</dt>
-                <dd className="font-medium text-[var(--text)]">{order.orderNo}</dd>
+                <dd className="min-w-0 break-words font-medium text-[var(--text)]">
+                  {order.orderNo}
+                </dd>
 
                 <dt className="text-[var(--text-muted)]">Đại lý</dt>
-                <dd className="text-[var(--text)]">
+                <dd className="min-w-0 break-words text-[var(--text)]">
                   {order.agency.name}{' '}
                   <span className="text-xs text-[var(--text-muted)]">({order.agency.code})</span>
                 </dd>
 
                 <dt className="text-[var(--text-muted)]">Ngày đặt</dt>
-                <dd className="tabular-nums text-[var(--text)]">{formatDate(order.orderDate)}</dd>
+                <dd className="min-w-0 tabular-nums text-[var(--text)]">
+                  {formatDate(order.orderDate)}
+                </dd>
 
                 <dt className="text-[var(--text-muted)]">Trạng thái</dt>
-                <dd>
+                <dd className="min-w-0">
                   <OrderStatusBadge status={order.status} />
                 </dd>
 
                 <dt className="text-[var(--text-muted)]">Người tạo</dt>
-                <dd className="text-[var(--text)]">{order.creator.fullName}</dd>
+                <dd className="min-w-0 break-words text-[var(--text)]">{order.creator.fullName}</dd>
 
                 {order.canceller && (
                   <>
                     <dt className="text-[var(--text-muted)]">Người hủy</dt>
-                    <dd className="text-[var(--text)]">{order.canceller.fullName}</dd>
+                    <dd className="min-w-0 break-words text-[var(--text)]">
+                      {order.canceller.fullName}
+                    </dd>
                   </>
                 )}
 
                 {order.cancelledAt && (
                   <>
                     <dt className="text-[var(--text-muted)]">Thời điểm hủy</dt>
-                    <dd className="tabular-nums text-[var(--text)]">
+                    <dd className="min-w-0 tabular-nums text-[var(--text)]">
                       {formatDateTime(order.cancelledAt)}
                     </dd>
                   </>
@@ -326,7 +332,9 @@ export function OrderDetailPage() {
                 {order.notes && (
                   <>
                     <dt className="text-[var(--text-muted)]">Ghi chú</dt>
-                    <dd className="whitespace-pre-line text-[var(--text)]">{order.notes}</dd>
+                    <dd className="min-w-0 break-words whitespace-pre-line text-[var(--text)]">
+                      {order.notes}
+                    </dd>
                   </>
                 )}
               </dl>

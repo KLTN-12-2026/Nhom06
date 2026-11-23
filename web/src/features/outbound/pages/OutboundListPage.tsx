@@ -148,7 +148,9 @@ export function OutboundListPage() {
             />
           </FilterBar>
         </div>
-        <p className="shrink-0 text-sm text-[var(--text-muted)]">{total} phiếu xuất</p>
+        <p className="shrink-0 text-sm tabular-nums text-[var(--text-muted)]">
+          {total} phiếu xuất
+        </p>
       </div>
 
       <DataTable

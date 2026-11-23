@@ -350,7 +350,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
             </p>
           )}
 
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[600px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-[var(--surface-muted)] text-left font-medium text-[var(--text)]">
