@@ -42,7 +42,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Nhập kho',
     items: [
-      { label: 'Phiếu nhập', path: '/inbound', requiredPermission: 'inbound.read' },
+      {
+        label: 'Phiếu nhập',
+        path: '/inbound',
+        requiredPermission: 'inbound.read',
+        pageTitle: 'Phiếu nhập kho',
+        pageDescription: 'Tồn kho chỉ tăng khi phiếu được xác nhận',
+      },
       { label: 'Tồn kho theo lô', path: '/inventory', requiredPermission: 'inventory.read' },
       { label: 'Lịch sử biến động', path: '/movements', requiredPermission: 'inventory.read' },
     ],
