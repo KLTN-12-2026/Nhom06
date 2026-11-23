@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks';
 import { useExpiryAlertsSummaryQuery } from '@/features/expiry/hooks';
+import { useProposalsSummaryQuery } from '@/features/proposals/hooks';
 import { cn } from '@/lib/utils';
 import { ALL_NAV_ITEMS, filterNavGroups } from './navigation';
 import { type PageHeaderConfig, PageHeaderContext } from './page-header-context';
@@ -19,6 +20,14 @@ export function AppLayout() {
     staleTime: 60_000,
   });
   const expiryAlertCount = expirySummaryQuery.data?.totalAlertLots ?? 0;
+
+  const canReadProposals = Boolean(user) && hasPermission('proposals.read');
+  const proposalsSummaryQuery = useProposalsSummaryQuery({
+    enabled: canReadProposals,
+    retry: false,
+    staleTime: 60_000,
+  });
+  const pendingProposalCount = proposalsSummaryQuery.data?.pending ?? 0;
 
   const visibleGroups = filterNavGroups(hasPermission);
   const visibleItems = visibleGroups.flatMap((group) => group.items);
@@ -83,6 +92,14 @@ export function AppLayout() {
                           {expiryAlertCount}
                         </span>
                       )}
+                      {item.path === '/proposals' && pendingProposalCount > 0 && (
+                        <span
+                          aria-label={`${pendingProposalCount} đề xuất chờ quyết định`}
+                          className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--risk-critical-fg)] px-1.5 text-xs font-semibold tabular-nums text-white"
+                        >
+                          {pendingProposalCount}
+                        </span>
+                      )}
                     </NavLink>
                   </li>
                 ))}
@@ -138,6 +155,11 @@ export function AppLayout() {
               {item.path === '/expiry-alerts' && expiryAlertCount > 0 && (
                 <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--risk-critical-fg)] px-1.5 text-xs font-semibold tabular-nums text-white">
                   {expiryAlertCount}
+                </span>
+              )}
+              {item.path === '/proposals' && pendingProposalCount > 0 && (
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--risk-critical-fg)] px-1.5 text-xs font-semibold tabular-nums text-white">
+                  {pendingProposalCount}
                 </span>
               )}
             </NavLink>

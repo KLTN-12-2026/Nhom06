@@ -58,6 +58,7 @@ export interface OutboundReceiptSummaryResponse {
   notes: string | null;
   lotCount: number;
   totalQuantity: string;
+  matchedLotQty?: string;
   createdAt: string;
 }
 
@@ -224,12 +225,19 @@ type OutboundDetailRecord = Prisma.OutboundReceiptGetPayload<{
   select: typeof OUTBOUND_DETAIL_SELECT;
 }>;
 
-function toOutboundSummary(record: OutboundDetailRecord): OutboundReceiptSummaryResponse {
+function toOutboundSummary(
+  record: OutboundDetailRecord,
+  matchedLotId?: string,
+): OutboundReceiptSummaryResponse {
   let totalQty = new Prisma.Decimal(0);
+  let matchedLotQty = new Prisma.Decimal(0);
   const uniqueLots = new Set<string>();
   for (const item of record.items) {
     totalQty = totalQty.add(item.quantity);
     uniqueLots.add(item.lotId);
+    if (matchedLotId && item.lotId === matchedLotId) {
+      matchedLotQty = matchedLotQty.add(item.quantity);
+    }
   }
 
   return {
@@ -244,6 +252,7 @@ function toOutboundSummary(record: OutboundDetailRecord): OutboundReceiptSummary
     notes: record.notes,
     lotCount: uniqueLots.size,
     totalQuantity: totalQty.toString(),
+    ...(matchedLotId ? { matchedLotQty: matchedLotQty.toString() } : {}),
     createdAt: record.createdAt.toISOString(),
   };
 }
@@ -317,6 +326,9 @@ export class OutboundReceiptsService {
     if (query.orderId) {
       where.orderId = query.orderId;
     }
+    if (query.lotId) {
+      where.items = { some: { lotId: query.lotId } };
+    }
     if (query.from || query.to) {
       where.confirmedAt = {
         ...(query.from ? { gte: new Date(`${query.from}T00:00:00.000+07:00`) } : {}),
@@ -344,7 +356,7 @@ export class OutboundReceiptsService {
     ]);
 
     return {
-      items: records.map(toOutboundSummary),
+      items: records.map((record) => toOutboundSummary(record, query.lotId)),
       total,
       page,
       pageSize,
@@ -426,6 +438,7 @@ export class OutboundReceiptsService {
     orderId: string,
     dto: ConfirmOrderOutboundDto,
     actorUserId: string,
+    internalOptions?: { confirmedAt?: Date },
   ): Promise<ConfirmOrderOutboundResponse> {
     const { validItems, errors: payloadErrors } = validateOutboundItems(dto.items);
     if (payloadErrors.length > 0) {
@@ -435,7 +448,7 @@ export class OutboundReceiptsService {
       });
     }
 
-    const confirmedAt = new Date();
+    const confirmedAt = internalOptions?.confirmedAt ?? new Date();
     const evaluationDateStr = getVnTodayDateString(confirmedAt);
     const minDeliveryDays = await this.expiryThresholdsService.getMinDeliveryDays(evaluationDateStr);
     const outboundPrefix = buildOutboundNoPrefix(evaluationDateStr);

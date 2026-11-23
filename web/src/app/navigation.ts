@@ -129,8 +129,20 @@ export const NAV_GROUPS: NavGroup[] = [
         pageTitle: 'Phân tích nguy cơ tồn dư',
         pageDescription: 'Ước lượng tồn dư theo FEFO và mức rủi ro cận hạn của từng lô',
       },
-      { label: 'Đề xuất xử lý', path: '/proposals', requiredPermission: 'proposals.read' },
-      { label: 'Theo dõi thực hiện', path: '/executions', requiredPermission: 'executions.read' },
+      {
+        label: 'Đề xuất xử lý',
+        path: '/proposals',
+        requiredPermission: 'proposals.read',
+        pageTitle: 'Đề xuất xử lý hàng cận hạn',
+        pageDescription: 'Phương án do bộ quy tắc sinh ra; quản lý kho xem xét và quyết định',
+      },
+      {
+        label: 'Theo dõi thực hiện',
+        path: '/executions',
+        requiredPermission: 'executions.read',
+        pageTitle: 'Theo dõi thực hiện phương án',
+        pageDescription: 'Đã duyệt và đã thực hiện là hai trạng thái khác nhau',
+      },
     ],
   },
   {

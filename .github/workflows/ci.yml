@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -156,3 +157,92 @@ jobs:
 
       - name: Run tests
         run: pytest -q
+
+  smoke:
+    name: Smoke (Full Flow)
+    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kho_ai
+          POSTGRES_PASSWORD: kho_ai_test_password
+          POSTGRES_DB: kho_ai_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://kho_ai:kho_ai_test_password@localhost:5432/kho_ai_test?schema=public
+      JWT_SECRET: ci-smoke-secret
+      ML_SERVICE_URL: http://127.0.0.1:8000
+      ML_TIMEOUT_MS: '15000'
+      LLM_PROVIDER: mock
+      LLM_DEMO_TOGGLE: 'true'
+      ALLOW_DEMO_SEED: 'true'
+      EXPIRY_CRON_ENABLED: 'false'
+      ANALYSIS_CRON_ENABLED: 'false'
+      ANALYSIS_AUTO_ENABLED: 'false'
+      ANALYSIS_AUTO_DEBOUNCE_MS: '0'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: ml/requirements.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install ML dependencies
+        working-directory: ml
+        run: pip install -r requirements.txt
+
+      - name: Start ML service and wait for health
+        working-directory: ml
+        run: |
+          MODEL_DIR=/tmp/kho-ai-ml-models uvicorn app.main:app --host 127.0.0.1 --port 8000 > /tmp/ml.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8000/health > /dev/null 2>&1; then
+              echo "ML service ready after $((i * 2))s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "ML service did not become healthy in time"
+          cat /tmp/ml.log || true
+          exit 1
+
+      - name: Install API dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: api
+        run: npx prisma generate
+
+      - name: Run Prisma migrations
+        working-directory: api
+        run: npx prisma migrate deploy
+
+      - name: Seed base database
+        working-directory: api
+        run: npx prisma db seed
+
+      - name: Run full-flow & demo-seed smoke tests
+        working-directory: api
+        run: npm run test:smoke
+
+      - name: Print ML logs on failure
+        if: failure()
+        run: tail -n 100 /tmp/ml.log || true

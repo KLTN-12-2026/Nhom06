@@ -6,9 +6,9 @@ import { PageHeader } from '@/components/common/PageHeader';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { formatDateTime, formatQuantity } from '@/lib/format';
-import { OutboundStatusBadge } from '../components/OutboundTypeBadge';
+import { OutboundStatusBadge, OutboundTypeBadge } from '../components/OutboundTypeBadge';
 import { useOutboundReceiptsQuery } from '../hooks';
-import { getOutboundTypeLabel, type OutboundReceiptSummary } from '../types';
+import { type OutboundReceiptSummary } from '../types';
 
 export function OutboundListPage() {
   const [search, setSearch] = useState('');
@@ -42,7 +42,7 @@ export function OutboundListPage() {
       },
       {
         key: 'order',
-        header: 'Đơn',
+        header: 'Đơn / Loại xuất',
         cellClassName: 'whitespace-nowrap',
         render: (row) =>
           row.order ? (
@@ -53,7 +53,7 @@ export function OutboundListPage() {
               {row.order.orderNo}
             </Link>
           ) : (
-            <span className="text-[var(--text-muted)]">{getOutboundTypeLabel(row.outboundType)}</span>
+            <OutboundTypeBadge type={row.outboundType} />
           ),
       },
       {
