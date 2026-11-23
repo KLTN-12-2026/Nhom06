@@ -1,0 +1,21 @@
+product_code,name,group,unit,shelf_life_days
+SP001,Sữa tươi tiệt trùng 1L,sua,thung,180
+SP002,Sữa tươi ít đường 180ml lốc 4,sua,thung,180
+SP003,Sữa đặc có đường lon 380g,sua,thung,365
+SP004,Sữa hạt nguyên chất 1L,sua,thung,180
+SP005,Sữa tiệt trùng sô-cô-la lốc 4,sua,thung,180
+SP006,Sữa chua trắng có đường lốc 4,sua_chua,thung,45
+SP007,Sữa chua không đường lốc 4,sua_chua,thung,45
+SP008,Sữa chua trái cây lốc 4,sua_chua,thung,45
+SP009,Sữa chua uống hương cam lốc 4,sua_chua,thung,60
+SP010,Sữa chua uống hương dâu lốc 4,sua_chua,thung,60
+SP011,Nước lọc đóng chai thùng 24,nuoc_giai_khat,thung,365
+SP012,Trà xanh đóng chai thùng 24,nuoc_giai_khat,thung,365
+SP013,Nước ngọt có ga thùng 24,nuoc_giai_khat,thung,365
+SP014,Nước tăng lực thùng 24,nuoc_giai_khat,thung,365
+SP015,Nước ép trái cây hộp 1L,nuoc_giai_khat,thung,270
+SP016,Bánh quy bơ hộp thiếc,banh_keo,thung,365
+SP017,Bánh bông lan đóng gói thùng,banh_keo,thung,180
+SP018,Kẹo mềm trái cây gói,banh_keo,thung,365
+SP019,Snack khoai tây thùng,banh_keo,thung,180
+SP020,Bánh gạo giòn gói,banh_keo,thung,270
