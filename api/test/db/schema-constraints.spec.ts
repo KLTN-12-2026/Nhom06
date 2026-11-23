@@ -32,9 +32,10 @@ const EXPECTED_TABLES = [
   // EXPIRY (2)
   'expiry_thresholds',
   'expiry_alerts',
-  // AI (8)
+  // AI (9 — gồm demand_history theo D-017)
   'analysis_runs',
   'demand_forecasts',
+  'demand_history',
   'lot_risk_assessments',
   'treatment_proposals',
   'llm_explanations',
@@ -259,7 +260,7 @@ describe('Ràng buộc và lược đồ PostgreSQL (T-004)', () => {
     expect(tableNames).toContain('stock_movements');
     expect(tableNames).not.toContain('forecast_models');
     expect(tableNames).toEqual(EXPECTED_TABLES);
-    expect(tableNames).toHaveLength(33);
+    expect(tableNames).toHaveLength(EXPECTED_TABLES.length);
   });
 
   // AC7

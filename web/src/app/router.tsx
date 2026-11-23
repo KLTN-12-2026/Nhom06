@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
+import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './AppLayout';
 import { ALL_NAV_ITEMS } from './navigation';
@@ -24,7 +25,7 @@ function DevelopingPage({ title }: { title: string }) {
 }
 
 const placeholderRoutes = ALL_NAV_ITEMS.filter(
-  (item) => item.path !== '/' && item.path !== '/users',
+  (item) => item.path !== '/' && item.path !== '/users' && item.path !== '/forecast',
 ).map((item) => ({
   path: item.path.replace(/^\//, ''),
   element: (
@@ -56,6 +57,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="users.read">
             <UsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'forecast',
+        element: (
+          <ProtectedRoute requiredPermission="forecast.read">
+            <ForecastPage />
           </ProtectedRoute>
         ),
       },

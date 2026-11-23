@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AGENCIES, PRODUCT_GROUPS, PRODUCTS, SUPPLIERS } from './seed/catalog';
+import { seedDemandHistory } from './seed/demand-history';
 import { PERMISSIONS, ROLE_PERMISSION_MATRIX, ROLES, RoleCode } from './seed/permissions';
 
 interface DemoUserSeed {
@@ -274,6 +275,9 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
       },
     });
   }
+
+  // 11. Lịch sử nhu cầu mô phỏng (D-017: 20 sản phẩm × 722 ngày SIMULATED, idempotent)
+  await seedDemandHistory(prisma);
 }
 
 async function main(): Promise<void> {

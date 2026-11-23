@@ -37,6 +37,11 @@ export class EnvironmentVariables {
   ML_SERVICE_URL!: string;
 
   @IsOptional()
+  @IsInt()
+  @Min(1000)
+  ML_TIMEOUT_MS?: number = 10000;
+
+  @IsOptional()
   @IsString()
   CORS_ORIGIN?: string = 'http://localhost:5173';
 
