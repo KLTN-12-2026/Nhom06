@@ -65,6 +65,10 @@ jobs:
       JWT_SECRET: ci-secret
       ML_SERVICE_URL: http://localhost:8000
       LLM_PROVIDER: none
+      EXPIRY_CRON_ENABLED: 'false'
+      ANALYSIS_CRON_ENABLED: 'false'
+      ANALYSIS_AUTO_ENABLED: 'false'
+      ANALYSIS_AUTO_DEBOUNCE_MS: '0'
     steps:
       - uses: actions/checkout@v4
 
