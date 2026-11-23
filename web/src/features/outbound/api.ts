@@ -10,6 +10,7 @@ import {
 export interface ListOutboundReceiptsParams {
   type?: string;
   orderId?: string;
+  lotId?: string;
   from?: string;
   to?: string;
   search?: string;
@@ -40,6 +41,9 @@ export function fetchOutboundReceipts(
   }
   if (params.orderId) {
     query.set('orderId', params.orderId);
+  }
+  if (params.lotId) {
+    query.set('lotId', params.lotId);
   }
   if (params.from) {
     query.set('from', params.from);

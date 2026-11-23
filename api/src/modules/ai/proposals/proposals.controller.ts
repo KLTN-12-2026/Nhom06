@@ -9,9 +9,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from '../../../common/decorators/current-user.decorator';
 import { Permissions } from '../../../common/decorators/permissions.decorator';
+import { AuthenticatedUser } from '../../../common/types/authenticated-user.type';
 import { ExplainProposalDto } from './dto/explain-proposal.dto';
 import { ListProposalsQueryDto } from './dto/list-proposals-query.dto';
+import { ApproveProposalDto, RejectProposalDto } from './dto/proposal-decision.dto';
 import { ProposalsService } from './proposals.service';
 
 const PROPOSAL_UUID_PIPE = new ParseUUIDPipe({
@@ -53,5 +56,27 @@ export class ProposalsController {
   @ApiOperation({ summary: 'Diễn giải lại đề xuất bằng LLM (hoặc mô phỏng lỗi khi bật demo)' })
   explain(@Param('id', PROPOSAL_UUID_PIPE) id: string, @Body() dto: ExplainProposalDto) {
     return this.proposalsService.explain(id, dto);
+  }
+
+  @Post(':id/approve')
+  @Permissions('proposals.approve')
+  @ApiOperation({ summary: 'Quản lý kho phê duyệt đề xuất xử lý (không đổi tồn kho)' })
+  approve(
+    @Param('id', PROPOSAL_UUID_PIPE) id: string,
+    @Body() dto: ApproveProposalDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.proposalsService.approve(id, dto, user.id);
+  }
+
+  @Post(':id/reject')
+  @Permissions('proposals.approve')
+  @ApiOperation({ summary: 'Quản lý kho từ chối đề xuất xử lý kèm lý do bắt buộc' })
+  reject(
+    @Param('id', PROPOSAL_UUID_PIPE) id: string,
+    @Body() dto: RejectProposalDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.proposalsService.reject(id, dto, user.id);
   }
 }

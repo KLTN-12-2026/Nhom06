@@ -4,6 +4,7 @@ import { AgenciesPage } from '@/features/agencies/pages/AgenciesPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
+import { ExecutionsPage } from '@/features/executions/pages/ExecutionsPage';
 import { ExpiryAlertsPage } from '@/features/expiry/pages/ExpiryAlertsPage';
 import { ExpiryThresholdsPage } from '@/features/expiry/pages/ExpiryThresholdsPage';
 import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
@@ -62,6 +63,7 @@ const IMPLEMENTED_PATHS = new Set([
   '/forecast',
   '/risk',
   '/proposals',
+  '/executions',
   '/expiry-alerts',
   '/expiry-thresholds',
   '/reports',
@@ -300,6 +302,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="proposals.read">
             <ProposalDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'executions',
+        element: (
+          <ProtectedRoute requiredPermission="executions.read">
+            <ExecutionsPage />
           </ProtectedRoute>
         ),
       },

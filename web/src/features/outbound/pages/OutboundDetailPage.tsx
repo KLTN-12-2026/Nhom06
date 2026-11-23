@@ -11,7 +11,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { formatDate, formatDateTime, formatQuantity } from '@/lib/format';
-import { OutboundStatusBadge } from '../components/OutboundTypeBadge';
+import { OutboundStatusBadge, OutboundTypeBadge } from '../components/OutboundTypeBadge';
 import { useOutboundReceiptDetailQuery } from '../hooks';
 import { getOutboundTypeLabel } from '../types';
 
@@ -134,7 +134,9 @@ export function OutboundDetailPage() {
                 <dd className="font-medium text-[var(--text)]">{receipt.outboundNo}</dd>
 
                 <dt className="text-[var(--text-muted)]">Loại xuất</dt>
-                <dd className="text-[var(--text)]">{getOutboundTypeLabel(receipt.outboundType)}</dd>
+                <dd>
+                  <OutboundTypeBadge type={receipt.outboundType} />
+                </dd>
 
                 <dt className="text-[var(--text-muted)]">Đơn liên quan</dt>
                 <dd>

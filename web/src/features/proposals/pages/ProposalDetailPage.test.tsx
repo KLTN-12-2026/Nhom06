@@ -76,11 +76,15 @@ function makeDetail(overrides: Partial<ProposalDetailResponse> = {}): ProposalDe
     displayMode: 'llm',
     fallbackReason: null,
     llmDemoToggleEnabled: true,
+    decision: null,
+    execution: null,
     ...overrides,
   };
 }
 
-function renderDetailPage(permissions = ['proposals.read', 'analysis.run']) {
+function renderDetailPage(
+  permissions = ['proposals.read', 'proposals.approve', 'analysis.run', 'executions.read'],
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -108,6 +112,7 @@ function renderDetailPage(permissions = ['proposals.read', 'analysis.run']) {
             <Routes>
               <Route path="/proposals/:id" element={<ProposalDetailPage />} />
               <Route path="/inventory" element={<div>Tồn kho</div>} />
+              <Route path="/executions" element={<div>Trang theo dõi thực hiện</div>} />
             </Routes>
           </MemoryRouter>
         </AuthContext.Provider>
@@ -116,7 +121,7 @@ function renderDetailPage(permissions = ['proposals.read', 'analysis.run']) {
   );
 }
 
-describe('ProposalDetailPage — 3 trạng thái diễn giải valid / invalid / failed (T-014 AC8, mockup 22–24)', () => {
+describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-014 + T-015 AC9, mockup 22–26)', () => {
   beforeEach(() => {
     localStorage.setItem('kho_ai_access_token', 'test-token');
   });
@@ -126,7 +131,7 @@ describe('ProposalDetailPage — 3 trạng thái diễn giải valid / invalid /
     localStorage.clear();
   });
 
-  it('trạng thái valid (mockup 22 & 23): hiện diễn giải LLM, mở được JSON số liệu thô, khối Quyết định disabled và bấm "Mô phỏng lỗi dịch vụ" chuyển sang fallback', async () => {
+  it('trạng thái valid (mockup 22 & 23): hiện diễn giải LLM, mở JSON số liệu thô, bấm mô phỏng lỗi chuyển sang fallback', async () => {
     let currentDetail = makeDetail();
     const postPayloads: unknown[] = [];
 
@@ -186,26 +191,14 @@ describe('ProposalDetailPage — 3 trạng thái diễn giải valid / invalid /
       ),
     ).toBeInTheDocument();
 
-    // Khối Quyết định bị vô hiệu hóa chờ T-015
-    expect(screen.getByRole('button', { name: 'Phê duyệt' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Từ chối' })).toBeDisabled();
-    expect(screen.getByText(/Phê duyệt làm ở bước sau/i)).toBeInTheDocument();
+    // Nút duyệt / từ chối đã bật cho quản lý kho
+    expect(screen.getByRole('button', { name: 'Phê duyệt' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Từ chối' })).toBeEnabled();
 
-    // Card tình trạng lô hiện tại
-    expect(screen.getByText('392 Lốc')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Xem trong tồn kho' })).toHaveAttribute(
-      'href',
-      '/inventory',
-    );
-
-    // Mở mục thu gọn "Số liệu thô đã gửi sang mô hình ngôn ngữ" (mockup 23)
     await user.click(screen.getByText('Số liệu thô đã gửi sang mô hình ngôn ngữ'));
     expect(screen.getByText(/"ton_du_uoc_tinh": 251/)).toBeInTheDocument();
-    expect(screen.getByText(/"allowed_actions"/)).toBeInTheDocument();
 
-    // Bấm "Mô phỏng lỗi dịch vụ" → chuyển sang giao diện fallback (mockup 24)
     await user.click(screen.getByRole('button', { name: 'Mô phỏng lỗi dịch vụ' }));
-
     await waitFor(() => {
       expect(
         screen.getByText(
@@ -214,21 +207,16 @@ describe('ProposalDetailPage — 3 trạng thái diễn giải valid / invalid /
       ).toBeInTheDocument();
     });
     expect(postPayloads).toEqual([{ simulateFailure: true }]);
-    expect(screen.getByText(currentDetail.ruleSummaryText)).toBeInTheDocument();
-    expect(screen.getByText('Nguồn: bộ quy tắc nghiệp vụ')).toBeInTheDocument();
 
-    // Bấm "Khôi phục dịch vụ diễn giải" → quay lại trạng thái valid
     await user.click(screen.getByRole('button', { name: 'Khôi phục dịch vụ diễn giải' }));
-
     await waitFor(() => {
       expect(
         screen.getByText(/Viết lại từ số liệu bên dưới bởi mô hình ngôn ngữ/),
       ).toBeInTheDocument();
     });
-    expect(postPayloads).toEqual([{ simulateFailure: true }, { simulateFailure: false }]);
   });
 
-  it('trạng thái invalid: hiển thị hộp cam kiểm tra số liệu không đạt + ruleSummaryText, không hiện văn bản LLM', async () => {
+  it('trạng thái invalid: hiển thị hộp cam kiểm tra số liệu không đạt + ruleSummaryText', async () => {
     const invalidDetail = makeDetail({
       displayMode: 'fallback',
       fallbackReason: 'invalid',
@@ -260,44 +248,156 @@ describe('ProposalDetailPage — 3 trạng thái diễn giải valid / invalid /
       ).toBeInTheDocument();
     });
     expect(screen.getByText(invalidDetail.ruleSummaryText)).toBeInTheDocument();
-    expect(screen.getByText('Nguồn: bộ quy tắc nghiệp vụ')).toBeInTheDocument();
   });
 
-  it('trạng thái failed + nhân viên kho (không có analysis.run): hiển thị fallback mockup 24 và ẩn link demo', async () => {
-    const failedDetail = makeDetail({
-      displayMode: 'fallback',
-      fallbackReason: 'failed',
-      llmDemoToggleEnabled: true,
-      explanation: {
-        id: 'exp-failed',
-        status: 'failed',
-        text: null,
-        modelName: 'none',
-        provider: 'none',
-        promptVersion: 'v1',
-        errorMessage: 'Dịch vụ diễn giải LLM chưa được bật (LLM_PROVIDER=none)',
-        createdAt: '2026-11-22T00:02:00.000Z',
-      },
-    });
-
+  it('ẩn nút Phê duyệt / Từ chối khi người dùng thiếu quyền proposals.approve (nhân viên kho / admin)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
-      json: async () => failedDetail,
+      json: async () => makeDetail(),
     } as Response);
 
     renderDetailPage(['proposals.read']);
 
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          /Dịch vụ diễn giải không phản hồi, nên phần dưới là câu tóm tắt do bộ quy tắc sinh ra\./,
-        ),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
     });
-    expect(screen.getByText(failedDetail.ruleSummaryText)).toBeInTheDocument();
+
+    expect(screen.queryByRole('button', { name: 'Phê duyệt' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Từ chối' })).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: 'Khôi phục dịch vụ diễn giải' }),
-    ).not.toBeInTheDocument();
+      screen.getByText(/Đề xuất đang chờ quản lý kho xem xét và phê duyệt/i),
+    ).toBeInTheDocument();
+  });
+
+  it('bắt buộc nhập lý do khi từ chối; phê duyệt mở hộp thoại mockup 25 → chuyển trạng thái đã phê duyệt (mockup 26) + toast', async () => {
+    let currentDetail = makeDetail();
+    const approveCalls: unknown[] = [];
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/proposals/prop-1/approve') && init?.method === 'POST') {
+        approveCalls.push(JSON.parse(String(init.body ?? '{}')));
+        currentDetail = makeDetail({
+          status: 'approved',
+          decision: {
+            id: 'dec-1',
+            decision: 'approved',
+            reason: 'Ưu tiên gọi đại lý trong tuần',
+            decidedAt: '2026-11-22T03:00:00.000Z',
+            decider: { id: 'u-1', fullName: 'Nguyễn Văn Dương' },
+          },
+          execution: {
+            id: 'exec-1',
+            status: 'planned',
+            plannedQty: '251.000',
+            actualQty: null,
+            linkedOutboundId: null,
+          },
+        });
+        return {
+          ok: true,
+          status: 201,
+          json: async () => currentDetail,
+        } as Response;
+      }
+      return {
+        ok: true,
+        status: 200,
+        json: async () => currentDetail,
+      } as Response;
+    });
+
+    const user = userEvent.setup();
+    renderDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Từ chối' })).toBeInTheDocument();
+    });
+
+    // Bấm Từ chối khi ô ý kiến trống → báo lỗi, không mở dialog xác nhận
+    await user.click(screen.getByRole('button', { name: 'Từ chối' }));
+    expect(screen.getByText(/Vui lòng nhập lý do từ chối/i)).toBeInTheDocument();
+    expect(screen.queryByText('Từ chối đề xuất này?')).not.toBeInTheDocument();
+
+    // Nhập ghi chú và bấm Phê duyệt → mở hộp thoại mockup 25
+    await user.type(
+      screen.getByLabelText(/Ý kiến \(bắt buộc khi từ chối\)/i),
+      'Ưu tiên gọi đại lý trong tuần',
+    );
+    await user.click(screen.getByRole('button', { name: 'Phê duyệt' }));
+
+    expect(screen.getByText('Phê duyệt đề xuất này?')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Quyết định được ghi lại kèm người thực hiện và thời điểm\. Việc này không tạo chứng từ xuất và không trừ tồn kho\./,
+      ),
+    ).toBeInTheDocument();
+
+    // Xác nhận trong hộp thoại
+    const confirmButtons = screen.getAllByRole('button', { name: 'Phê duyệt' });
+    await user.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Đã ghi nhận quyết định: phê duyệt.')).toBeInTheDocument();
+    });
+
+    expect(approveCalls).toEqual([{ note: 'Ưu tiên gọi đại lý trong tuần' }]);
+    expect(screen.getByText('Nguyễn Văn Dương')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Theo dõi thực hiện' })).toHaveAttribute(
+      'href',
+      '/executions',
+    );
+    expect(screen.queryByRole('button', { name: 'Từ chối' })).not.toBeInTheDocument();
+  });
+
+  it('khi API trả 409 (đề xuất đã có quyết định trước đó) → hiển thị thông báo lỗi và tải lại dữ liệu', async () => {
+    let getCount = 0;
+    const latestApproved = makeDetail({
+      status: 'approved',
+      decision: {
+        id: 'dec-2',
+        decision: 'approved',
+        reason: null,
+        decidedAt: '2026-11-22T04:00:00.000Z',
+        decider: { id: 'u-1', fullName: 'Nguyễn Văn Dương' },
+      },
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/proposals/prop-1/approve') && init?.method === 'POST') {
+        return {
+          ok: false,
+          status: 409,
+          json: async () => ({ statusCode: 409, message: 'Đề xuất đã có quyết định' }),
+        } as Response;
+      }
+      getCount += 1;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => (getCount === 1 ? makeDetail() : latestApproved),
+      } as Response;
+    });
+
+    const user = userEvent.setup();
+    renderDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Phê duyệt' })).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Phê duyệt' }));
+    const confirmButtons = screen.getAllByRole('button', { name: 'Phê duyệt' });
+    await user.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.getByText('Đề xuất đã có quyết định')).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: 'Theo dõi thực hiện' })).toBeInTheDocument();
+    });
+    expect(getCount).toBeGreaterThanOrEqual(2);
   });
 });

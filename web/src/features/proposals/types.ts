@@ -81,6 +81,25 @@ export interface ProposalSummaryResponse {
   pending: number;
 }
 
+export interface ProposalDecision {
+  id: string;
+  decision: 'approved' | 'rejected';
+  reason: string | null;
+  decidedAt: string;
+  decider: {
+    id: string;
+    fullName: string;
+  };
+}
+
+export interface ProposalExecutionBrief {
+  id: string;
+  status: string;
+  plannedQty: string;
+  actualQty: string | null;
+  linkedOutboundId: string | null;
+}
+
 export interface ProposalDetailResponse {
   id: string;
   status: ProposalStatus;
@@ -124,6 +143,8 @@ export interface ProposalDetailResponse {
   displayMode: ProposalDisplayMode;
   fallbackReason: ProposalFallbackReason;
   llmDemoToggleEnabled: boolean;
+  decision: ProposalDecision | null;
+  execution: ProposalExecutionBrief | null;
 }
 
 export interface ExplainProposalResponse {

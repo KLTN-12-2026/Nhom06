@@ -32,10 +32,14 @@ export function useConfirmOrderOutboundMutation(orderId: string) {
   });
 }
 
-export function useOutboundReceiptsQuery(params: ListOutboundReceiptsParams) {
+export function useOutboundReceiptsQuery(
+  params: ListOutboundReceiptsParams,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: ['outbound-receipts', params],
     queryFn: () => fetchOutboundReceipts(params),
+    enabled: options?.enabled,
   });
 }
 

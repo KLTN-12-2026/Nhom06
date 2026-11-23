@@ -420,11 +420,12 @@ model OutboundReceipt {
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  order               AgencyOrder?          @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  creator             User                  @relation("OutboundReceiptCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  confirmer           User?                 @relation("OutboundReceiptConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  order               AgencyOrder?               @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  creator             User                       @relation("OutboundReceiptCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  confirmer           User?                      @relation("OutboundReceiptConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
   items               OutboundReceiptItem[]
   treatmentExecutions TreatmentExecution[]
+  executionUpdates    TreatmentExecutionUpdate[]
 
   @@map("outbound_receipts")
 }
@@ -643,16 +644,19 @@ model TreatmentExecution {
 }
 
 model TreatmentExecutionUpdate {
-  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  executionId String   @map("execution_id") @db.Uuid
-  status      String   @db.VarChar(20)
-  actualQty   Decimal? @map("actual_qty") @db.Decimal(14, 3)
-  note        String?  @db.Text
-  updatedBy   String   @map("updated_by") @db.Uuid
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  executionId      String    @map("execution_id") @db.Uuid
+  status           String    @db.VarChar(20)
+  actualQty        Decimal?  @map("actual_qty") @db.Decimal(14, 3)
+  note             String?   @db.Text
+  occurredOn       DateTime? @map("occurred_on") @db.Date
+  linkedOutboundId String?   @map("linked_outbound_id") @db.Uuid
+  updatedBy        String    @map("updated_by") @db.Uuid
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  execution TreatmentExecution @relation(fields: [executionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  updater   User               @relation(fields: [updatedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  execution      TreatmentExecution @relation(fields: [executionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updater        User               @relation(fields: [updatedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  linkedOutbound OutboundReceipt?   @relation(fields: [linkedOutboundId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@map("treatment_execution_updates")
 }
