@@ -4,6 +4,7 @@ import { AgenciesPage } from '@/features/agencies/pages/AgenciesPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
+import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
 import { ProductsPage } from '@/features/products/pages/ProductsPage';
 import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
@@ -26,7 +27,14 @@ function DevelopingPage({ title }: { title: string }) {
   );
 }
 
-const IMPLEMENTED_PATHS = new Set(['/', '/products', '/suppliers', '/agencies', '/users']);
+const IMPLEMENTED_PATHS = new Set([
+  '/',
+  '/products',
+  '/suppliers',
+  '/agencies',
+  '/users',
+  '/forecast',
+]);
 
 const placeholderRoutes = ALL_NAV_ITEMS.filter((item) => !IMPLEMENTED_PATHS.has(item.path)).map(
   (item) => ({
@@ -85,6 +93,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="users.read">
             <UsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'forecast',
+        element: (
+          <ProtectedRoute requiredPermission="forecast.read">
+            <ForecastPage />
           </ProtectedRoute>
         ),
       },

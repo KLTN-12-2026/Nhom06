@@ -64,7 +64,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Phân tích AI',
     items: [
-      { label: 'Dự báo nhu cầu', path: '/forecast', requiredPermission: 'forecast.read' },
+      {
+        label: 'Dự báo nhu cầu',
+        path: '/forecast',
+        requiredPermission: 'forecast.read',
+        pageTitle: 'Dự báo nhu cầu tiêu thụ',
+        pageDescription: 'Ước lượng nhu cầu tiêu thụ và đối chiếu tồn kho hiện tại',
+      },
       { label: 'Phân tích nguy cơ', path: '/risk', requiredPermission: 'analysis.read' },
       { label: 'Đề xuất xử lý', path: '/proposals', requiredPermission: 'proposals.read' },
       { label: 'Theo dõi thực hiện', path: '/executions', requiredPermission: 'executions.read' },
