@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +9,9 @@ import { useAuth } from '@/features/auth/hooks';
 import { RiskLevelBadge } from '@/features/risk/components/RiskLevelBadge';
 import { ApiError } from '@/lib/api';
 import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
+import { ProposalDecisionCard } from '../components/ProposalDecisionCard';
 import { ProposalExplanationBlock } from '../components/ProposalExplanationBlock';
-import { formatRemainingDaysText } from '../constants';
+import { formatRemainingDaysText, PROPOSAL_STATUS_META } from '../constants';
 import { useExplainProposalMutation, useProposalDetailQuery } from '../hooks';
 
 export function ProposalDetailPage() {
@@ -79,15 +81,26 @@ export function ProposalDetailPage() {
   }
 
   const canToggleDemo = proposal.llmDemoToggleEnabled && canRunExplain;
+  const headerBadge =
+    proposal.status === 'pending' || proposal.status === 'new' ? (
+      <RiskLevelBadge riskLevel={proposal.risk.riskLevel} isExpired={proposal.risk.isExpired} />
+    ) : proposal.status === 'approved' ? (
+      <StatusBadge tone="active" label="Đã phê duyệt" />
+    ) : proposal.status === 'rejected' ? (
+      <StatusBadge tone="critical" label="Đã từ chối" />
+    ) : (
+      <StatusBadge
+        tone={PROPOSAL_STATUS_META[proposal.status]?.tone ?? 'neutral'}
+        label={PROPOSAL_STATUS_META[proposal.status]?.label ?? proposal.status}
+      />
+    );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={`Lô ${proposal.lot.lotCode}`}
         description={`${proposal.product.code} — ${proposal.product.name}`}
-        actions={
-          <RiskLevelBadge riskLevel={proposal.risk.riskLevel} isExpired={proposal.risk.isExpired} />
-        }
+        actions={headerBadge}
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
@@ -181,65 +194,12 @@ export function ProposalDetailPage() {
           </Card>
         </div>
 
-        {/* Cột phải (1/3): Card Quyết định (disabled chờ T-015) + Card Tình trạng lô hiện tại */}
+        {/* Cột phải (1/3): Card Quyết định (mockup 22 → 25 → 26) + Card Tình trạng lô hiện tại */}
         <div className="space-y-6 lg:col-span-4">
-          <Card>
-            <CardHeader className="border-b border-border px-6 py-4">
-              <CardTitle className="text-lg font-semibold">Quyết định</CardTitle>
-            </CardHeader>
-
-            <CardContent className="space-y-4 p-6">
-              <div className="rounded-lg border border-border bg-[var(--surface-muted)]/60 p-4">
-                <div className="text-xs text-[var(--text-muted)]">
-                  Phương án theo quy tắc nghiệp vụ
-                </div>
-                <div className="mt-1 text-base font-semibold text-[var(--text)]">
-                  {proposal.actionLabel}
-                </div>
-                <div className="mt-1 text-sm text-[var(--text-muted)]">
-                  Lượng đề xuất xử lý{' '}
-                  <strong className="font-semibold tabular-nums text-[var(--text)]">
-                    {formatQuantity(proposal.proposedQty)} {proposal.product.unit}
-                  </strong>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="proposal-decision-note"
-                  className="block text-sm font-medium text-[var(--text)]"
-                >
-                  Ý kiến (bắt buộc khi từ chối)
-                </label>
-                <textarea
-                  id="proposal-decision-note"
-                  rows={3}
-                  disabled
-                  placeholder="Ghi lý do hoặc lưu ý cho người thực hiện"
-                  className="w-full rounded-md border border-border bg-[var(--surface-muted)] px-3 py-2 text-sm text-[var(--text-muted)] disabled:cursor-not-allowed disabled:opacity-70"
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="destructive" disabled>
-                  Từ chối
-                </Button>
-                <Button type="button" variant="default" disabled>
-                  Phê duyệt
-                </Button>
-              </div>
-
-              <p className="text-xs text-[var(--text-muted)]">Phê duyệt làm ở bước sau.</p>
-
-              <div
-                role="note"
-                className="rounded-md border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-3.5 py-3 text-xs leading-relaxed text-[var(--text)]"
-              >
-                Phê duyệt chỉ ghi nhận quyết định. Tồn kho không thay đổi cho đến khi phương án được
-                thực hiện bằng một phiếu xuất thật.
-              </div>
-            </CardContent>
-          </Card>
+          <ProposalDecisionCard
+            proposal={proposal}
+            onConflictRefresh={() => void detailQuery.refetch()}
+          />
 
           <Card>
             <CardHeader className="border-b border-border px-6 py-4">

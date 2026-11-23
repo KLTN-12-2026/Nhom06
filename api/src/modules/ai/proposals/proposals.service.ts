@@ -1,12 +1,19 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
+import { writeAuditLog } from '../../../common/utils/audit-log.util';
 import { PrismaService } from '../../../prisma/prisma.service';
 import {
   diffCalendarDays,
   formatDateOnly,
   getVnTodayDateString,
 } from '../../expiry/domain/vn-date';
+import { isPgConcurrencyConflictError } from '../../outbound/domain/outbound-policy';
 import {
   LotRiskBasis,
   QUANTITY_DECIMAL_PLACES,
@@ -23,6 +30,7 @@ import {
 } from './domain/rules';
 import { ExplainProposalDto } from './dto/explain-proposal.dto';
 import { ListProposalsQueryDto } from './dto/list-proposals-query.dto';
+import { ApproveProposalDto, RejectProposalDto } from './dto/proposal-decision.dto';
 import { ProposalExplanationView, ProposalsLlmService } from './proposals-llm.service';
 
 export interface ProposalSnapshotData {
@@ -87,6 +95,25 @@ export interface ProposalSummaryResponse {
 export type ProposalDisplayMode = 'llm' | 'fallback';
 export type ProposalFallbackReason = 'invalid' | 'failed' | 'unavailable' | null;
 
+export interface ProposalDecisionView {
+  id: string;
+  decision: 'approved' | 'rejected';
+  reason: string | null;
+  decidedAt: string;
+  decider: {
+    id: string;
+    fullName: string;
+  };
+}
+
+export interface ProposalExecutionBriefView {
+  id: string;
+  status: string;
+  plannedQty: string;
+  actualQty: string | null;
+  linkedOutboundId: string | null;
+}
+
 export interface ProposalDetailResponse {
   id: string;
   status: ProposalStatus;
@@ -130,6 +157,8 @@ export interface ProposalDetailResponse {
   displayMode: ProposalDisplayMode;
   fallbackReason: ProposalFallbackReason;
   llmDemoToggleEnabled: boolean;
+  decision: ProposalDecisionView | null;
+  execution: ProposalExecutionBriefView | null;
 }
 
 export interface ExplainProposalResponse {
@@ -294,8 +323,11 @@ export class ProposalsService {
     };
   }
 
-  private async loadProposalRecord(id: string) {
-    const row = await this.prisma.treatmentProposal.findUnique({
+  private async loadProposalRecord(
+    id: string,
+    client: PrismaService | Prisma.TransactionClient = this.prisma,
+  ) {
+    const row = await client.treatmentProposal.findUnique({
       where: { id },
       select: {
         id: true,
@@ -358,6 +390,29 @@ export class ProposalsService {
             validationStatus: true,
             errorMessage: true,
             createdAt: true,
+          },
+        },
+        decision: {
+          select: {
+            id: true,
+            decision: true,
+            reason: true,
+            decidedAt: true,
+            decider: {
+              select: {
+                id: true,
+                fullName: true,
+              },
+            },
+          },
+        },
+        execution: {
+          select: {
+            id: true,
+            status: true,
+            plannedQty: true,
+            actualQty: true,
+            linkedOutboundId: true,
           },
         },
       },
@@ -506,6 +561,25 @@ export class ProposalsService {
         displayMode,
         fallbackReason,
         llmDemoToggleEnabled: this.isDemoToggleEnabled(),
+        decision: row.decision
+          ? {
+              id: row.decision.id,
+              decision: row.decision.decision as 'approved' | 'rejected',
+              reason: row.decision.reason,
+              decidedAt: row.decision.decidedAt.toISOString(),
+              decider: row.decision.decider,
+            }
+          : null,
+        execution: row.execution
+          ? {
+              id: row.execution.id,
+              status: row.execution.status,
+              plannedQty: formatQty(row.execution.plannedQty),
+              actualQty:
+                row.execution.actualQty !== null ? formatQty(row.execution.actualQty) : null,
+              linkedOutboundId: row.execution.linkedOutboundId,
+            }
+          : null,
       } satisfies ProposalDetailResponse,
       llmInput,
       ruleSummaryText,
@@ -515,6 +589,211 @@ export class ProposalsService {
   async getDetail(id: string): Promise<ProposalDetailResponse> {
     const row = await this.loadProposalRecord(id);
     return this.extractDetailContext(row).detail;
+  }
+
+  async approve(
+    id: string,
+    dto: ApproveProposalDto,
+    actorUserId: string,
+  ): Promise<ProposalDetailResponse> {
+    return this.decide(id, {
+      decision: 'approved',
+      reason: dto.note ?? null,
+      responsibleUserId: dto.responsibleUserId,
+      actorUserId,
+    });
+  }
+
+  async reject(
+    id: string,
+    dto: RejectProposalDto,
+    actorUserId: string,
+  ): Promise<ProposalDetailResponse> {
+    const reason = dto.reason?.trim() ?? '';
+    if (!reason) {
+      throw new BadRequestException({
+        message: 'Vui lòng nhập lý do từ chối',
+        errors: [{ field: 'reason', message: 'Vui lòng nhập lý do từ chối' }],
+      });
+    }
+    return this.decide(id, {
+      decision: 'rejected',
+      reason,
+      actorUserId,
+    });
+  }
+
+  /**
+   * Phê duyệt hoặc từ chối đề xuất trong một DB transaction có khóa bi quan (D-028, bất biến 1 & 8):
+   * - Khóa treatment_proposals (FOR UPDATE), kiểm status = 'pending'.
+   * - Khóa lots & inventory_lot_balances (FOR UPDATE), kiểm lô chưa 'closed' và tồn > 0.
+   * - Ghi proposal_decisions (UNIQUE proposal_id chặn quyết định thứ 2), chốt trạng thái đề xuất bằng điều kiện kép.
+   * - Nếu phê duyệt: tạo treatment_executions (planned); KHÔNG tạo phiếu xuất, KHÔNG đổi tồn.
+   */
+  private async decide(
+    id: string,
+    params: {
+      decision: 'approved' | 'rejected';
+      reason: string | null;
+      responsibleUserId?: string;
+      actorUserId: string;
+    },
+  ): Promise<ProposalDetailResponse> {
+    const decidedAt = new Date();
+
+    try {
+      const updatedRecord = await this.prisma.$transaction(
+        async (tx) => {
+          const lockedProposals = await tx.$queryRaw<
+            Array<{
+              id: string;
+              lot_id: string;
+              action_type: string;
+              proposed_qty: string;
+              status: string;
+            }>
+          >`
+            SELECT id, lot_id, action_type, proposed_qty::text AS proposed_qty, status
+            FROM treatment_proposals
+            WHERE id = ${id}::uuid
+            FOR UPDATE
+          `;
+          const locked = lockedProposals[0];
+          if (!locked) {
+            throw new NotFoundException('Không tìm thấy đề xuất xử lý');
+          }
+          if (locked.status !== 'pending') {
+            throw new ConflictException('Đề xuất đã có quyết định hoặc không ở trạng thái chờ duyệt');
+          }
+
+          // Khóa lô và tồn theo đúng thứ tự chuẩn (lots → inventory_lot_balances) để kiểm tồn > 0 trong transaction
+          const lockedLots = await tx.$queryRaw<
+            Array<{ id: string; lot_code: string; status: string }>
+          >`
+            SELECT id, lot_code, status
+            FROM lots
+            WHERE id = ${locked.lot_id}::uuid
+            FOR UPDATE
+          `;
+          const lot = lockedLots[0];
+          if (!lot || lot.status === 'closed') {
+            throw new ConflictException('Đề xuất không còn phù hợp với tồn hiện tại');
+          }
+
+          const lockedBalances = await tx.$queryRaw<Array<{ on_hand_qty: string }>>`
+            SELECT on_hand_qty::text AS on_hand_qty
+            FROM inventory_lot_balances
+            WHERE lot_id = ${locked.lot_id}::uuid
+            FOR UPDATE
+          `;
+          const currentOnHand = lockedBalances[0]
+            ? new Prisma.Decimal(lockedBalances[0].on_hand_qty)
+            : new Prisma.Decimal(0);
+          if (currentOnHand.lte(0)) {
+            throw new ConflictException('Đề xuất không còn phù hợp với tồn hiện tại');
+          }
+
+          let responsibleUserId = params.actorUserId;
+          if (
+            params.decision === 'approved' &&
+            params.responsibleUserId &&
+            params.responsibleUserId !== params.actorUserId
+          ) {
+            const responsibleUser = await tx.user.findUnique({
+              where: { id: params.responsibleUserId },
+              select: { id: true, status: true },
+            });
+            if (!responsibleUser || responsibleUser.status !== 'active') {
+              throw new BadRequestException({
+                message: 'Người phụ trách không tồn tại hoặc đã bị khóa',
+                errors: [
+                  {
+                    field: 'responsibleUserId',
+                    message: 'Người phụ trách không tồn tại hoặc đã bị khóa',
+                  },
+                ],
+              });
+            }
+            responsibleUserId = responsibleUser.id;
+          }
+
+          let decisionRow: { id: string };
+          try {
+            decisionRow = await tx.proposalDecision.create({
+              data: {
+                proposalId: locked.id,
+                decision: params.decision,
+                decidedBy: params.actorUserId,
+                reason: params.reason,
+                decidedAt,
+              },
+              select: { id: true },
+            });
+          } catch (error) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+              throw new ConflictException('Đề xuất đã có quyết định');
+            }
+            throw error;
+          }
+
+          const proposalUpdate = await tx.treatmentProposal.updateMany({
+            where: { id: locked.id, status: 'pending' },
+            data: { status: params.decision },
+          });
+          if (proposalUpdate.count !== 1) {
+            throw new ConflictException('Đề xuất đã có quyết định');
+          }
+
+          let executionId: string | null = null;
+          if (params.decision === 'approved') {
+            const execution = await tx.treatmentExecution.create({
+              data: {
+                proposalId: locked.id,
+                status: 'planned',
+                plannedQty: new Prisma.Decimal(locked.proposed_qty),
+                actualQty: null,
+                responsibleUserId,
+                linkedOutboundId: null,
+                note: params.reason,
+              },
+              select: { id: true },
+            });
+            executionId = execution.id;
+          }
+
+          await writeAuditLog(tx, {
+            actorUserId: params.actorUserId,
+            eventType: params.decision === 'approved' ? 'PROPOSAL_APPROVED' : 'PROPOSAL_REJECTED',
+            entityType: 'treatment_proposal',
+            entityId: locked.id,
+            oldData: { status: 'pending' },
+            newData: {
+              status: params.decision,
+              decisionId: decisionRow.id,
+              executionId,
+              reason: params.reason,
+              lotId: locked.lot_id,
+              lotCode: lot.lot_code,
+              actionType: locked.action_type,
+              onHandAtDecision: currentOnHand.toString(),
+            },
+          });
+
+          return this.loadProposalRecord(locked.id, tx);
+        },
+        { timeout: 10_000 },
+      );
+
+      return this.extractDetailContext(updatedRecord).detail;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        throw new ConflictException('Đề xuất đã có quyết định');
+      }
+      if (isPgConcurrencyConflictError(error)) {
+        throw new ConflictException('Đề xuất đang được xử lý đồng thời, vui lòng thử lại');
+      }
+      throw error;
+    }
   }
 
   async explain(id: string, dto: ExplainProposalDto): Promise<ExplainProposalResponse> {

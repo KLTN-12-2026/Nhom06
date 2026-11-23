@@ -98,6 +98,7 @@ export interface OutboundReceiptSummary {
   notes: string | null;
   lotCount: number;
   totalQuantity: string;
+  matchedLotQty?: string;
   createdAt: string;
 }
 

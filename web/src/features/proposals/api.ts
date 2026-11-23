@@ -55,3 +55,23 @@ export function explainProposal(
     body: JSON.stringify(payload),
   });
 }
+
+export function approveProposal(
+  id: string,
+  payload: { note?: string | null; responsibleUserId?: string } = {},
+): Promise<ProposalDetailResponse> {
+  return apiFetch<ProposalDetailResponse>(`/proposals/${id}/approve`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function rejectProposal(
+  id: string,
+  payload: { reason: string },
+): Promise<ProposalDetailResponse> {
+  return apiFetch<ProposalDetailResponse>(`/proposals/${id}/reject`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}

@@ -84,6 +84,12 @@ export class ListOutboundReceiptsQueryDto {
   @IsUUID('4', { message: 'Mã đơn hàng không đúng định dạng UUID' })
   orderId?: string;
 
+  @ApiPropertyOptional({ description: 'Lọc các phiếu xuất có chứa ID lô (UUID)' })
+  @IsOptional()
+  @Transform(trimOptionalToUndefined)
+  @IsUUID('4', { message: 'Mã lô không đúng định dạng UUID' })
+  lotId?: string;
+
   @ApiPropertyOptional({ example: '2026-11-01', description: 'Từ ngày xuất (YYYY-MM-DD, giờ VN)' })
   @IsOptional()
   @Transform(trimOptionalToUndefined)

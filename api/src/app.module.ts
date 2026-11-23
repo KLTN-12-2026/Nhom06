@@ -7,6 +7,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { validateEnv } from './config/env.validation';
 import { AiModule } from './modules/ai/ai.module';
+import { ExecutionsModule } from './modules/ai/executions/executions.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ExpiryModule } from './modules/expiry/expiry.module';
@@ -35,6 +36,7 @@ import { PrismaModule } from './prisma/prisma.module';
     OutboundModule,
     ExpiryModule,
     AiModule,
+    ExecutionsModule,
     ReportsModule,
   ],
   providers: [
