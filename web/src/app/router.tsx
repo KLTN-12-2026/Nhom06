@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AgenciesPage } from '@/features/agencies/pages/AgenciesPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
@@ -10,6 +10,11 @@ import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
 import { InboundDetailPage } from '@/features/inbound/pages/InboundDetailPage';
 import { InboundFormPage } from '@/features/inbound/pages/InboundFormPage';
 import { InboundListPage } from '@/features/inbound/pages/InboundListPage';
+import { InventoryLotsPage } from '@/features/inventory/pages/InventoryLotsPage';
+import { StockCountDetailPage } from '@/features/inventory/pages/StockCountDetailPage';
+import { StockCountFormPage } from '@/features/inventory/pages/StockCountFormPage';
+import { StockCountListPage } from '@/features/inventory/pages/StockCountListPage';
+import { StockMovementsPage } from '@/features/inventory/pages/StockMovementsPage';
 import { ProductsPage } from '@/features/products/pages/ProductsPage';
 import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
@@ -38,6 +43,9 @@ const IMPLEMENTED_PATHS = new Set([
   '/suppliers',
   '/agencies',
   '/inbound',
+  '/inventory',
+  '/stock-movements',
+  '/stock-counts',
   '/users',
   '/forecast',
   '/expiry-alerts',
@@ -125,6 +133,62 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="inbound.create">
             <InboundFormPage mode="edit" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inventory',
+        element: (
+          <ProtectedRoute requiredPermission="inventory.read">
+            <InventoryLotsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'stock-movements',
+        element: (
+          <ProtectedRoute requiredPermission="inventory.read">
+            <StockMovementsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'movements',
+        element: (
+          <ProtectedRoute requiredPermission="inventory.read">
+            <Navigate to="/stock-movements" replace />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'stock-counts',
+        element: (
+          <ProtectedRoute requiredPermission="inventory.read">
+            <StockCountListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'stock-counts/new',
+        element: (
+          <ProtectedRoute requiredPermission="stock_count.create">
+            <StockCountFormPage mode="create" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'stock-counts/:id',
+        element: (
+          <ProtectedRoute requiredPermission="inventory.read">
+            <StockCountDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'stock-counts/:id/edit',
+        element: (
+          <ProtectedRoute requiredPermission="stock_count.create">
+            <StockCountFormPage mode="edit" />
           </ProtectedRoute>
         ),
       },

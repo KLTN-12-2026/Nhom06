@@ -49,8 +49,28 @@ export const NAV_GROUPS: NavGroup[] = [
         pageTitle: 'Phiếu nhập kho',
         pageDescription: 'Tồn kho chỉ tăng khi phiếu được xác nhận',
       },
-      { label: 'Tồn kho theo lô', path: '/inventory', requiredPermission: 'inventory.read' },
-      { label: 'Lịch sử biến động', path: '/movements', requiredPermission: 'inventory.read' },
+      {
+        label: 'Tồn kho theo lô',
+        path: '/inventory',
+        requiredPermission: 'inventory.read',
+        pageTitle: 'Tồn kho theo lô',
+        pageDescription:
+          'Số tồn chỉ thay đổi qua phiếu nhập, phiếu xuất hoặc phiếu kiểm kê đã xác nhận',
+      },
+      {
+        label: 'Lịch sử biến động',
+        path: '/stock-movements',
+        requiredPermission: 'inventory.read',
+        pageTitle: 'Lịch sử biến động tồn kho',
+        pageDescription: 'Mỗi dòng gắn với một chứng từ đã xác nhận và không thể sửa',
+      },
+      {
+        label: 'Kiểm kê kho',
+        path: '/stock-counts',
+        requiredPermission: 'inventory.read',
+        pageTitle: 'Phiếu kiểm kê kho',
+        pageDescription: 'Đối chiếu tồn thực tế theo lô; tồn kho chỉ thay đổi khi phiếu được duyệt',
+      },
     ],
   },
   {
