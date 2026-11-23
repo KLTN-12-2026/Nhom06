@@ -15,6 +15,12 @@ import { StockCountDetailPage } from '@/features/inventory/pages/StockCountDetai
 import { StockCountFormPage } from '@/features/inventory/pages/StockCountFormPage';
 import { StockCountListPage } from '@/features/inventory/pages/StockCountListPage';
 import { StockMovementsPage } from '@/features/inventory/pages/StockMovementsPage';
+import { OrderDetailPage } from '@/features/orders/pages/OrderDetailPage';
+import { OrderFormPage } from '@/features/orders/pages/OrderFormPage';
+import { OrdersListPage } from '@/features/orders/pages/OrdersListPage';
+import { OrderFefoOutboundPage } from '@/features/outbound/pages/OrderFefoOutboundPage';
+import { OutboundDetailPage } from '@/features/outbound/pages/OutboundDetailPage';
+import { OutboundListPage } from '@/features/outbound/pages/OutboundListPage';
 import { ProductsPage } from '@/features/products/pages/ProductsPage';
 import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
@@ -46,6 +52,8 @@ const IMPLEMENTED_PATHS = new Set([
   '/inventory',
   '/stock-movements',
   '/stock-counts',
+  '/orders',
+  '/outbound',
   '/users',
   '/forecast',
   '/expiry-alerts',
@@ -189,6 +197,62 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="stock_count.create">
             <StockCountFormPage mode="edit" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'orders',
+        element: (
+          <ProtectedRoute requiredPermission="orders.read">
+            <OrdersListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'orders/new',
+        element: (
+          <ProtectedRoute requiredPermission="orders.create">
+            <OrderFormPage mode="create" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'orders/:id',
+        element: (
+          <ProtectedRoute requiredPermission="orders.read">
+            <OrderDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'orders/:id/edit',
+        element: (
+          <ProtectedRoute requiredPermission="orders.create">
+            <OrderFormPage mode="edit" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'orders/:id/outbound',
+        element: (
+          <ProtectedRoute requiredPermission="outbound.read">
+            <OrderFefoOutboundPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'outbound',
+        element: (
+          <ProtectedRoute requiredPermission="outbound.read">
+            <OutboundListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'outbound/:id',
+        element: (
+          <ProtectedRoute requiredPermission="outbound.read">
+            <OutboundDetailPage />
           </ProtectedRoute>
         ),
       },
