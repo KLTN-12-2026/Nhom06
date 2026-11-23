@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '../../common/decorators/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 
 export type DependencyStatus = 'up' | 'down';
@@ -21,6 +22,7 @@ export class HealthController {
     private readonly configService: ConfigService,
   ) {}
 
+  @Public()
   @Get()
   @ApiOperation({ summary: 'Kiểm tra trạng thái API, PostgreSQL và dịch vụ ML' })
   @ApiOkResponse({

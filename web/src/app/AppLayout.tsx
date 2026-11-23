@@ -1,11 +1,25 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/features/auth/hooks';
 import { cn } from '@/lib/utils';
-import { ALL_NAV_ITEMS, NAV_GROUPS } from './navigation';
+import { ALL_NAV_ITEMS, filterNavGroups } from './navigation';
 
 export function AppLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, hasPermission } = useAuth();
+
+  const visibleGroups = filterNavGroups(hasPermission);
+  const visibleItems = visibleGroups.flatMap((group) => group.items);
+
   const currentNav = ALL_NAV_ITEMS.find((item) => item.path === location.pathname);
-  const pageTitle = currentNav?.label ?? 'Bảng điều khiển';
+  const pageTitle = currentNav?.pageTitle ?? currentNav?.label ?? 'Bảng điều khiển';
+  const pageDescription =
+    currentNav?.pageDescription ?? 'Hệ thống quản lý kho trung tâm — KHO-AI';
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] lg:flex">
@@ -17,7 +31,7 @@ export function AppLayout() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4" aria-label="Điều hướng chính">
-          {NAV_GROUPS.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.title} className="mb-4">
               <div className="px-5 pb-1.5 text-xs font-medium text-white/60">{group.title}</div>
               <ul className="space-y-0.5">
@@ -45,13 +59,13 @@ export function AppLayout() {
         </nav>
 
         <div className="border-t border-white/10 px-5 py-4">
-          <div className="text-sm font-medium">Chưa đăng nhập</div>
-          <div className="mt-1 flex items-center justify-between">
-            <span className="text-xs text-white/60">Khung nền tảng</span>
+          <div className="truncate text-sm font-medium">{user?.fullName ?? 'Chưa đăng nhập'}</div>
+          <div className="mt-1 flex items-center justify-between gap-2">
+            <span className="truncate text-xs text-white/60">{user?.role?.name ?? ''}</span>
             <button
               type="button"
-              disabled
-              className="rounded border border-white/30 px-2.5 py-1 text-xs text-white/70 opacity-60"
+              onClick={() => void handleLogout()}
+              className="shrink-0 rounded border border-white/30 px-2.5 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
             >
               Đăng xuất
             </button>
@@ -64,12 +78,14 @@ export function AppLayout() {
         <div className="flex items-center justify-between px-4 py-3">
           <div>
             <div className="text-base font-semibold leading-tight">Quản lý kho</div>
-            <div className="text-xs text-white/60">Kho trung tâm Đà Nẵng</div>
+            <div className="text-xs text-white/60">
+              {user ? `${user.fullName} · ${user.role?.name ?? ''}` : 'Kho trung tâm Đà Nẵng'}
+            </div>
           </div>
           <button
             type="button"
-            disabled
-            className="rounded border border-white/30 px-2.5 py-1 text-xs text-white/70 opacity-60"
+            onClick={() => void handleLogout()}
+            className="rounded border border-white/30 px-2.5 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
           >
             Đăng xuất
           </button>
@@ -79,7 +95,7 @@ export function AppLayout() {
           className="flex overflow-x-auto border-t border-white/10"
           aria-label="Điều hướng di động"
         >
-          {ALL_NAV_ITEMS.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -103,9 +119,7 @@ export function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="border-b border-border bg-[var(--surface)] px-6 py-4 lg:px-8">
           <h1 className="text-2xl font-semibold text-[var(--text)]">{pageTitle}</h1>
-          <p className="mt-0.5 text-sm text-[var(--text-muted)]">
-            Hệ thống quản lý kho trung tâm — KHO-AI
-          </p>
+          <p className="mt-0.5 text-sm text-[var(--text-muted)]">{pageDescription}</p>
         </header>
 
         <main className="flex-1 p-6 lg:p-8">
