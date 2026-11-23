@@ -1,10 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
-import { fetchHealth } from './api';
+import { fetchDashboard, fetchHealth } from './api';
 
-export function useHealthQuery() {
+export function useHealthQuery(enabled = true) {
   return useQuery({
     queryKey: ['system-health'],
     queryFn: fetchHealth,
-    refetchInterval: 30_000,
+    enabled,
+    refetchInterval: enabled ? 30_000 : false,
+  });
+}
+
+export function useDashboardQuery() {
+  return useQuery({
+    queryKey: ['reports', 'dashboard'],
+    queryFn: fetchDashboard,
   });
 }

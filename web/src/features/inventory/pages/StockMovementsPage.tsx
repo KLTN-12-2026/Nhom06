@@ -44,11 +44,13 @@ export function StockMovementsPage() {
   const initialProductId = searchParams.get('productId') ?? '';
   const initialSourceType = (searchParams.get('sourceType') ?? '') as MovementSourceType | '';
   const initialSourceId = searchParams.get('sourceId') ?? '';
+  const initialFrom = searchParams.get('from') ?? '';
+  const initialTo = searchParams.get('to') ?? '';
 
   const [search, setSearch] = useState('');
   const [movementType, setMovementType] = useState<MovementType | ''>('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [from, setFrom] = useState(initialFrom);
+  const [to, setTo] = useState(initialTo);
   const [page, setPage] = useState(1);
 
   const movementsQuery = useStockMovementsQuery({

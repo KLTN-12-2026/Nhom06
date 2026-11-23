@@ -67,6 +67,67 @@ export function formatCurrency(
   return withSuffix ? `${formatted} đ` : formatted;
 }
 
+/**
+ * Định dạng tiền VNĐ rút gọn cho KPI Dashboard (vd: 103.000.000 → "103" + "triệu đ").
+ */
+export function formatVndCompact(value: string | number | null | undefined): {
+  valueText: string;
+  unitText: string;
+} {
+  if (value === null || value === undefined || value === '') {
+    return { valueText: '0', unitText: 'đ' };
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (Number.isNaN(parsed)) {
+    return { valueText: String(value), unitText: 'đ' };
+  }
+
+  const abs = Math.abs(parsed);
+  if (abs >= 1_000_000_000) {
+    const billions = parsed / 1_000_000_000;
+    return {
+      valueText: new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(billions),
+      unitText: 'tỷ đ',
+    };
+  }
+  if (abs >= 1_000_000) {
+    const millions = parsed / 1_000_000;
+    return {
+      valueText: new Intl.NumberFormat('vi-VN', {
+        maximumFractionDigits: abs >= 10_000_000 ? 0 : 1,
+      }).format(millions),
+      unitText: 'triệu đ',
+    };
+  }
+  if (abs >= 1_000) {
+    const thousands = parsed / 1_000;
+    return {
+      valueText: new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(thousands),
+      unitText: 'nghìn đ',
+    };
+  }
+  return {
+    valueText: new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(parsed),
+    unitText: 'đ',
+  };
+}
+
+/**
+ * Định dạng mốc tháng `YYYY-MM` sang nhãn ngắn `MM/YY` cho trục X biểu đồ 12 tháng.
+ */
+export function formatMonthShort(ym: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(ym.trim());
+  if (!match) {
+    return ym;
+  }
+  return `${match[2]}/${match[1].slice(2)}`;
+}
+
+export function getMonthStartIsoVn(isoDate?: string): string {
+  const base = isoDate ?? getVnTodayIso();
+  return `${base.slice(0, 7)}-01`;
+}
+
 export function formatShelfLife(days: number | null | undefined): string {
   if (days === null || days === undefined) {
     return '—';

@@ -22,6 +22,7 @@ import { OrderFefoOutboundPage } from '@/features/outbound/pages/OrderFefoOutbou
 import { OutboundDetailPage } from '@/features/outbound/pages/OutboundDetailPage';
 import { OutboundListPage } from '@/features/outbound/pages/OutboundListPage';
 import { ProductsPage } from '@/features/products/pages/ProductsPage';
+import { ReportsPage } from '@/features/reports/pages/ReportsPage';
 import { RiskAnalysisPage } from '@/features/risk/pages/RiskAnalysisPage';
 import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
@@ -60,6 +61,7 @@ const IMPLEMENTED_PATHS = new Set([
   '/risk',
   '/expiry-alerts',
   '/expiry-thresholds',
+  '/reports',
 ]);
 
 const placeholderRoutes = ALL_NAV_ITEMS.filter((item) => !IMPLEMENTED_PATHS.has(item.path)).map(
@@ -295,6 +297,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="expiry.read">
             <ExpiryThresholdsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'reports',
+        element: (
+          <ProtectedRoute requiredPermission="reports.read">
+            <ReportsPage />
           </ProtectedRoute>
         ),
       },

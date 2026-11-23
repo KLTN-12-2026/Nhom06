@@ -8,7 +8,11 @@ import { IS_PUBLIC_KEY } from '../src/common/decorators/public.decorator';
 
 const ALLOWED_PUBLIC_ROUTES = new Set(['GET /health', 'POST /auth/login']);
 
-const ALLOWED_AUTHENTICATED_ONLY_ROUTES = new Set(['GET /auth/me', 'POST /auth/logout']);
+const ALLOWED_AUTHENTICATED_ONLY_ROUTES = new Set([
+  'GET /auth/me',
+  'POST /auth/logout',
+  'GET /reports/dashboard',
+]);
 
 function joinRoutePath(controllerPath: string, methodPath: string): string {
   const parts = [controllerPath, methodPath]

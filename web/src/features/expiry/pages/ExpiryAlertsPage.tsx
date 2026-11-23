@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { ExpiryBar } from '@/components/common/ExpiryBar';
 import { FilterBar } from '@/components/common/FilterBar';
@@ -25,10 +25,16 @@ const SEVERITY_BADGE: Record<ExpiryAlertSeverity, { tone: StatusTone; label: str
 
 export function ExpiryAlertsPage() {
   const { hasPermission } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const defaultDate = useMemo(() => getVnTodayIso(), []);
+  const rawSeverity = searchParams.get('severity') ?? '';
+  const initialSeverity: ExpiryAlertSeverity | '' =
+    rawSeverity === 'expired' || rawSeverity === 'critical' || rawSeverity === 'warning'
+      ? rawSeverity
+      : '';
 
   const [date, setDate] = useState(defaultDate);
-  const [severity, setSeverity] = useState<ExpiryAlertSeverity | ''>('');
+  const [severity, setSeverity] = useState<ExpiryAlertSeverity | ''>(initialSeverity);
   const [productId, setProductId] = useState('');
   const [expiryFrom, setExpiryFrom] = useState('');
   const [expiryTo, setExpiryTo] = useState('');
@@ -73,6 +79,9 @@ export function ExpiryAlertsPage() {
     setExpiryTo('');
     setMaxDaysRemaining('');
     setSearch('');
+    if (searchParams.size > 0) {
+      setSearchParams({});
+    }
   };
 
   const columns = useMemo<DataTableColumn<ExpiryAlertItem>[]>(
