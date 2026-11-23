@@ -1,8 +1,15 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { writeAuditLog } from '../../common/utils/audit-log.util';
 import { PrismaService } from '../../prisma/prisma.service';
 import { formatUtcDate, isValidIsoDate, toUtcDate } from '../inbound/domain/inbound-policy';
 import { ListLotsQueryDto } from './dto/list-lots-query.dto';
+import { UpdateLotStatusDto } from './dto/update-lot-status.dto';
 
 export interface LotResponse {
   id: string;
@@ -143,6 +150,75 @@ export class LotsService {
       total,
       page,
       pageSize,
+    };
+  }
+
+  /**
+   * Khóa hoặc mở khóa lô hàng (active ↔ blocked, D-024):
+   * - Không làm thay đổi tồn kho hay tạo stock_movements.
+   * - Lô closed trả 409; đổi sang trạng thái trùng hiện tại trả 409.
+   * - Ghi audit LOT_BLOCKED / LOT_UNBLOCKED trong cùng transaction.
+   */
+  async updateStatus(
+    id: string,
+    dto: UpdateLotStatusDto,
+    actorUserId: string,
+  ): Promise<LotResponse> {
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const lockedRows = await tx.$queryRaw<Array<{ id: string; lot_code: string; status: string }>>`
+        SELECT id, lot_code, status
+        FROM lots
+        WHERE id = ${id}::uuid
+        FOR UPDATE
+      `;
+      const locked = lockedRows[0];
+      if (!locked) {
+        throw new NotFoundException('Không tìm thấy lô hàng');
+      }
+      if (locked.status === 'closed') {
+        throw new ConflictException('Lô hàng đã đóng, không thể khóa hoặc mở khóa');
+      }
+      if (locked.status === dto.status) {
+        throw new ConflictException(
+          dto.status === 'blocked'
+            ? 'Lô hàng hiện đang ở trạng thái đã khóa'
+            : 'Lô hàng hiện đang ở trạng thái hoạt động',
+        );
+      }
+
+      const lot = await tx.lot.update({
+        where: { id },
+        data: { status: dto.status },
+        select: LOT_SELECT,
+      });
+
+      await writeAuditLog(tx, {
+        actorUserId,
+        eventType: dto.status === 'blocked' ? 'LOT_BLOCKED' : 'LOT_UNBLOCKED',
+        entityType: 'lot',
+        entityId: lot.id,
+        oldData: { status: locked.status, lotCode: locked.lot_code },
+        newData: {
+          status: lot.status,
+          lotCode: lot.lotCode,
+          reason: dto.reason,
+        },
+      });
+
+      return lot;
+    });
+
+    return {
+      id: updated.id,
+      lotCode: updated.lotCode,
+      product: updated.product,
+      supplier: updated.supplier,
+      manufacturedDate: updated.manufacturedDate ? formatUtcDate(updated.manufacturedDate) : null,
+      expiryDate: formatUtcDate(updated.expiryDate),
+      receivedAt: formatUtcDate(updated.receivedAt),
+      initialQuantity: updated.initialQuantity.toString(),
+      onHandQty: updated.balance ? updated.balance.onHandQty.toString() : '0',
+      status: updated.status,
     };
   }
 }
