@@ -18,6 +18,9 @@ function appendInventoryFilterParams(
   query: URLSearchParams,
   params: InventoryFilterParams,
 ): void {
+  if (params.lotId) {
+    query.set('lotId', params.lotId);
+  }
   if (params.search?.trim()) {
     query.set('search', params.search.trim());
   }

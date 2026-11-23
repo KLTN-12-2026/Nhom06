@@ -92,11 +92,11 @@ export function ProposalDecisionCard({
 
   return (
     <Card>
-      <CardHeader className="border-b border-border px-6 py-4">
+      <CardHeader className="border-b border-border px-4 py-4 sm:px-6">
         <CardTitle className="text-lg font-semibold">Quyết định</CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-4 p-6">
+      <CardContent className="space-y-4 p-4 sm:p-6">
         <div className="rounded-lg border border-border bg-[var(--surface-muted)]/60 p-4">
           <div className="text-xs text-[var(--text-muted)]">Phương án theo quy tắc nghiệp vụ</div>
           <div className="mt-1 text-base font-semibold text-[var(--text)]">
@@ -114,20 +114,20 @@ export function ProposalDecisionCard({
           <div className="space-y-4">
             <dl className="space-y-2.5 text-sm">
               <div className="flex items-baseline justify-between gap-4">
-                <dt className="text-[var(--text-muted)]">Kết quả</dt>
-                <dd className="font-medium text-[var(--text)]">
+                <dt className="shrink-0 text-[var(--text-muted)]">Kết quả</dt>
+                <dd className="min-w-0 break-words text-right font-medium text-[var(--text)]">
                   {proposal.decision.decision === 'approved' ? 'Phê duyệt' : 'Từ chối'}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <dt className="text-[var(--text-muted)]">Người quyết định</dt>
-                <dd className="font-medium text-[var(--text)]">
+                <dt className="shrink-0 text-[var(--text-muted)]">Người quyết định</dt>
+                <dd className="min-w-0 break-words text-right font-medium text-[var(--text)]">
                   {proposal.decision.decider.fullName}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-4">
-                <dt className="text-[var(--text-muted)]">Thời điểm</dt>
-                <dd className="font-medium tabular-nums text-[var(--text)]">
+                <dt className="shrink-0 text-[var(--text-muted)]">Thời điểm</dt>
+                <dd className="min-w-0 break-words text-right font-medium tabular-nums text-[var(--text)]">
                   {formatDateTime(proposal.decision.decidedAt)}
                 </dd>
               </div>
@@ -136,7 +136,7 @@ export function ProposalDecisionCard({
                   <dt className="text-xs text-[var(--text-muted)]">
                     {proposal.decision.decision === 'approved' ? 'Ý kiến' : 'Lý do từ chối'}
                   </dt>
-                  <dd className="whitespace-pre-line text-sm text-[var(--text)]">
+                  <dd className="whitespace-pre-line break-words text-sm text-[var(--text)]">
                     {proposal.decision.reason}
                   </dd>
                 </div>
@@ -144,7 +144,7 @@ export function ProposalDecisionCard({
             </dl>
 
             {proposal.decision.decision === 'approved' && canReadExecutions && (
-              <Button asChild type="button" variant="outline" className="w-full sm:w-auto">
+              <Button asChild type="button" variant="secondary" className="w-full sm:w-auto">
                 <Link to="/executions">Theo dõi thực hiện</Link>
               </Button>
             )}

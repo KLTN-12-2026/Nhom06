@@ -18,7 +18,7 @@ import { useAuth } from '@/features/auth/hooks';
 import { PROPOSAL_ACTION_LABELS } from '@/features/proposals/constants';
 import { type ProposalActionType } from '@/features/proposals/types';
 import { ApiError } from '@/lib/api';
-import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
+import { formatDateTime, formatQuantity, formatTimestampDateVi } from '@/lib/format';
 import { ExecutionResultDialog } from '../components/ExecutionResultDialog';
 import { EXECUTION_STATUS_META, isTerminalExecutionStatus } from '../constants';
 import { useExecutionsQuery } from '../hooks';
@@ -58,7 +58,7 @@ export function ExecutionsPage() {
         <Card>
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Phương án đã duyệt</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--text)]">
+            <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
               {kpi ? formatQuantity(kpi.approvedCount) : '—'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -70,7 +70,7 @@ export function ExecutionsPage() {
         <Card>
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Lượng cần xử lý</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--text)]">
+            <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
               {kpi ? formatQuantity(kpi.plannedQtyTotal) : '—'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -82,7 +82,7 @@ export function ExecutionsPage() {
         <Card>
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Đã xử lý thực tế</div>
-            <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--text)]">
+            <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
               {kpi ? formatQuantity(kpi.actualQtyTotal) : '—'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -171,7 +171,7 @@ export function ExecutionsPage() {
               tabIndex={0}
               role="region"
               aria-label="Danh sách theo dõi thực hiện phương án"
-              className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
+              className="relative overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
             >
               <Table>
                 <TableHeader>
@@ -241,7 +241,7 @@ export function ExecutionsPage() {
                                   {item.decision.decider.fullName}
                                 </div>
                                 <div className="text-xs tabular-nums text-[var(--text-muted)]">
-                                  {formatDateVi(item.decision.decidedAt.slice(0, 10))}
+                                  {formatTimestampDateVi(item.decision.decidedAt)}
                                 </div>
                               </div>
                             ) : (

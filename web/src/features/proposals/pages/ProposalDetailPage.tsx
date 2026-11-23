@@ -1,12 +1,12 @@
 import { ChevronRight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
+import { RiskLevelBadge } from '@/components/common/RiskStatusBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/hooks';
-import { RiskLevelBadge } from '@/features/risk/components/RiskLevelBadge';
 import { ApiError } from '@/lib/api';
 import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
 import { ProposalDecisionCard } from '../components/ProposalDecisionCard';
@@ -81,9 +81,13 @@ export function ProposalDetailPage() {
   }
 
   const canToggleDemo = proposal.llmDemoToggleEnabled && canRunExplain;
+  const inventoryLotUrl =
+    Number(proposal.lot.currentOnHandQty) <= 0
+      ? `/inventory?lotId=${proposal.lot.id}&includeEmpty=true`
+      : `/inventory?lotId=${proposal.lot.id}`;
   const headerBadge =
     proposal.status === 'pending' || proposal.status === 'new' ? (
-      <RiskLevelBadge riskLevel={proposal.risk.riskLevel} isExpired={proposal.risk.isExpired} />
+      <RiskLevelBadge level={proposal.risk.riskLevel} isExpired={proposal.risk.isExpired} />
     ) : proposal.status === 'approved' ? (
       <StatusBadge tone="active" label="Đã phê duyệt" />
     ) : proposal.status === 'rejected' ? (
@@ -105,9 +109,9 @@ export function ProposalDetailPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         {/* Cột trái (2/3): Card Tình trạng lô và đề xuất xử lý (mockup 22, 23, 24) */}
-        <div className="lg:col-span-8">
+        <div className="min-w-0 lg:col-span-8">
           <Card>
-            <CardHeader className="flex flex-col gap-1 border-b border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardHeader className="flex flex-col gap-1 border-b border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <CardTitle className="text-lg font-semibold">
                 Tình trạng lô và đề xuất xử lý
               </CardTitle>
@@ -116,7 +120,7 @@ export function ProposalDetailPage() {
               </span>
             </CardHeader>
 
-            <CardContent className="space-y-6 p-6">
+            <CardContent className="space-y-6 p-4 sm:p-6">
               {/* Khối diễn giải LLM hoặc fallback theo bộ quy tắc */}
               <ProposalExplanationBlock
                 displayMode={proposal.displayMode}
@@ -170,7 +174,7 @@ export function ProposalDetailPage() {
                   <div className="text-xs text-[var(--text-muted)]">Mức rủi ro</div>
                   <div className="mt-2">
                     <RiskLevelBadge
-                      riskLevel={proposal.risk.riskLevel}
+                      level={proposal.risk.riskLevel}
                       isExpired={proposal.risk.isExpired}
                     />
                   </div>
@@ -195,45 +199,47 @@ export function ProposalDetailPage() {
         </div>
 
         {/* Cột phải (1/3): Card Quyết định (mockup 22 → 25 → 26) + Card Tình trạng lô hiện tại */}
-        <div className="space-y-6 lg:col-span-4">
+        <div className="min-w-0 space-y-6 lg:col-span-4">
           <ProposalDecisionCard
             proposal={proposal}
             onConflictRefresh={() => void detailQuery.refetch()}
           />
 
           <Card>
-            <CardHeader className="border-b border-border px-6 py-4">
+            <CardHeader className="border-b border-border px-4 py-4 sm:px-6">
               <CardTitle className="text-lg font-semibold">Tình trạng lô hiện tại</CardTitle>
             </CardHeader>
 
-            <CardContent className="space-y-4 p-6">
+            <CardContent className="space-y-4 p-4 sm:p-6">
               <dl className="space-y-2.5 text-sm">
                 <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-[var(--text-muted)]">Mã lô</dt>
-                  <dd className="font-medium text-[var(--text)]">{proposal.lot.lotCode}</dd>
+                  <dt className="shrink-0 text-[var(--text-muted)]">Mã lô</dt>
+                  <dd className="min-w-0 break-words text-right font-medium text-[var(--text)]">
+                    {proposal.lot.lotCode}
+                  </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-[var(--text-muted)]">Tồn hiện tại</dt>
-                  <dd className="font-medium tabular-nums text-[var(--text)]">
+                  <dt className="shrink-0 text-[var(--text-muted)]">Tồn hiện tại</dt>
+                  <dd className="min-w-0 break-words text-right font-medium tabular-nums text-[var(--text)]">
                     {formatQuantity(proposal.lot.currentOnHandQty)} {proposal.product.unit}
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-[var(--text-muted)]">Hạn sử dụng</dt>
-                  <dd className="font-medium tabular-nums text-[var(--text)]">
+                  <dt className="shrink-0 text-[var(--text-muted)]">Hạn sử dụng</dt>
+                  <dd className="min-w-0 break-words text-right font-medium tabular-nums text-[var(--text)]">
                     {formatDateVi(proposal.lot.expiryDate)}
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-4">
-                  <dt className="text-[var(--text-muted)]">Còn lại</dt>
-                  <dd className="font-medium tabular-nums text-[var(--text)]">
+                  <dt className="shrink-0 text-[var(--text-muted)]">Còn lại</dt>
+                  <dd className="min-w-0 break-words text-right font-medium tabular-nums text-[var(--text)]">
                     {formatRemainingDaysText(proposal.lot.daysRemaining)}
                   </dd>
                 </div>
               </dl>
 
               <Button asChild type="button" variant="secondary" size="sm">
-                <Link to="/inventory">Xem trong tồn kho</Link>
+                <Link to={inventoryLotUrl}>Xem trong tồn kho</Link>
               </Button>
             </CardContent>
           </Card>

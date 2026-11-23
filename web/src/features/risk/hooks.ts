@@ -44,9 +44,10 @@ export function useRunAnalysisMutation() {
   return useMutation({
     mutationFn: () => triggerAnalysisRun(),
     onSettled: async () => {
-      // Làm mới cả kết quả lẫn lịch sử lượt chạy và đề xuất xử lý (kể cả khi lượt vừa chạy thất bại)
+      // Làm mới cả kết quả lẫn lịch sử lượt chạy, dự báo và đề xuất xử lý (kể cả khi lượt vừa chạy thất bại)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ANALYSIS_QUERY_KEYS.all }),
+        queryClient.invalidateQueries({ queryKey: ['forecasts'] }),
         queryClient.invalidateQueries({ queryKey: ['proposals'] }),
       ]);
     },

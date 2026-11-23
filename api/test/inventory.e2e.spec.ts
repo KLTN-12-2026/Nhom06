@@ -332,6 +332,46 @@ describe('Tồn kho theo lô, lịch sử biến động, kiểm kê, khóa lô 
         await prisma.expiryThreshold.delete({ where: { id: overrideRes.body.id as string } });
       }
     });
+
+    it('T-019 AC3: lọc chính xác theo lotId trên /inventory/lots và /inventory/summary; lotId sai định dạng trả 400', async () => {
+      const targetLotId = await createLotWithBalance({
+        productId: sp002Id,
+        lotCode: `${PREFIX}LOTID_1`,
+        expiryDate: addDaysUtc(todayVn, 10),
+        onHandQty: '35.000',
+      });
+      await createLotWithBalance({
+        productId: sp002Id,
+        lotCode: `${PREFIX}LOTID_10`,
+        expiryDate: addDaysUtc(todayVn, 15),
+        onHandQty: '50.000',
+      });
+
+      const lotsRes = await request(app.getHttpServer())
+        .get('/api/inventory/lots')
+        .query({ lotId: targetLotId })
+        .set('Authorization', `Bearer ${staffToken}`)
+        .expect(200);
+
+      expect(lotsRes.body.total).toBe(1);
+      expect(lotsRes.body.items).toHaveLength(1);
+      expect(lotsRes.body.items[0].lotId).toBe(targetLotId);
+
+      const summaryRes = await request(app.getHttpServer())
+        .get('/api/inventory/summary')
+        .query({ lotId: targetLotId })
+        .set('Authorization', `Bearer ${staffToken}`)
+        .expect(200);
+
+      expect(summaryRes.body.lotCount).toBe(1);
+      expect(summaryRes.body.totalQty).toBe('35');
+
+      await request(app.getHttpServer())
+        .get('/api/inventory/lots')
+        .query({ lotId: 'not-a-uuid' })
+        .set('Authorization', `Bearer ${staffToken}`)
+        .expect(400);
+    });
   });
 
   // AC2

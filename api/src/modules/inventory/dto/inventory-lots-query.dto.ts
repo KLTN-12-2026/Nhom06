@@ -53,6 +53,12 @@ function parseOptionalBooleanQuery({
 }
 
 export class InventorySummaryQueryDto {
+  @ApiPropertyOptional({ description: 'Lọc chính xác theo ID lô hàng (UUID)' })
+  @IsOptional()
+  @Transform(trimOptionalToUndefined)
+  @IsUUID('4', { message: 'Mã lô không đúng định dạng UUID' })
+  lotId?: string;
+
   @ApiPropertyOptional({ description: 'Tìm theo mã lô, mã sản phẩm hoặc tên sản phẩm' })
   @IsOptional()
   @Transform(trimOptionalToUndefined)

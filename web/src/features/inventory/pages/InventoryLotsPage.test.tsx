@@ -99,7 +99,7 @@ const SUMMARY_FIXTURE = {
   byProduct: [],
 };
 
-function renderPage() {
+function renderPage(initialPath = '/inventory') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -108,7 +108,7 @@ function renderPage() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthProvider>
-          <MemoryRouter initialEntries={['/inventory']}>
+          <MemoryRouter initialEntries={[initialPath]}>
             <InventoryLotsPage />
           </MemoryRouter>
         </AuthProvider>
@@ -229,5 +229,105 @@ describe('InventoryLotsPage (AC8)', () => {
         reason: 'Tạm giữ chờ kiểm tra chất lượng',
       });
     });
+  });
+
+  it('T-019 AC3: đọc ?lotId= và ?includeEmpty=true từ URL, lọc đúng lô và cho phép xóa lọc lô', async () => {
+    const requestedUrls: string[] = [];
+    const singleLotFixture = {
+      ...LOTS_FIXTURE,
+      total: 1,
+      items: [LOTS_FIXTURE.items[1]],
+    };
+    const singleSummaryFixture = {
+      ...SUMMARY_FIXTURE,
+      lotCount: 1,
+      totalQty: '44',
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => STAFF_USER } as Response;
+      }
+      if (url.includes('/product-groups')) {
+        return { ok: true, status: 200, json: async () => PRODUCT_GROUPS_FIXTURE } as Response;
+      }
+      if (url.includes('/inventory/summary')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => (url.includes('lotId=lot-2') ? singleSummaryFixture : SUMMARY_FIXTURE),
+        } as Response;
+      }
+      if (url.includes('/inventory/lots')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => (url.includes('lotId=lot-2') ? singleLotFixture : LOTS_FIXTURE),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    const user = userEvent.setup();
+    renderPage('/inventory?lotId=lot-2&includeEmpty=true');
+
+    await waitFor(() => {
+      expect(screen.getByText('L26081802')).toBeInTheDocument();
+    });
+
+    expect(
+      requestedUrls.some(
+        (url) =>
+          url.includes('/inventory/lots') &&
+          url.includes('lotId=lot-2') &&
+          url.includes('includeEmpty=true'),
+      ),
+    ).toBe(true);
+    expect(
+      requestedUrls.some(
+        (url) => url.includes('/inventory/summary') && url.includes('lotId=lot-2'),
+      ),
+    ).toBe(true);
+    expect(screen.getByText(/Đang lọc lô L26081802/i)).toBeInTheDocument();
+    expect(screen.queryByText('L26101801')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Xem tất cả lô' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('L26101801')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Đang lọc lô/i)).not.toBeInTheDocument();
+  });
+
+  it('T-019 AC3: đọc ?search= từ URL để điền sẵn ô tìm kiếm', async () => {
+    const requestedUrls: string[] = [];
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => STAFF_USER } as Response;
+      }
+      if (url.includes('/product-groups')) {
+        return { ok: true, status: 200, json: async () => PRODUCT_GROUPS_FIXTURE } as Response;
+      }
+      if (url.includes('/inventory/summary')) {
+        return { ok: true, status: 200, json: async () => SUMMARY_FIXTURE } as Response;
+      }
+      if (url.includes('/inventory/lots')) {
+        return { ok: true, status: 200, json: async () => LOTS_FIXTURE } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderPage('/inventory?search=L26101801');
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('L26101801')).toBeInTheDocument();
+    });
+    expect(
+      requestedUrls.some((url) => url.includes('/inventory/lots') && url.includes('search=L26101801')),
+    ).toBe(true);
   });
 });

@@ -202,4 +202,133 @@ describe('ForecastService (T-012 AC4, AC5)', () => {
       }),
     );
   });
+
+  it('T-019 AC4: getLatest đọc lượt FULL succeeded có demand_forecasts và mở metrics.forecast giữ nguyên hợp đồng', async () => {
+    const { prisma, mlClient } = createMocks();
+    const fullRunFinishedAt = new Date('2026-11-23T07:00:00.000Z');
+    (prisma.analysisRun.findFirst as jest.Mock).mockResolvedValue({
+      id: 'run-full-1',
+      runType: 'FULL',
+      status: 'succeeded',
+      modelVersion: 'rf-v1',
+      finishedAt: fullRunFinishedAt,
+      metrics: {
+        evaluationDate: '2026-11-23',
+        minDeliveryDays: 7,
+        lotCount: 40,
+        riskCounts: { expired: 4, high: 1, medium: 2, low: 33 },
+        surplusLotCount: 7,
+        createdProposals: 7,
+        skippedProposals: 0,
+        actualSyncedCount: 10,
+        forecast: {
+          model: { mean_mae: 5.38, mean_rmse: 8.06, pooled_rmse: 8.96 },
+          baseline: { mean_mae: 6.65, mean_rmse: 9.17, pooled_rmse: 10.16 },
+          modelInfo: {
+            trainStart: '2024-12-01',
+            trainEnd: '2026-09-23',
+            nRows: 12680,
+            dataSource: 'mô phỏng',
+          },
+          horizonDays: 60,
+          productCount: 1,
+          dataSource: 'MIXED',
+          skipped: [],
+        },
+        warnings: [],
+      },
+    });
+    (prisma.demandForecast.findMany as jest.Mock).mockResolvedValue([
+      {
+        productId: 'prod-1',
+        forecastDate: new Date('2026-11-24T00:00:00.000Z'),
+        forecastQty: new Prisma.Decimal('15.000'),
+        baselineQty: new Prisma.Decimal('12.000'),
+        product: { id: 'prod-1', code: 'SP001', name: 'Sữa tươi 180ml' },
+      },
+      {
+        productId: 'prod-1',
+        forecastDate: new Date('2026-11-25T00:00:00.000Z'),
+        forecastQty: new Prisma.Decimal('15.000'),
+        baselineQty: new Prisma.Decimal('12.000'),
+        product: { id: 'prod-1', code: 'SP001', name: 'Sữa tươi 180ml' },
+      },
+    ]);
+    (prisma.inventoryLotBalance.findMany as jest.Mock).mockResolvedValue([
+      { onHandQty: new Prisma.Decimal('100.000'), lot: { productId: 'prod-1' } },
+    ]);
+
+    const service = new ForecastService(prisma, mlClient);
+    const result = await service.getLatest();
+
+    expect(prisma.analysisRun.findFirst).toHaveBeenCalledWith({
+      where: {
+        runType: { in: ['FORECAST', 'FULL'] },
+        status: 'succeeded',
+        demandForecasts: { some: {} },
+      },
+      orderBy: [{ finishedAt: 'desc' }, { createdAt: 'desc' }],
+    });
+    expect(result.run).toEqual({
+      id: 'run-full-1',
+      modelVersion: 'rf-v1',
+      finishedAt: fullRunFinishedAt,
+      horizonDays: 60,
+      forecastStart: '2026-11-24',
+      dataSource: 'MIXED',
+      metrics: expect.objectContaining({
+        model: { mean_mae: 5.38, mean_rmse: 8.06, pooled_rmse: 8.96 },
+        baseline: { mean_mae: 6.65, mean_rmse: 9.17, pooled_rmse: 10.16 },
+        horizonDays: 60,
+        dataSource: 'MIXED',
+      }),
+    });
+    expect(result.items).toHaveLength(1);
+    expect(result.items[0]).toMatchObject({
+      code: 'SP001',
+      forecastQty: '30.000',
+      baselineQty: '24.000',
+      onHandQty: '100.000',
+    });
+  });
+
+  it('T-019 AC4: getProductForecast hỗ trợ cả lượt FULL (theo runId lẫn mặc định mới nhất)', async () => {
+    const { prisma, mlClient } = createMocks();
+    (prisma.product.findUnique as jest.Mock).mockResolvedValue({
+      id: 'prod-1',
+      code: 'SP001',
+      name: 'Sữa tươi 180ml',
+      unit: 'Thùng',
+    });
+    (prisma.analysisRun.findFirst as jest.Mock).mockResolvedValue({
+      id: 'run-full-1',
+      modelVersion: 'rf-v1',
+      status: 'succeeded',
+      finishedAt: new Date('2026-11-23T07:00:00.000Z'),
+    });
+    (prisma.demandForecast.findMany as jest.Mock).mockResolvedValue([
+      {
+        forecastDate: new Date('2026-11-24T00:00:00.000Z'),
+        forecastQty: new Prisma.Decimal('18.500'),
+        baselineQty: new Prisma.Decimal('16.000'),
+      },
+    ]);
+
+    const service = new ForecastService(prisma, mlClient);
+    const res = await service.getProductForecast('prod-1');
+
+    expect(prisma.analysisRun.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          runType: { in: ['FORECAST', 'FULL'] },
+          status: 'succeeded',
+          demandForecasts: { some: {} },
+        },
+      }),
+    );
+    expect(res.run?.id).toBe('run-full-1');
+    expect(res.items).toEqual([
+      { forecastDate: '2026-11-24', forecastQty: '18.500', baselineQty: '16.000' },
+    ]);
+  });
 });
