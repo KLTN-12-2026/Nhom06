@@ -1,8 +1,13 @@
 from __future__ import annotations
 
 from datetime import date
+from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from app.services.features import MIN_HISTORY_DAYS
+
+SUPPORTED_METHODS = ("baseline", "model")
 
 
 class HealthResponse(BaseModel):
@@ -42,11 +47,23 @@ class ForecastRequest(BaseModel):
     @field_validator("method")
     @classmethod
     def validate_method(cls, value: str) -> str:
-        if value != "baseline":
+        if value not in SUPPORTED_METHODS:
             raise ValueError(
-                f"Phương thức '{value}' chưa hỗ trợ; hiện chỉ hỗ trợ 'baseline'."
+                f"Phương thức '{value}' chưa hỗ trợ; chỉ hỗ trợ 'baseline' hoặc 'model'."
             )
         return value
+
+    @model_validator(mode="after")
+    def validate_history_span_for_model(self) -> ForecastRequest:
+        if self.method == "model":
+            dates = [item.date for item in self.history]
+            normalized_days = (max(dates) - min(dates)).days + 1
+            if normalized_days < MIN_HISTORY_DAYS:
+                raise ValueError(
+                    f"Không đủ dữ liệu lịch sử (cần ≥ {MIN_HISTORY_DAYS} ngày, "
+                    f"sau chuẩn hóa hiện có {normalized_days} ngày)."
+                )
+        return self
 
 
 class ForecastItem(BaseModel):
@@ -60,3 +77,15 @@ class ForecastResponse(BaseModel):
     model_version: str
     generated_at: str
     forecast: list[ForecastItem]
+
+
+class ModelInfoResponse(BaseModel):
+    model_version: str
+    trained_at: str
+    train_start: str
+    train_end: str
+    n_rows: int
+    features: list[str]
+    params: dict[str, Any]
+    data_source: str
+    metrics: dict[str, Any] | None = None
