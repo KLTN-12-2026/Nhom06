@@ -73,9 +73,9 @@ export const PERMISSIONS: readonly PermissionDefinition[] = [
 ] as const;
 
 /**
- * Ma trận phân quyền mặc định theo quyết định Q-07 (docs/decisions.md).
- * Tập trung tại một hằng số duy nhất để nhóm dễ cập nhật khi chốt PB03.
- * Bất biến bắt buộc: `proposals.approve` và `stock_count.approve` CHỈ có ở WAREHOUSE_MANAGER.
+ * Ma trận phân quyền theo quyết định D-016 (docs/decisions.md — ánh xạ mockup 29).
+ * Tập trung tại một hằng số duy nhất để nhóm dễ bảo trì.
+ * Bất biến bắt buộc: `proposals.approve` CHỈ có ở WAREHOUSE_MANAGER (bỏ khỏi ADMIN theo bất biến 8).
  */
 export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly string[]> = {
   ADMIN: [
@@ -84,20 +84,6 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly string[]> = {
     'roles.read',
     'roles.manage',
     'audit.read',
-    'catalog.read',
-    'catalog.manage',
-    'inbound.read',
-    'inventory.read',
-    'orders.read',
-    'outbound.read',
-    'expiry.read',
-    'forecast.read',
-    'analysis.read',
-    'proposals.read',
-    'executions.read',
-    'reports.read',
-  ],
-  WAREHOUSE_MANAGER: [
     'catalog.read',
     'catalog.manage',
     'inbound.read',
@@ -111,6 +97,27 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly string[]> = {
     'orders.cancel',
     'outbound.read',
     'outbound.create',
+    'outbound.confirm',
+    'expiry.read',
+    'expiry.manage',
+    'forecast.read',
+    'analysis.read',
+    'analysis.run',
+    'proposals.read',
+    'executions.read',
+    'executions.update',
+    'reports.read',
+  ],
+  WAREHOUSE_MANAGER: [
+    'catalog.read',
+    'catalog.manage',
+    'inbound.read',
+    'inbound.confirm',
+    'inventory.read',
+    'stock_count.create',
+    'stock_count.approve',
+    'orders.read',
+    'outbound.read',
     'outbound.confirm',
     'expiry.read',
     'expiry.manage',
@@ -133,6 +140,7 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly string[]> = {
     'stock_count.create',
     'orders.read',
     'orders.create',
+    'orders.cancel',
     'outbound.read',
     'outbound.create',
     'outbound.confirm',
@@ -142,6 +150,5 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly string[]> = {
     'proposals.read',
     'executions.read',
     'executions.update',
-    'reports.read',
   ],
 };

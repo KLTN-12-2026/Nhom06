@@ -1,7 +1,83 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { runSeed } from '../../prisma/seed';
-import { PERMISSIONS, ROLE_PERMISSION_MATRIX, ROLES } from '../../prisma/seed/permissions';
+import { PERMISSIONS, ROLE_PERMISSION_MATRIX, ROLES, RoleCode } from '../../prisma/seed/permissions';
+
+const EXPECTED_D016_MATRIX: Record<RoleCode, readonly string[]> = {
+  ADMIN: [
+    'users.read',
+    'users.manage',
+    'roles.read',
+    'roles.manage',
+    'audit.read',
+    'catalog.read',
+    'catalog.manage',
+    'inbound.read',
+    'inbound.create',
+    'inbound.confirm',
+    'inventory.read',
+    'stock_count.create',
+    'stock_count.approve',
+    'orders.read',
+    'orders.create',
+    'orders.cancel',
+    'outbound.read',
+    'outbound.create',
+    'outbound.confirm',
+    'expiry.read',
+    'expiry.manage',
+    'forecast.read',
+    'analysis.read',
+    'analysis.run',
+    'proposals.read',
+    'executions.read',
+    'executions.update',
+    'reports.read',
+  ],
+  WAREHOUSE_MANAGER: [
+    'catalog.read',
+    'catalog.manage',
+    'inbound.read',
+    'inbound.confirm',
+    'inventory.read',
+    'stock_count.create',
+    'stock_count.approve',
+    'orders.read',
+    'outbound.read',
+    'outbound.confirm',
+    'expiry.read',
+    'expiry.manage',
+    'forecast.read',
+    'analysis.read',
+    'analysis.run',
+    'proposals.read',
+    'proposals.approve',
+    'executions.read',
+    'executions.update',
+    'reports.read',
+  ],
+  WAREHOUSE_STAFF: [
+    'catalog.read',
+    'catalog.manage',
+    'inbound.read',
+    'inbound.create',
+    'inbound.confirm',
+    'inventory.read',
+    'stock_count.create',
+    'orders.read',
+    'orders.create',
+    'orders.cancel',
+    'outbound.read',
+    'outbound.create',
+    'outbound.confirm',
+    'expiry.read',
+    'forecast.read',
+    'analysis.read',
+    'proposals.read',
+    'executions.read',
+    'executions.update',
+  ],
+};
 
 describe('Dữ liệu seed cơ bản và phân quyền (T-004)', () => {
   let prisma: PrismaClient;
@@ -105,8 +181,8 @@ describe('Dữ liệu seed cơ bản và phân quyền (T-004)', () => {
     });
   });
 
-  // AC6 + Plan review: đọc ma trận từ hằng số ROLE_PERMISSION_MATRIX
-  it('ma trận quyền của 3 vai trò trong DB khớp đúng hằng số ROLE_PERMISSION_MATRIX', async () => {
+  // AC6 + D-016: kiểm chứng bằng bảng mong đợi đầy đủ cho cả 3 vai trò
+  it('ma trận quyền của 3 vai trò trong DB khớp đúng quyết định D-016 và hằng số ROLE_PERMISSION_MATRIX', async () => {
     for (const roleDef of ROLES) {
       const role = await prisma.role.findUniqueOrThrow({
         where: { code: roleDef.code },
@@ -118,14 +194,16 @@ describe('Dữ liệu seed cơ bản và phân quyền (T-004)', () => {
       });
 
       const actualPerms = role.rolePermissions.map((rp) => rp.permission.code).sort();
-      const expectedPerms = [...ROLE_PERMISSION_MATRIX[roleDef.code]].sort();
+      const matrixPerms = [...ROLE_PERMISSION_MATRIX[roleDef.code]].sort();
+      const expectedPerms = [...EXPECTED_D016_MATRIX[roleDef.code]].sort();
 
+      expect(matrixPerms).toEqual(expectedPerms);
       expect(actualPerms).toEqual(expectedPerms);
     }
   });
 
-  // AC6 bất biến phân quyền theo tài khoản demo
-  it('manager có quyền duyệt đề xuất và kiểm kê; staff và admin không có; staff có quyền xác nhận nhập/xuất', async () => {
+  // AC6 bất biến phân quyền theo tài khoản demo D-016
+  it('quanly là tài khoản duy nhất có proposals.approve và không có inbound.create; nhanvien có inbound/outbound.confirm nhưng không có stock_count.approve', async () => {
     async function getUserPermissions(username: string): Promise<Set<string>> {
       const user = await prisma.user.findUniqueOrThrow({
         where: { username },
@@ -153,37 +231,54 @@ describe('Dữ liệu seed cơ bản và phân quyền (T-004)', () => {
       return perms;
     }
 
-    const [adminPerms, managerPerms, staffPerms] = await Promise.all([
+    const [adminPerms, quanlyPerms, nhanvienPerms] = await Promise.all([
       getUserPermissions('admin'),
-      getUserPermissions('manager'),
-      getUserPermissions('staff'),
+      getUserPermissions('quanly'),
+      getUserPermissions('nhanvien'),
     ]);
 
-    expect(managerPerms.has('proposals.approve')).toBe(true);
-    expect(managerPerms.has('stock_count.approve')).toBe(true);
-
-    expect(staffPerms.has('proposals.approve')).toBe(false);
-    expect(staffPerms.has('stock_count.approve')).toBe(false);
+    // Chỉ quanly có proposals.approve
+    expect(quanlyPerms.has('proposals.approve')).toBe(true);
     expect(adminPerms.has('proposals.approve')).toBe(false);
-    expect(adminPerms.has('stock_count.approve')).toBe(false);
+    expect(nhanvienPerms.has('proposals.approve')).toBe(false);
 
-    expect(staffPerms.has('inbound.confirm')).toBe(true);
-    expect(staffPerms.has('outbound.confirm')).toBe(true);
+    // quanly không lập phiếu nhập/đơn/phiếu xuất hay quản trị tài khoản
+    expect(quanlyPerms.has('inbound.create')).toBe(false);
+    expect(quanlyPerms.has('orders.create')).toBe(false);
+    expect(quanlyPerms.has('orders.cancel')).toBe(false);
+    expect(quanlyPerms.has('outbound.create')).toBe(false);
+    expect(quanlyPerms.has('users.manage')).toBe(false);
+    expect(quanlyPerms.has('roles.manage')).toBe(false);
+    expect(quanlyPerms.has('audit.read')).toBe(false);
 
+    // nhanvien có xác nhận nhập/xuất, quản lý danh mục; không duyệt kiểm kê hay xem báo cáo
+    expect(nhanvienPerms.has('inbound.confirm')).toBe(true);
+    expect(nhanvienPerms.has('outbound.confirm')).toBe(true);
+    expect(nhanvienPerms.has('catalog.manage')).toBe(true);
+    expect(nhanvienPerms.has('stock_count.approve')).toBe(false);
+    expect(nhanvienPerms.has('expiry.manage')).toBe(false);
+    expect(nhanvienPerms.has('analysis.run')).toBe(false);
+    expect(nhanvienPerms.has('reports.read')).toBe(false);
+
+    // Cả 3 vai trò đều có catalog.manage theo D-016
     expect(adminPerms.has('catalog.manage')).toBe(true);
-    expect(managerPerms.has('catalog.manage')).toBe(true);
-    expect(staffPerms.has('catalog.manage')).toBe(true);
+    expect(quanlyPerms.has('catalog.manage')).toBe(true);
   });
 
-  // AC6 mật khẩu bcrypt
-  it('mật khẩu tài khoản demo lưu dạng bcrypt và khớp mật khẩu mặc định Demo@123 khi không đặt env', async () => {
-    const expectedPassword = process.env.SEED_DEMO_PASSWORD || 'Demo@123';
+  // AC6 tài khoản demo D-016 & mật khẩu bcrypt mặc định 123456
+  it('tài khoản demo admin/quanly/nhanvien đúng họ tên, lưu mật khẩu bcrypt và khớp 123456 khi không đặt env', async () => {
+    const expectedPassword = process.env.SEED_DEMO_PASSWORD || '123456';
     const users = await prisma.user.findMany({
-      where: { username: { in: ['admin', 'manager', 'staff'] } },
+      where: { username: { in: ['admin', 'quanly', 'nhanvien'] } },
       orderBy: { username: 'asc' },
     });
 
-    expect(users).toHaveLength(3);
+    expect(users.map((u) => ({ username: u.username, email: u.email, fullName: u.fullName }))).toEqual([
+      { username: 'admin', email: 'admin@kho-ai.local', fullName: 'Phan Thanh Đức' },
+      { username: 'nhanvien', email: 'nhanvien@kho-ai.local', fullName: 'Trương Thành Lê' },
+      { username: 'quanly', email: 'quanly@kho-ai.local', fullName: 'Nguyễn Văn Dương' },
+    ]);
+
     for (const user of users) {
       expect(user.passwordHash.startsWith('$2')).toBe(true);
       await expect(bcrypt.compare(expectedPassword, user.passwordHash)).resolves.toBe(true);

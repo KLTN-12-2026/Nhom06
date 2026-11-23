@@ -14,19 +14,19 @@ const DEMO_USERS: readonly DemoUserSeed[] = [
   {
     username: 'admin',
     email: 'admin@kho-ai.local',
-    fullName: 'Quản trị viên hệ thống',
+    fullName: 'Phan Thanh Đức',
     roleCode: 'ADMIN',
   },
   {
-    username: 'manager',
-    email: 'manager@kho-ai.local',
-    fullName: 'Quản lý kho trung tâm',
+    username: 'quanly',
+    email: 'quanly@kho-ai.local',
+    fullName: 'Nguyễn Văn Dương',
     roleCode: 'WAREHOUSE_MANAGER',
   },
   {
-    username: 'staff',
-    email: 'staff@kho-ai.local',
-    fullName: 'Nhân viên vận hành kho',
+    username: 'nhanvien',
+    email: 'nhanvien@kho-ai.local',
+    fullName: 'Trương Thành Lê',
     roleCode: 'WAREHOUSE_STAFF',
   },
 ];
@@ -76,7 +76,7 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
   }
 
   // 3. Tài khoản demo (băm bcrypt cost 10)
-  const demoPassword = process.env.SEED_DEMO_PASSWORD || 'Demo@123';
+  const demoPassword = process.env.SEED_DEMO_PASSWORD || '123456';
   const passwordHash = await bcrypt.hash(demoPassword, BCRYPT_ROUNDS);
 
   const userByUsername = new Map<string, string>();
