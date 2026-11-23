@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { ExpiryBar } from '@/components/common/ExpiryBar';
 import { FilterBar } from '@/components/common/FilterBar';
@@ -34,11 +34,16 @@ export function InventoryLotsPage() {
   const canReadCatalog = hasPermission('catalog.read');
   const canManageLotStatus = hasPermission('stock_count.approve');
 
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const lotIdParam = searchParams.get('lotId') ?? '';
+
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
   const [groupId, setGroupId] = useState('');
   const [expiryStatus, setExpiryStatus] = useState<ExpiryStatusFilter | ''>('');
   const [lotStatus, setLotStatus] = useState<LotStatus | ''>('');
-  const [includeEmpty, setIncludeEmpty] = useState(false);
+  const [includeEmpty, setIncludeEmpty] = useState(
+    () => searchParams.get('includeEmpty') === 'true',
+  );
   const [page, setPage] = useState(1);
 
   const [selectedLot, setSelectedLot] = useState<InventoryLotItem | null>(null);
@@ -46,13 +51,14 @@ export function InventoryLotsPage() {
 
   const filterParams = useMemo(
     () => ({
+      lotId: lotIdParam || undefined,
       search,
       groupId,
       expiryStatus,
       lotStatus,
       includeEmpty,
     }),
-    [search, groupId, expiryStatus, lotStatus, includeEmpty],
+    [lotIdParam, search, groupId, expiryStatus, lotStatus, includeEmpty],
   );
 
   const groupsQuery = useProductGroupsQuery(canReadCatalog ? 'active' : undefined);
@@ -60,7 +66,18 @@ export function InventoryLotsPage() {
   const summaryQuery = useInventorySummaryQuery(filterParams);
   const updateLotStatusMutation = useUpdateLotStatusMutation();
 
-  const hasFilters = Boolean(search.trim() || groupId || expiryStatus || lotStatus || includeEmpty);
+  const hasFilters = Boolean(
+    lotIdParam || search.trim() || groupId || expiryStatus || lotStatus || includeEmpty,
+  );
+  const filteredLotCode =
+    lotIdParam && lotsQuery.data?.items.length === 1 ? lotsQuery.data.items[0].lotCode : null;
+
+  const handleClearLotFilter = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete('lotId');
+    setSearchParams(next, { replace: true });
+    setPage(1);
+  };
 
   const handleResetFilters = () => {
     setSearch('');
@@ -69,6 +86,9 @@ export function InventoryLotsPage() {
     setLotStatus('');
     setIncludeEmpty(false);
     setPage(1);
+    if (searchParams.size > 0) {
+      setSearchParams({}, { replace: true });
+    }
   };
 
   const handleOpenStatusDialog = (lot: InventoryLotItem) => {
@@ -286,6 +306,21 @@ export function InventoryLotsPage() {
               />
               <span>Hiện lô tồn 0</span>
             </label>
+
+            {lotIdParam && (
+              <div className="inline-flex items-center gap-2 rounded-md border border-border bg-[var(--surface-muted)] px-3 py-1.5 text-xs text-[var(--text)]">
+                <span>
+                  {filteredLotCode ? `Đang lọc lô ${filteredLotCode}` : 'Đang lọc theo một lô cụ thể'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleClearLotFilter}
+                  className="font-medium text-[var(--info)] underline underline-offset-2 hover:opacity-80"
+                >
+                  Xem tất cả lô
+                </button>
+              </div>
+            )}
 
             {hasFilters && (
               <Button type="button" variant="outline" onClick={handleResetFilters}>

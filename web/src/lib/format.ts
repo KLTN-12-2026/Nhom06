@@ -200,6 +200,20 @@ export function formatDateTime(isoTimestamp: string | null | undefined): string 
   return vnDateTimeFormatter.format(date);
 }
 
+/**
+ * Định dạng mốc thời gian ISO (UTC) sang ngày `dd/MM/yyyy` theo đúng múi giờ Asia/Ho_Chi_Minh.
+ */
+export function formatTimestampDateVi(isoTimestamp: string | null | undefined): string {
+  if (!isoTimestamp) {
+    return '—';
+  }
+  const date = new Date(isoTimestamp);
+  if (Number.isNaN(date.getTime())) {
+    return formatDateVi(isoTimestamp);
+  }
+  return formatDateVi(vnIsoDateFormatter.format(date));
+}
+
 export function formatRelativeTime(
   isoTimestamp: string | null | undefined,
   nowMs: number = Date.now(),

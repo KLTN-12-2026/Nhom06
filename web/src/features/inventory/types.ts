@@ -60,6 +60,7 @@ export interface InventorySummaryResponse {
 }
 
 export interface InventoryFilterParams {
+  lotId?: string;
   search?: string;
   groupId?: string;
   productId?: string;

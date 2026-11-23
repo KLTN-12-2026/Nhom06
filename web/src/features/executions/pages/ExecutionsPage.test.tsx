@@ -362,4 +362,30 @@ describe('ExecutionsPage — Theo dõi thực hiện & Dialog Ghi kết quả (T
       expect(disposalCalls).toEqual([{ quantity: '44', notes: null }]);
     });
   });
+
+  it('T-019 AC2: số KPI dùng cỡ chữ text-4xl chuẩn DESIGN.md và ngày duyệt hiển thị đúng múi giờ Asia/Ho_Chi_Minh', async () => {
+    // 2026-11-22T20:00:00.000Z = 23/11/2026 03:00 theo giờ Việt Nam (UTC+7)
+    const lateUtcItem = makeExecution({
+      decision: {
+        decidedAt: '2026-11-22T20:00:00.000Z',
+        reason: null,
+        decider: { id: 'u-mgr', fullName: 'Nguyễn Văn Dương' },
+      },
+    });
+
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => makeListResponse([lateUtcItem]),
+    } as Response);
+
+    renderExecutionsPage(['executions.read']);
+
+    await waitFor(() => {
+      expect(screen.getByText('23/11/2026')).toBeInTheDocument();
+    });
+
+    const kpiValue = screen.getByText('437');
+    expect(kpiValue.className).toContain('text-4xl');
+  });
 });

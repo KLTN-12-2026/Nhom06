@@ -145,6 +145,9 @@ export class InventoryService {
     const includeEmpty = filter.includeEmpty === true;
     const where: Prisma.LotWhereInput = {};
 
+    if (filter.lotId) {
+      where.id = filter.lotId;
+    }
     if (filter.productId) {
       where.productId = filter.productId;
     }

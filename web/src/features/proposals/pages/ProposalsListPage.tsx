@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ExpiryBar } from '@/components/common/ExpiryBar';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { RiskLevelBadge } from '@/components/common/RiskStatusBadge';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,7 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { RiskLevelBadge } from '@/features/risk/components/RiskLevelBadge';
 import { mapRiskToExpiryBarSeverity } from '@/features/risk/constants';
 import { type RiskLevel } from '@/features/risk/types';
 import { ApiError } from '@/lib/api';
@@ -154,7 +154,7 @@ export function ProposalsListPage() {
               tabIndex={0}
               role="region"
               aria-label="Danh sách đề xuất xử lý hàng cận hạn"
-              className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
+              className="relative overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
             >
               <Table>
                 <TableHeader>
@@ -204,7 +204,7 @@ export function ProposalsListPage() {
                           {formatQuantity(item.proposedQty)}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          <RiskLevelBadge riskLevel={item.riskLevel} isExpired={item.isExpired} />
+                          <RiskLevelBadge level={item.riskLevel} isExpired={item.isExpired} />
                         </TableCell>
                         <TableCell className="max-w-[200px] text-sm text-[var(--text)]">
                           {item.actionLabel}

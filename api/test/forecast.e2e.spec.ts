@@ -97,6 +97,22 @@ describe('Forecast API E2E với PostgreSQL thật + MlClient mock (T-012 AC4, A
     });
     const runIds = runs.map((r) => r.id);
     if (runIds.length > 0) {
+      const proposals = await prisma.treatmentProposal.findMany({
+        where: { sourceRunId: { in: runIds } },
+        select: { id: true },
+      });
+      const proposalIds = proposals.map((p) => p.id);
+      if (proposalIds.length > 0) {
+        await prisma.llmExplanation.deleteMany({
+          where: { proposalId: { in: proposalIds } },
+        });
+        await prisma.treatmentProposal.deleteMany({
+          where: { id: { in: proposalIds } },
+        });
+      }
+      await prisma.lotRiskAssessment.deleteMany({
+        where: { analysisRunId: { in: runIds } },
+      });
       await prisma.demandForecast.deleteMany({
         where: { analysisRunId: { in: runIds } },
       });
@@ -286,5 +302,56 @@ describe('Forecast API E2E với PostgreSQL thật + MlClient mock (T-012 AC4, A
       .expect(409);
 
     expect((res.body as { message: string }).message).toBe('Đang có lượt phân tích chạy');
+  });
+
+  it('T-019 AC4: sau khi chạy phân tích FULL, GET /api/forecasts/latest trả đúng lượt FULL cùng metrics và sản phẩm', async () => {
+    const managerToken = await loginAs('quanly');
+
+    // Chạy lượt FORECAST trước (horizon 10 ngày)
+    const forecastRunRes = await request(app.getHttpServer())
+      .post('/api/forecasts/runs')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({ horizonDays: 10 })
+      .expect(201);
+    const olderForecastRunId = (forecastRunRes.body as { id: string }).id;
+
+    // Sau đó chạy phân tích FULL (horizon 14 ngày)
+    const fullRunRes = await request(app.getHttpServer())
+      .post('/api/analysis/runs')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({ horizonDays: 14 })
+      .expect(201);
+    const fullRunId = (fullRunRes.body as { id: string }).id;
+    expect(fullRunId).not.toBe(olderForecastRunId);
+
+    // GET /api/forecasts/latest phải trả lượt FULL mới nhất với đủ metrics MAE và 20 sản phẩm
+    const latestRes = await request(app.getHttpServer())
+      .get('/api/forecasts/latest')
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+
+    const latestBody = latestRes.body as {
+      run: {
+        id: string;
+        modelVersion: string;
+        horizonDays: number;
+        metrics: { model: { mean_mae: number }; baseline: { mean_mae: number } };
+      };
+      items: Array<{ productId: string; code: string; forecastQty: string }>;
+    };
+
+    expect(latestBody.run.id).toBe(fullRunId);
+    expect(latestBody.run.modelVersion).toBe('rf-v1');
+    expect(latestBody.run.horizonDays).toBe(14);
+    expect(latestBody.run.metrics.model.mean_mae).toBe(5.38);
+    expect(latestBody.run.metrics.baseline.mean_mae).toBe(6.65);
+    expect(latestBody.items).toHaveLength(20);
+
+    // GET /api/forecasts/products/:id?runId=<fullRunId> cũng đọc được dự báo lượt FULL
+    const productRes = await request(app.getHttpServer())
+      .get(`/api/forecasts/products/${latestBody.items[0].productId}?runId=${fullRunId}`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .expect(200);
+    expect((productRes.body as { items: unknown[] }).items).toHaveLength(14);
   });
 });

@@ -49,7 +49,7 @@ export function RiskReportTab() {
 
   const [applied, setApplied] = useState<RiskReportParams>({});
 
-  const productsQuery = useProductsQuery({ page: 1, pageSize: 200 });
+  const productsQuery = useProductsQuery({ page: 1, pageSize: 100 });
   const reportQuery = useRiskReportQuery(applied);
   const data = reportQuery.data;
 

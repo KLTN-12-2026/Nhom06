@@ -27,6 +27,7 @@ const DEFAULT_HORIZON_DAYS = 60;
 const MIN_BASELINE_HISTORY_DAYS = 7;
 const MIN_MODEL_HISTORY_DAYS = 28;
 const FORECAST_RUN_TYPE = 'FORECAST';
+const LATEST_FORECAST_RUN_TYPES = [FORECAST_RUN_TYPE, 'FULL'];
 
 export interface ForecastSkippedItem {
   productCode: string;
@@ -314,8 +315,9 @@ export class ForecastService {
   async getLatest(): Promise<LatestForecastResponse> {
     const latestRun = await this.prisma.analysisRun.findFirst({
       where: {
-        runType: FORECAST_RUN_TYPE,
+        runType: { in: LATEST_FORECAST_RUN_TYPES },
         status: 'succeeded',
+        demandForecasts: { some: {} },
       },
       orderBy: [{ finishedAt: 'desc' }, { createdAt: 'desc' }],
     });
@@ -454,7 +456,7 @@ export class ForecastService {
     let targetRun;
     if (runId) {
       targetRun = await this.prisma.analysisRun.findFirst({
-        where: { id: runId, runType: FORECAST_RUN_TYPE },
+        where: { id: runId, runType: { in: LATEST_FORECAST_RUN_TYPES } },
         select: { id: true, modelVersion: true, status: true, finishedAt: true },
       });
       if (!targetRun) {
@@ -462,7 +464,11 @@ export class ForecastService {
       }
     } else {
       targetRun = await this.prisma.analysisRun.findFirst({
-        where: { runType: FORECAST_RUN_TYPE, status: 'succeeded' },
+        where: {
+          runType: { in: LATEST_FORECAST_RUN_TYPES },
+          status: 'succeeded',
+          demandForecasts: { some: {} },
+        },
         orderBy: [{ finishedAt: 'desc' }, { createdAt: 'desc' }],
         select: { id: true, modelVersion: true, status: true, finishedAt: true },
       });
@@ -557,6 +563,16 @@ export class ForecastService {
   private parseMetrics(raw: Prisma.JsonValue | null): ForecastRunMetrics | null {
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
       return null;
+    }
+    const record = raw as Record<string, unknown>;
+    // Lượt FULL (AnalysisPipelineService) lưu ForecastRunMetrics trong khóa con `metrics.forecast`
+    if (
+      'forecast' in record &&
+      record.forecast &&
+      typeof record.forecast === 'object' &&
+      !Array.isArray(record.forecast)
+    ) {
+      return record.forecast as unknown as ForecastRunMetrics;
     }
     return raw as unknown as ForecastRunMetrics;
   }

@@ -112,8 +112,8 @@ export function useExpiryAlertsSummaryQuery(
 
 export function useActiveProductsForExpiryQuery(enabled = true) {
   return useQuery({
-    queryKey: ['products', { status: 'active', pageSize: 200 }],
-    queryFn: () => fetchProducts({ status: 'active', pageSize: 200 }),
+    queryKey: ['products', { status: 'active', pageSize: 100 }],
+    queryFn: () => fetchProducts({ status: 'active', pageSize: 100 }),
     enabled,
   });
 }

@@ -344,11 +344,63 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
 
     expect(approveCalls).toEqual([{ note: 'Ưu tiên gọi đại lý trong tuần' }]);
     expect(screen.getByText('Nguyễn Văn Dương')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Theo dõi thực hiện' })).toHaveAttribute(
-      'href',
-      '/executions',
-    );
+    const executionsLink = screen.getByRole('link', { name: 'Theo dõi thực hiện' });
+    expect(executionsLink).toHaveAttribute('href', '/executions');
+    // Mockup 26: nút phụ viền & chữ màu --info (variant="secondary")
+    expect(executionsLink.className).toContain('text-info');
     expect(screen.queryByRole('button', { name: 'Từ chối' })).not.toBeInTheDocument();
+  });
+
+  it('T-019 AC2 + AC3: nút "Xem trong tồn kho" trỏ /inventory?lotId= (thêm includeEmpty=true khi tồn = 0) và lưới xếp dọc ở 390px', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => makeDetail(),
+    } as Response);
+
+    const { container, unmount } = renderDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('link', { name: 'Xem trong tồn kho' })).toHaveAttribute(
+      'href',
+      '/inventory?lotId=lot-1',
+    );
+    // Kiểm cấu trúc responsive 1 cột (<1024px) → 12 cột (lg) + min-w-0 chống tràn ở 390px
+    const layoutGrid = container.querySelector('.grid.grid-cols-1.lg\\:grid-cols-12');
+    expect(layoutGrid).not.toBeNull();
+    expect(container.querySelector('.min-w-0.lg\\:col-span-8')).not.toBeNull();
+    expect(container.querySelector('.min-w-0.lg\\:col-span-4')).not.toBeNull();
+
+    unmount();
+
+    // Khi lô đã xuất hủy về tồn 0 → thêm includeEmpty=true để trang tồn kho vẫn hiển thị lô đó
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () =>
+        makeDetail({
+          lot: {
+            id: 'lot-empty',
+            lotCode: 'L26091802',
+            status: 'active',
+            expiryDate: '2026-11-01',
+            daysRemaining: -22,
+            currentOnHandQty: '0.000',
+          },
+        }),
+    } as Response);
+
+    renderDetailPage();
+    await waitFor(() => {
+      expect(screen.getByText('Lô L26091802')).toBeInTheDocument();
+    });
+    expect(screen.getByRole('link', { name: 'Xem trong tồn kho' })).toHaveAttribute(
+      'href',
+      '/inventory?lotId=lot-empty&includeEmpty=true',
+    );
   });
 
   it('khi API trả 409 (đề xuất đã có quyết định trước đó) → hiển thị thông báo lỗi và tải lại dữ liệu', async () => {
