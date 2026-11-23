@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -10,12 +12,13 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Permissions } from '../../common/decorators/permissions.decorator';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
@@ -86,5 +89,18 @@ export class UsersController {
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<UserResponse> {
     return this.usersService.updateRole(id, dto.roleCode, actor.id);
+  }
+
+  @Post(':id/reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Permissions('users.manage')
+  @ApiOperation({ summary: 'Quản trị viên đặt lại mật khẩu cho tài khoản khác và vô hiệu phiên cũ' })
+  @ApiNoContentResponse({ description: 'Đặt lại mật khẩu thành công' })
+  resetPassword(
+    @Param('id', uuidPipe) id: string,
+    @Body() dto: ResetPasswordDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<void> {
+    return this.usersService.resetPassword(id, dto, actor.id);
   }
 }

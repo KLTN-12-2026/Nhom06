@@ -57,19 +57,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return response.user;
   }, []);
 
-  const logout = useCallback(async (): Promise<void> => {
-    try {
-      if (getAccessToken()) {
-        await logoutRequest();
+  const logout = useCallback(
+    async (options?: { skipServerRequest?: boolean }): Promise<void> => {
+      try {
+        if (!options?.skipServerRequest && getAccessToken()) {
+          await logoutRequest();
+        }
+      } catch {
+        // Vẫn xóa phiên cục bộ ngay cả khi token đã hết hạn trên server
+      } finally {
+        clearAccessToken();
+        setUser(null);
+        queryClient.clear();
       }
-    } catch {
-      // Vẫn xóa phiên cục bộ ngay cả khi token đã hết hạn trên server
-    } finally {
-      clearAccessToken();
-      setUser(null);
-      queryClient.clear();
-    }
-  }, [queryClient]);
+    },
+    [queryClient],
+  );
 
   const permissionSet = useMemo(() => new Set(user?.permissions ?? []), [user]);
 

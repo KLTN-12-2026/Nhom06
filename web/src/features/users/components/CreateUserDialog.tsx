@@ -32,7 +32,10 @@ const createUserSchema = z.object({
   fullName: z.string().trim().min(1, 'Vui lòng nhập họ tên'),
   email: z.string().trim().email('Email không đúng định dạng'),
   phone: z.string().trim().max(30, 'Số điện thoại tối đa 30 ký tự').optional(),
-  password: z.string().min(6, 'Mật khẩu phải có ít nhất 6 ký tự'),
+  password: z
+    .string()
+    .min(8, 'Mật khẩu phải có ít nhất 8 ký tự')
+    .max(100, 'Mật khẩu không được vượt quá 100 ký tự'),
   roleCode: z.string().min(1, 'Vui lòng chọn vai trò'),
 });
 
@@ -167,7 +170,7 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
               <Input
                 id="create-password"
                 type="password"
-                placeholder="Tối thiểu 6 ký tự"
+                placeholder="Tối thiểu 8 ký tự"
                 {...register('password')}
               />
               {errors.password && (

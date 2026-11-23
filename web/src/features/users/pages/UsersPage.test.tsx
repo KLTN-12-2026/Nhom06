@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/components/common/ToastProvider';
@@ -145,5 +146,46 @@ describe('UsersPage (AC8)', () => {
 
     expect(screen.queryByRole('button', { name: 'Thêm tài khoản' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Khoá' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Đặt lại mật khẩu' })).not.toBeInTheDocument();
+  });
+
+  it('chỉ hiện nút Đặt lại mật khẩu ở các dòng không phải chính mình khi có users.manage và mở được dialog (T-020 AC6)', async () => {
+    const user = userEvent.setup();
+    renderUsersPage({
+      id: 'u-admin',
+      username: 'admin',
+      fullName: 'Phan Thanh Đức',
+      role: { code: 'ADMIN', name: 'Quản trị viên' },
+      permissions: ['users.read', 'users.manage', 'roles.read', 'roles.manage'],
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Phan Thanh Đức')).toBeInTheDocument();
+    });
+
+    const adminRow = screen.getByText('Phan Thanh Đức').closest('tr');
+    const managerRow = screen.getByText('Nguyễn Văn Dương').closest('tr');
+    const staffRow = screen.getByText('Trương Thành Lê').closest('tr');
+
+    expect(adminRow).not.toBeNull();
+    expect(managerRow).not.toBeNull();
+    expect(staffRow).not.toBeNull();
+
+    // Ẩn ở dòng của chính mình (admin), hiện ở 2 dòng còn lại (quanly, nhanvien)
+    expect(
+      within(adminRow as HTMLElement).queryByRole('button', { name: 'Đặt lại mật khẩu' }),
+    ).not.toBeInTheDocument();
+    const managerResetBtn = within(managerRow as HTMLElement).getByRole('button', {
+      name: 'Đặt lại mật khẩu',
+    });
+    expect(
+      within(staffRow as HTMLElement).getByRole('button', { name: 'Đặt lại mật khẩu' }),
+    ).toBeInTheDocument();
+
+    await user.click(managerResetBtn);
+    expect(await screen.findByText('Đặt lại mật khẩu cho quanly')).toBeInTheDocument();
+    expect(
+      screen.getByText('Tài khoản này sẽ bị đăng xuất khỏi mọi phiên đang mở.'),
+    ).toBeInTheDocument();
   });
 });

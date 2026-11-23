@@ -206,10 +206,44 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
     expect(mobileTopbar).toHaveTextContent('Quản lý kho');
     expect(mobileTopbar).toHaveTextContent('Kho trung tâm Đà Nẵng');
     expect(mobileTopbar).toHaveTextContent('Nguyễn Văn Dương');
+    expect(mobileTopbar).toHaveTextContent('Đổi mật khẩu');
     expect(mobileTopbar).toHaveTextContent('Đăng xuất');
 
     const mobileNav = screen.getByRole('navigation', { name: 'Điều hướng di động' });
     expect(mobileNav.className).toContain('overflow-x-auto');
+  });
+
+  it('hiển thị nút Đổi mật khẩu cạnh Đăng xuất và mở dialog đổi mật khẩu (T-020 AC6)', async () => {
+    const staffUser: AuthUser = {
+      id: 'u-staff',
+      username: 'nhanvien',
+      fullName: 'Trương Thành Lê',
+      role: { code: 'WAREHOUSE_STAFF', name: 'Nhân viên kho' },
+      permissions: ['inventory.read'],
+    };
+
+    localStorage.setItem('kho_ai_access_token', 'staff-token');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => staffUser,
+    } as Response);
+
+    const user = userEvent.setup();
+    renderAppWithAuth('/');
+
+    await waitFor(() => {
+      expect(screen.getByText('Nội dung bảng điều khiển')).toBeInTheDocument();
+    });
+
+    const changePassButtons = screen.getAllByRole('button', { name: 'Đổi mật khẩu' });
+    expect(changePassButtons).toHaveLength(2); // desktop sidebar + mobile topbar
+
+    await user.click(changePassButtons[0]);
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mật khẩu hiện tại')).toBeInTheDocument();
+    expect(screen.getByLabelText('Mật khẩu mới')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nhập lại mật khẩu mới')).toBeInTheDocument();
   });
 
   it('DialogContent dùng kích thước co giãn và cuộn dọc phù hợp màn 390px (T-018 AC2)', () => {

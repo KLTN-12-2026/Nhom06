@@ -1,4 +1,4 @@
-import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -6,13 +6,26 @@ import { AuthService } from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let txMock: {
+    user: { update: jest.Mock };
+    auditLog: { create: jest.Mock };
+  };
   let prismaMock: {
     user: { findUnique: jest.Mock; update: jest.Mock };
     auditLog: { create: jest.Mock };
+    $transaction: jest.Mock;
   };
   let jwtServiceMock: { signAsync: jest.Mock };
 
   beforeEach(() => {
+    txMock = {
+      user: {
+        update: jest.fn(),
+      },
+      auditLog: {
+        create: jest.fn(),
+      },
+    };
     prismaMock = {
       user: {
         findUnique: jest.fn(),
@@ -21,6 +34,7 @@ describe('AuthService', () => {
       auditLog: {
         create: jest.fn(),
       },
+      $transaction: jest.fn((cb: (tx: typeof txMock) => unknown) => cb(txMock)),
     };
     jwtServiceMock = {
       signAsync: jest.fn().mockResolvedValue('signed-jwt-token'),
@@ -141,6 +155,113 @@ describe('AuthService', () => {
     expect(prismaMock.user.update).toHaveBeenCalledWith({
       where: { id: 'u-1' },
       data: { tokenVersion: { increment: 1 } },
+    });
+  });
+
+  describe('changePassword', () => {
+    it('đổi mật khẩu hợp lệ: băm bcrypt cost 10, tăng token_version và ghi audit USER_PASSWORD_CHANGED trong cùng transaction (không lộ mật khẩu)', async () => {
+      const oldHash = await bcrypt.hash('123456', 4);
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'u-staff',
+        username: 'nhanvien',
+        passwordHash: oldHash,
+        status: 'active',
+      });
+      txMock.user.update.mockResolvedValue({});
+      txMock.auditLog.create.mockResolvedValue({});
+
+      await service.changePassword('u-staff', {
+        currentPassword: '123456',
+        newPassword: 'NewPassword2026',
+        confirmPassword: 'NewPassword2026',
+      });
+
+      expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+      const updateArg = txMock.user.update.mock.calls[0][0];
+      expect(updateArg.where).toEqual({ id: 'u-staff' });
+      expect(updateArg.data.tokenVersion).toEqual({ increment: 1 });
+      expect(updateArg.data.passwordHash).toMatch(/^\$2[ab]\$10\$/);
+      await expect(bcrypt.compare('NewPassword2026', updateArg.data.passwordHash)).resolves.toBe(
+        true,
+      );
+
+      expect(txMock.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorUserId: 'u-staff',
+          eventType: 'USER_PASSWORD_CHANGED',
+          entityType: 'user',
+          entityId: 'u-staff',
+        }),
+      });
+      const auditSerialized = JSON.stringify(txMock.auditLog.create.mock.calls[0][0]);
+      expect(auditSerialized).not.toContain('123456');
+      expect(auditSerialized).not.toContain('NewPassword2026');
+      expect(auditSerialized).not.toContain('$2');
+    });
+
+    it('sai mật khẩu hiện tại trả 400 (không 401), không đổi mật khẩu và không tăng token_version', async () => {
+      const oldHash = await bcrypt.hash('123456', 4);
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'u-staff',
+        username: 'nhanvien',
+        passwordHash: oldHash,
+        status: 'active',
+      });
+
+      await expect(
+        service.changePassword('u-staff', {
+          currentPassword: 'wrong-password',
+          newPassword: 'NewPassword2026',
+          confirmPassword: 'NewPassword2026',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(prismaMock.$transaction).not.toHaveBeenCalled();
+      expect(txMock.user.update).not.toHaveBeenCalled();
+    });
+
+    it('mật khẩu mới trùng mật khẩu hiện tại trả 400 có errors[field=newPassword]', async () => {
+      const oldHash = await bcrypt.hash('SamePass2026', 4);
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'u-staff',
+        username: 'nhanvien',
+        passwordHash: oldHash,
+        status: 'active',
+      });
+
+      try {
+        await service.changePassword('u-staff', {
+          currentPassword: 'SamePass2026',
+          newPassword: 'SamePass2026',
+          confirmPassword: 'SamePass2026',
+        });
+        fail('Phải ném BadRequestException');
+      } catch (err) {
+        expect(err).toBeInstanceOf(BadRequestException);
+        const body = (err as BadRequestException).getResponse() as {
+          errors: Array<{ field: string; message: string }>;
+        };
+        expect(body.errors[0].field).toBe('newPassword');
+      }
+      expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('confirmPassword không khớp trả 400 có errors[field=confirmPassword]', async () => {
+      try {
+        await service.changePassword('u-staff', {
+          currentPassword: '123456',
+          newPassword: 'NewPassword2026',
+          confirmPassword: 'DifferentPassword2026',
+        });
+        fail('Phải ném BadRequestException');
+      } catch (err) {
+        expect(err).toBeInstanceOf(BadRequestException);
+        const body = (err as BadRequestException).getResponse() as {
+          errors: Array<{ field: string; message: string }>;
+        };
+        expect(body.errors[0].field).toBe('confirmPassword');
+      }
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
     });
   });
 });

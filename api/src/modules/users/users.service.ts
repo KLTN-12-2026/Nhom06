@@ -8,12 +8,19 @@ import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { writeAuditLog } from '../../common/utils/audit-log.util';
 import { PrismaService } from '../../prisma/prisma.service';
-import { assertNotSelfLock, assertNotSelfRoleChange } from './domain/user-policy';
+import {
+  assertPasswordConfirmationMatch,
+  BCRYPT_COST,
+} from '../auth/domain/password-policy';
+import {
+  assertNotSelfLock,
+  assertNotSelfPasswordReset,
+  assertNotSelfRoleChange,
+} from './domain/user-policy';
 import { CreateUserDto } from './dto/create-user.dto';
 import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
-const BCRYPT_COST = 10;
 
 export interface UserResponse {
   id: string;
@@ -345,5 +352,51 @@ export class UsersService {
       ...toUserResponse(existing),
       role: { code: newRole.code, name: newRole.name },
     };
+  }
+
+  async resetPassword(
+    targetUserId: string,
+    dto: ResetPasswordDto,
+    actorUserId: string,
+  ): Promise<void> {
+    assertNotSelfPasswordReset(actorUserId, targetUserId);
+    assertPasswordConfirmationMatch(dto.newPassword, dto.confirmPassword);
+
+    const target = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: {
+        id: true,
+        username: true,
+        status: true,
+      },
+    });
+
+    if (!target) {
+      throw new NotFoundException('Không tìm thấy tài khoản người dùng');
+    }
+
+    // Băm ngoài transaction; không so mật khẩu cũ của user đích (tránh oracle lộ thông tin) và không đổi status
+    const nextPasswordHash = await bcrypt.hash(dto.newPassword, BCRYPT_COST);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: target.id },
+        data: {
+          passwordHash: nextPasswordHash,
+          tokenVersion: { increment: 1 },
+        },
+      });
+
+      await writeAuditLog(tx, {
+        actorUserId,
+        eventType: 'USER_PASSWORD_RESET',
+        entityType: 'user',
+        entityId: target.id,
+        newData: {
+          username: target.username,
+          sessionsInvalidated: true,
+        },
+      });
+    });
   }
 }

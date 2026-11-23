@@ -5,11 +5,16 @@ import {
   fetchRoles,
   fetchUsers,
   type ListUsersParams,
+  resetUserPassword,
   updateUserProfile,
   updateUserRole,
   updateUserStatus,
 } from './api';
-import { type CreateUserPayload, type UpdateUserProfilePayload } from './types';
+import {
+  type CreateUserPayload,
+  type ResetUserPasswordPayload,
+  type UpdateUserProfilePayload,
+} from './types';
 
 export function useUsersQuery(params: ListUsersParams, enabled = true) {
   return useQuery({
@@ -75,5 +80,12 @@ export function useUpdateUserRoleMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['users'] });
     },
+  });
+}
+
+export function useResetUserPasswordMutation() {
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: ResetUserPasswordPayload }) =>
+      resetUserPassword(id, payload),
   });
 }

@@ -1,9 +1,20 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { AuthenticatedRole, AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { writeAuditLog } from '../../common/utils/audit-log.util';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  assertNewPasswordDifferent,
+  assertPasswordConfirmationMatch,
+  BCRYPT_COST,
+} from './domain/password-policy';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 
 export interface AuthUserResponse {
@@ -108,6 +119,76 @@ export class AuthService {
     await this.prisma.user.update({
       where: { id: userId },
       data: { tokenVersion: { increment: 1 } },
+    });
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    assertPasswordConfirmationMatch(dto.newPassword, dto.confirmPassword);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        username: true,
+        passwordHash: true,
+        status: true,
+      },
+    });
+
+    if (!user || user.status !== 'active') {
+      throw new UnauthorizedException('Phiên đăng nhập không hợp lệ hoặc đã hết hạn');
+    }
+
+    // Kiểm tra mật khẩu hiện tại trước để tránh lộ thông tin hash khi kẻ tấn công dò mật khẩu mới
+    const currentMatches = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!currentMatches) {
+      throw new BadRequestException({
+        message: 'Mật khẩu hiện tại không đúng',
+        errors: [
+          {
+            field: 'currentPassword',
+            message: 'Mật khẩu hiện tại không đúng',
+          },
+        ],
+      });
+    }
+
+    assertNewPasswordDifferent(dto.currentPassword, dto.newPassword);
+    const sameAsCurrentHash = await bcrypt.compare(dto.newPassword, user.passwordHash);
+    if (sameAsCurrentHash) {
+      throw new BadRequestException({
+        message: 'Mật khẩu mới không được trùng mật khẩu hiện tại',
+        errors: [
+          {
+            field: 'newPassword',
+            message: 'Mật khẩu mới không được trùng mật khẩu hiện tại',
+          },
+        ],
+      });
+    }
+
+    // Băm mật khẩu ngoài transaction để không giữ kết nối DB trong lúc CPU xử lý bcrypt
+    const nextPasswordHash = await bcrypt.hash(dto.newPassword, BCRYPT_COST);
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: {
+          passwordHash: nextPasswordHash,
+          tokenVersion: { increment: 1 },
+        },
+      });
+
+      await writeAuditLog(tx, {
+        actorUserId: user.id,
+        eventType: 'USER_PASSWORD_CHANGED',
+        entityType: 'user',
+        entityId: user.id,
+        newData: {
+          username: user.username,
+          sessionsInvalidated: true,
+        },
+      });
     });
   }
 

@@ -2,6 +2,7 @@ import { apiFetch } from '@/lib/api';
 import {
   type CreateUserPayload,
   type PermissionMatrixResponse,
+  type ResetUserPasswordPayload,
   type RoleOption,
   type UpdateUserProfilePayload,
   type UserItem,
@@ -49,6 +50,13 @@ export function updateUserRole(id: string, roleCode: string): Promise<UserItem> 
   return apiFetch<UserItem>(`/users/${id}/role`, {
     method: 'PUT',
     body: JSON.stringify({ roleCode }),
+  });
+}
+
+export function resetUserPassword(id: string, payload: ResetUserPasswordPayload): Promise<void> {
+  return apiFetch<void>(`/users/${id}/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
   });
 }
 
