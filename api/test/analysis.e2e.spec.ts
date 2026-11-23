@@ -330,22 +330,30 @@ describe('Risk Analysis & Pipeline API E2E trên PostgreSQL thật + MlClient mo
       .set('Authorization', `Bearer ${staffToken}`)
       .expect(200);
 
-    // Tạo sẵn 1 đề xuất + quyết định đã duyệt gắn với lượt 1 (bất biến 8)
+    // Dùng đề xuất do lượt 1 đã sinh (T-014) và gắn quyết định đã duyệt để kiểm bất biến 8
     const assessment = await prisma.lotRiskAssessment.findUniqueOrThrow({
       where: { analysisRunId_lotId: { analysisRunId: run1Id, lotId: lot.id } },
     });
-    const proposal = await prisma.treatmentProposal.create({
-      data: {
-        riskAssessmentId: assessment.id,
-        lotId: lot.id,
-        actionType: 'CONTACT_AGENCY',
-        proposedQty: new Prisma.Decimal('60'),
-        rationale: 'Đề xuất kiểm thử bất biến 8',
-        sourceRunId: run1Id,
-        status: 'approved',
-        snapshot: { ruleCode: 'TEST_RULE' },
-      },
+    const existingProposal = await prisma.treatmentProposal.findFirst({
+      where: { lotId: lot.id, sourceRunId: run1Id },
     });
+    const proposal = existingProposal
+      ? await prisma.treatmentProposal.update({
+          where: { id: existingProposal.id },
+          data: { status: 'approved' },
+        })
+      : await prisma.treatmentProposal.create({
+          data: {
+            riskAssessmentId: assessment.id,
+            lotId: lot.id,
+            actionType: 'CONTACT_AGENCY',
+            proposedQty: new Prisma.Decimal('60'),
+            rationale: 'Đề xuất kiểm thử bất biến 8',
+            sourceRunId: run1Id,
+            status: 'approved',
+            snapshot: { ruleCode: 'TEST_RULE' },
+          },
+        });
     const decisionBefore = await prisma.proposalDecision.create({
       data: {
         proposalId: proposal.id,

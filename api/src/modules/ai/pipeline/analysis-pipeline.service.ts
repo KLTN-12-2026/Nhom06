@@ -4,6 +4,7 @@ import {
   HttpException,
   Injectable,
   Logger,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -11,7 +12,15 @@ import { formatDateOnly, getVnTodayDateString } from '../../expiry/domain/vn-dat
 import { ExpiryThresholdsService } from '../../expiry/expiry-thresholds.service';
 import { ForecastRunMetrics, ForecastService } from '../forecast/forecast.service';
 import { MlServiceError } from '../forecast/ml-client.service';
-import { computeLotRisks, RiskLotInput } from '../risk/domain/lot-risk.domain';
+import { buildLlmInput, LlmExplanationInput } from '../proposals/domain/llm-guard';
+import { ACTIVE_PROPOSAL_STATUSES, decideProposal } from '../proposals/domain/rules';
+import { ExplainBatchTask, ProposalsLlmService } from '../proposals/proposals-llm.service';
+import {
+  ComputedLotRisk,
+  computeLotRisks,
+  QUANTITY_DECIMAL_PLACES,
+  RiskLotInput,
+} from '../risk/domain/lot-risk.domain';
 import { ActualDemandSyncService } from './actual-demand-sync.service';
 
 export type AnalysisTriggerType = 'MANUAL' | 'SCHEDULED' | 'STOCK_CHANGE';
@@ -42,6 +51,8 @@ export interface FullAnalysisMetrics {
     low: number;
   };
   surplusLotCount: number;
+  createdProposals: number;
+  skippedProposals: number;
   actualSyncedCount: number;
   forecast: ForecastRunMetrics;
   warnings: AnalysisWarning[];
@@ -106,6 +117,7 @@ export class AnalysisPipelineService {
     private readonly forecastService: ForecastService,
     private readonly expiryThresholdsService: ExpiryThresholdsService,
     private readonly actualDemandSyncService: ActualDemandSyncService,
+    @Optional() private readonly proposalsLlmService?: ProposalsLlmService,
   ) {}
 
   /**
@@ -168,6 +180,7 @@ export class AnalysisPipelineService {
               id: true,
               code: true,
               name: true,
+              unit: true,
               status: true,
             },
           },
@@ -182,7 +195,7 @@ export class AnalysisPipelineService {
       const lotsByProduct = new Map<
         string,
         {
-          product: { id: string; code: string; name: string; status: string };
+          product: { id: string; code: string; name: string; unit: string; status: string };
           lots: RiskLotInput[];
         }
       >();
@@ -213,6 +226,13 @@ export class AnalysisPipelineService {
 
       // Bước 4: Tính tồn dư theo lô; sản phẩm thiếu dự báo không tạo kết quả giả mà ghi warnings (PB22 AC8)
       const riskRows: Prisma.LotRiskAssessmentCreateManyInput[] = [];
+      const computedByLotId = new Map<
+        string,
+        {
+          computed: ComputedLotRisk;
+          product: { id: string; code: string; name: string; unit: string };
+        }
+      >();
       const warnings: AnalysisWarning[] = [];
       const riskCounts = { expired: 0, high: 0, medium: 0, low: 0 };
       let surplusLotCount = 0;
@@ -262,6 +282,15 @@ export class AnalysisPipelineService {
             riskLevel: item.riskLevel,
             basis: item.basis as unknown as Prisma.InputJsonValue,
           });
+          computedByLotId.set(item.lotId, {
+            computed: item,
+            product: {
+              id: group.product.id,
+              code: group.product.code,
+              name: group.product.name,
+              unit: group.product.unit,
+            },
+          });
 
           if (item.isExpired || item.riskLevel === 'critical') {
             riskCounts.expired += 1;
@@ -279,34 +308,168 @@ export class AnalysisPipelineService {
         }
       }
 
-      const metrics: FullAnalysisMetrics = {
-        evaluationDate,
-        minDeliveryDays,
-        lotCount: riskRows.length,
-        riskCounts,
-        surplusLotCount,
-        actualSyncedCount,
-        forecast: forecastBundle.metrics,
-        warnings,
-      };
-
-      // Bước 5: Lưu toàn bộ kết quả lượt phân tích trong một DB transaction nguyên tử ở cuối
-      const finishedRun = await this.prisma.$transaction(async (tx) => {
+      // Bước 5: Lưu toàn bộ kết quả lượt phân tích + sinh đề xuất xử lý trong một DB transaction nguyên tử
+      const { finishedRun, metrics, llmTasks } = await this.prisma.$transaction(async (tx) => {
         if (forecastBundle.forecastRows.length > 0) {
           await tx.demandForecast.createMany({ data: forecastBundle.forecastRows });
         }
-        if (riskRows.length > 0) {
-          await tx.lotRiskAssessment.createMany({ data: riskRows });
+
+        const createdAssessments =
+          riskRows.length > 0
+            ? await tx.lotRiskAssessment.createManyAndReturn({
+                data: riskRows,
+                select: { id: true, lotId: true },
+              })
+            : [];
+
+        // T-014: áp bộ quy tắc đề xuất xử lý cho từng lô có tồn dư > 0, bỏ qua lô đã có đề xuất đang hoạt động
+        const proposalCandidates: Array<{
+          lotId: string;
+          riskAssessmentId: string;
+          computed: ComputedLotRisk;
+          product: { id: string; code: string; name: string; unit: string };
+          decision: NonNullable<ReturnType<typeof decideProposal>>;
+          llmInput: LlmExplanationInput;
+        }> = [];
+
+        for (const assessment of createdAssessments) {
+          const ctx = computedByLotId.get(assessment.lotId);
+          if (!ctx) {
+            continue;
+          }
+          const decision = decideProposal({
+            riskLevel: ctx.computed.riskLevel,
+            isExpired: ctx.computed.isExpired,
+            daysRemaining: ctx.computed.daysRemaining,
+            expiryDate: ctx.computed.expiryDate,
+            onHandSnapshot: ctx.computed.onHandSnapshot,
+            allocatedDemand: ctx.computed.allocatedDemand,
+            estimatedSurplus: ctx.computed.estimatedSurplus,
+          });
+          if (!decision) {
+            continue;
+          }
+
+          const llmInput = buildLlmInput({
+            lotCode: ctx.computed.lotCode,
+            productCode: ctx.product.code,
+            expiryDate: ctx.computed.expiryDate,
+            daysRemaining: ctx.computed.daysRemaining,
+            onHandSnapshot: ctx.computed.onHandSnapshot,
+            allocatedDemand: ctx.computed.allocatedDemand,
+            estimatedConsumption: ctx.computed.estimatedConsumption,
+            estimatedSurplus: ctx.computed.estimatedSurplus,
+            riskLevel: ctx.computed.riskLevel,
+            actionType: decision.actionType,
+            proposedQty: ctx.computed.estimatedSurplus,
+            allowedActions: decision.allowedActions,
+          });
+
+          proposalCandidates.push({
+            lotId: assessment.lotId,
+            riskAssessmentId: assessment.id,
+            computed: ctx.computed,
+            product: ctx.product,
+            decision,
+            llmInput,
+          });
         }
 
-        // T-014: sinh treatment_proposals cho các lô có tồn dư > 0 trong cùng transaction
+        const candidateLotIds = proposalCandidates.map((item) => item.lotId);
+        const existingActive =
+          candidateLotIds.length > 0
+            ? await tx.treatmentProposal.findMany({
+                where: {
+                  lotId: { in: candidateLotIds },
+                  status: { in: [...ACTIVE_PROPOSAL_STATUSES] },
+                },
+                select: { lotId: true },
+              })
+            : [];
+        const activeLotIdSet = new Set(existingActive.map((row) => row.lotId));
 
-        return tx.analysisRun.update({
+        let skippedProposals = 0;
+        const proposalsToCreate: Prisma.TreatmentProposalCreateManyInput[] = [];
+        const llmInputByLotId = new Map<string, LlmExplanationInput>();
+
+        for (const candidate of proposalCandidates) {
+          if (activeLotIdSet.has(candidate.lotId)) {
+            skippedProposals += 1;
+            continue;
+          }
+
+          const snapshot = {
+            evaluationDate,
+            expiryDate: candidate.computed.expiryDate,
+            daysRemaining: candidate.computed.daysRemaining,
+            isExpired: candidate.computed.isExpired,
+            lotCode: candidate.computed.lotCode,
+            productCode: candidate.product.code,
+            productName: candidate.product.name,
+            productUnit: candidate.product.unit,
+            onHandSnapshot: candidate.computed.onHandSnapshot.toFixed(QUANTITY_DECIMAL_PLACES),
+            allocatedDemand: candidate.computed.allocatedDemand.toFixed(QUANTITY_DECIMAL_PLACES),
+            estimatedConsumption: candidate.computed.estimatedConsumption.toFixed(
+              QUANTITY_DECIMAL_PLACES,
+            ),
+            estimatedSurplus: candidate.computed.estimatedSurplus.toFixed(QUANTITY_DECIMAL_PLACES),
+            riskLevel: candidate.computed.riskLevel,
+            actionType: candidate.decision.actionType,
+            proposedQty: candidate.computed.estimatedSurplus.toFixed(QUANTITY_DECIMAL_PLACES),
+            allowedActions: candidate.decision.allowedActions,
+            ruleCode: candidate.decision.ruleCode,
+            ruleSummaryText: candidate.decision.ruleSummaryText,
+            llmInput: candidate.llmInput,
+          };
+
+          proposalsToCreate.push({
+            riskAssessmentId: candidate.riskAssessmentId,
+            lotId: candidate.lotId,
+            actionType: candidate.decision.actionType,
+            proposedQty: candidate.computed.estimatedSurplus,
+            rationale: candidate.decision.ruleSummaryText,
+            sourceRunId: run.id,
+            status: 'pending',
+            snapshot: snapshot as unknown as Prisma.InputJsonValue,
+          });
+          llmInputByLotId.set(candidate.lotId, candidate.llmInput);
+        }
+
+        const createdProposals =
+          proposalsToCreate.length > 0
+            ? await tx.treatmentProposal.createManyAndReturn({
+                data: proposalsToCreate,
+                select: { id: true, lotId: true },
+              })
+            : [];
+
+        const batchTasks: ExplainBatchTask[] = [];
+        for (const created of createdProposals) {
+          const llmInput = llmInputByLotId.get(created.lotId);
+          if (llmInput) {
+            batchTasks.push({ proposalId: created.id, llmInput });
+          }
+        }
+
+        const finalMetrics: FullAnalysisMetrics = {
+          evaluationDate,
+          minDeliveryDays,
+          lotCount: riskRows.length,
+          riskCounts,
+          surplusLotCount,
+          createdProposals: createdProposals.length,
+          skippedProposals,
+          actualSyncedCount,
+          forecast: forecastBundle.metrics,
+          warnings,
+        };
+
+        const updatedRun = await tx.analysisRun.update({
           where: { id: run.id },
           data: {
             status: 'succeeded',
             modelVersion: forecastBundle.modelVersion,
-            metrics: metrics as unknown as Prisma.InputJsonValue,
+            metrics: finalMetrics as unknown as Prisma.InputJsonValue,
             finishedAt: new Date(),
           },
           select: {
@@ -328,7 +491,24 @@ export class AnalysisPipelineService {
             },
           },
         });
+
+        return {
+          finishedRun: updatedRun,
+          metrics: finalMetrics,
+          llmTasks: batchTasks,
+        };
       });
+
+      // Bước 6 (SAU commit): gọi LLM diễn giải cho từng đề xuất mới (giới hạn đồng thời 3).
+      // Lỗi/timeout từ LLM tuyệt đối không làm hỏng trạng thái succeeded của lượt phân tích (bất biến 7).
+      if (llmTasks.length > 0 && this.proposalsLlmService) {
+        try {
+          await this.proposalsLlmService.explainProposalsBatch(llmTasks, 3);
+        } catch (llmError) {
+          const detail = llmError instanceof Error ? llmError.message : String(llmError);
+          this.logger.warn(`Lỗi diễn giải LLM sau lượt phân tích ${run.id}: ${detail}`);
+        }
+      }
 
       return {
         id: finishedRun.id,
