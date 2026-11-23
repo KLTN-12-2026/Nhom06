@@ -141,7 +141,8 @@ model ProductGroup {
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  products Product[]
+  products         Product[]
+  expiryThresholds ExpiryThreshold[]
 
   @@map("product_groups")
 }
@@ -163,6 +164,7 @@ model Product {
   agencyOrderItems    AgencyOrderItem[]
   demandForecasts     DemandForecast[]
   demandHistories     DemandHistory[]
+  expiryThresholds    ExpiryThreshold[]
 
   @@map("products")
 }
@@ -447,18 +449,25 @@ model OutboundReceiptItem {
 // ============================================================================
 
 model ExpiryThreshold {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  warningDays   Int       @map("warning_days")
-  criticalDays  Int       @default(0) @map("critical_days")
-  effectiveFrom DateTime  @map("effective_from") @db.Date
-  effectiveTo   DateTime? @map("effective_to") @db.Date
-  createdBy     String    @map("created_by") @db.Uuid
-  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope           String    @default("GLOBAL") @db.VarChar(20)
+  productGroupId  String?   @map("product_group_id") @db.Uuid
+  productId       String?   @map("product_id") @db.Uuid
+  warningDays     Int       @map("warning_days")
+  criticalDays    Int       @default(0) @map("critical_days")
+  minDeliveryDays Int?      @map("min_delivery_days")
+  effectiveFrom   DateTime  @map("effective_from") @db.Date
+  effectiveTo     DateTime? @map("effective_to") @db.Date
+  createdBy       String    @map("created_by") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
+  productGroup ProductGroup? @relation(fields: [productGroupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product      Product?      @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   creator      User          @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
   expiryAlerts ExpiryAlert[]
 
+  @@index([scope, effectiveFrom, effectiveTo])
   @@map("expiry_thresholds")
 }
 

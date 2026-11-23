@@ -74,6 +74,24 @@ export function formatShelfLife(days: number | null | undefined): string {
   return `${viNumberFormatter.format(days)} ngày`;
 }
 
+export function getVnTodayIso(now: Date = new Date()): string {
+  return vnIsoDateFormatter.format(now);
+}
+
+/**
+ * Định dạng chuỗi YYYY-MM-DD sang dd/MM/yyyy không bị lệch múi giờ trình duyệt.
+ */
+export function formatDateVi(isoDate: string | null | undefined): string {
+  if (!isoDate) {
+    return '—';
+  }
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(isoDate.trim());
+  if (!match) {
+    return isoDate;
+  }
+  return `${match[3]}/${match[2]}/${match[1]}`;
+}
+
 /**
  * Định dạng ngày nghiệp vụ YYYY-MM-DD → dd/MM/yyyy không qua Date cục bộ để tránh lệch múi giờ.
  */

@@ -53,6 +53,7 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-}
       LLM_TIMEOUT_MS: ${LLM_TIMEOUT_MS:-20000}
+      EXPIRY_CRON_ENABLED: ${EXPIRY_CRON_ENABLED:-true}
       CORS_ORIGIN: http://localhost:${WEB_PORT:-5173}
     ports:
       - "${API_PORT:-3000}:3000"

@@ -590,6 +590,111 @@ describe('Ràng buộc và lược đồ PostgreSQL (T-004)', () => {
     ).rejects.toThrow(/chk_expiry_thresholds_critical_days/);
   });
 
+  // T-011 AC3: D-019 CHECK & partial unique index cho expiry_thresholds
+  it('từ chối expiry_thresholds sai nhất quán scope/target, min_delivery_days âm và chặn 2 bản đang hiệu lực cùng đối tượng', async () => {
+    // Sai scope/target: PRODUCT nhưng thiếu productId
+    await expect(
+      prisma.expiryThreshold.create({
+        data: {
+          scope: 'PRODUCT',
+          warningDays: 10,
+          effectiveFrom: new Date('2026-03-01'),
+          createdBy: userId,
+        },
+      }),
+    ).rejects.toThrow(/chk_expiry_thresholds_scope_target/);
+
+    // Sai min_delivery_days âm
+    await expect(
+      prisma.expiryThreshold.create({
+        data: {
+          scope: 'GLOBAL',
+          warningDays: 30,
+          criticalDays: 7,
+          minDeliveryDays: -1,
+          effectiveFrom: new Date('2026-03-01'),
+          effectiveTo: new Date('2026-03-02'),
+          createdBy: userId,
+        },
+      }),
+    ).rejects.toThrow(/chk_expiry_thresholds_min_delivery_days/);
+
+    // Partial unique index: không cho phép 2 bản PRODUCT đang hiệu lực (effective_to IS NULL) cùng productId
+    const activeProd = await prisma.expiryThreshold.create({
+      data: {
+        scope: 'PRODUCT',
+        productId,
+        warningDays: 12,
+        effectiveFrom: new Date('2026-03-01'),
+        effectiveTo: null,
+        createdBy: userId,
+      },
+    });
+
+    // Partial unique index: không cho phép 2 bản PRODUCT_GROUP đang hiệu lực cùng productGroupId
+    const activeGroup = await prisma.expiryThreshold.create({
+      data: {
+        scope: 'PRODUCT_GROUP',
+        productGroupId,
+        warningDays: 45,
+        effectiveFrom: new Date('2026-03-01'),
+        effectiveTo: null,
+        createdBy: userId,
+      },
+    });
+
+    const createdThresholdIds = [activeProd.id, activeGroup.id];
+    try {
+      await expect(
+        prisma.expiryThreshold.create({
+          data: {
+            scope: 'PRODUCT',
+            productId,
+            warningDays: 15,
+            effectiveFrom: new Date('2026-03-02'),
+            effectiveTo: null,
+            createdBy: userId,
+          },
+        }),
+      ).rejects.toThrow(/uq_expiry_thresholds_active_product|Unique constraint/);
+
+      await expect(
+        prisma.expiryThreshold.create({
+          data: {
+            scope: 'PRODUCT_GROUP',
+            productGroupId,
+            warningDays: 40,
+            effectiveFrom: new Date('2026-03-02'),
+            effectiveTo: null,
+            createdBy: userId,
+          },
+        }),
+      ).rejects.toThrow(/uq_expiry_thresholds_active_group|Unique constraint/);
+
+      // Sau khi đóng bản cũ (effective_to != NULL), tạo bản mới cho cùng productId thành công
+      await prisma.expiryThreshold.update({
+        where: { id: activeProd.id },
+        data: { effectiveTo: new Date('2026-03-05') },
+      });
+      const replacement = await prisma.expiryThreshold.create({
+        data: {
+          scope: 'PRODUCT',
+          productId,
+          warningDays: 18,
+          effectiveFrom: new Date('2026-03-05'),
+          effectiveTo: null,
+          createdBy: userId,
+        },
+      });
+      createdThresholdIds.push(replacement.id);
+      expect(replacement.id).toBeDefined();
+    } finally {
+      await prisma.expiryThreshold.deleteMany({
+        where: { id: { in: createdThresholdIds } },
+      });
+    }
+  });
+
   // AC3.10
   it('từ chối giá trị trạng thái và action_type ngoài danh sách cho phép', async () => {
     await expect(

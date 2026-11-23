@@ -4,6 +4,8 @@ import { AgenciesPage } from '@/features/agencies/pages/AgenciesPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
+import { ExpiryAlertsPage } from '@/features/expiry/pages/ExpiryAlertsPage';
+import { ExpiryThresholdsPage } from '@/features/expiry/pages/ExpiryThresholdsPage';
 import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
 import { InboundDetailPage } from '@/features/inbound/pages/InboundDetailPage';
 import { InboundFormPage } from '@/features/inbound/pages/InboundFormPage';
@@ -38,6 +40,8 @@ const IMPLEMENTED_PATHS = new Set([
   '/inbound',
   '/users',
   '/forecast',
+  '/expiry-alerts',
+  '/expiry-thresholds',
 ]);
 
 const placeholderRoutes = ALL_NAV_ITEMS.filter((item) => !IMPLEMENTED_PATHS.has(item.path)).map(
@@ -137,6 +141,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="forecast.read">
             <ForecastPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'expiry-alerts',
+        element: (
+          <ProtectedRoute requiredPermission="expiry.read">
+            <ExpiryAlertsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'expiry-thresholds',
+        element: (
+          <ProtectedRoute requiredPermission="expiry.read">
+            <ExpiryThresholdsPage />
           </ProtectedRoute>
         ),
       },

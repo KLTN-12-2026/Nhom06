@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks';
+import { useExpiryAlertsSummaryQuery } from '@/features/expiry/hooks';
 import { cn } from '@/lib/utils';
 import { ALL_NAV_ITEMS, filterNavGroups } from './navigation';
 import { type PageHeaderConfig, PageHeaderContext } from './page-header-context';
@@ -10,6 +11,14 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuth();
   const [headerOverride, setHeaderOverride] = useState<PageHeaderConfig | null>(null);
+
+  const canReadExpiry = Boolean(user) && hasPermission('expiry.read');
+  const expirySummaryQuery = useExpiryAlertsSummaryQuery(undefined, {
+    enabled: canReadExpiry,
+    retry: false,
+    staleTime: 60_000,
+  });
+  const expiryAlertCount = expirySummaryQuery.data?.totalAlertLots ?? 0;
 
   const visibleGroups = filterNavGroups(hasPermission);
   const visibleItems = visibleGroups.flatMap((group) => group.items);
@@ -58,14 +67,22 @@ export function AppLayout() {
                       end={item.path === '/'}
                       className={({ isActive }) =>
                         cn(
-                          'block border-l-[3px] py-2 pl-[17px] pr-5 text-sm transition-colors',
+                          'flex items-center justify-between gap-2 border-l-[3px] py-2 pl-[17px] pr-5 text-sm transition-colors',
                           isActive
                             ? 'border-white bg-[var(--brand-active)] font-medium text-white'
                             : 'border-transparent text-white/85 hover:bg-white/5 hover:text-white',
                         )
                       }
                     >
-                      {item.label}
+                      <span>{item.label}</span>
+                      {item.path === '/expiry-alerts' && expiryAlertCount > 0 && (
+                        <span
+                          aria-label={`${expiryAlertCount} lô cảnh báo cận hạn`}
+                          className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--risk-critical-fg)] px-1.5 text-xs font-semibold tabular-nums text-white"
+                        >
+                          {expiryAlertCount}
+                        </span>
+                      )}
                     </NavLink>
                   </li>
                 ))}
@@ -118,14 +135,19 @@ export function AppLayout() {
               end={item.path === '/'}
               className={({ isActive }) =>
                 cn(
-                  'shrink-0 border-b-2 px-4 py-2.5 text-sm whitespace-nowrap transition-colors',
+                  'inline-flex shrink-0 items-center gap-1.5 border-b-2 px-4 py-2.5 text-sm whitespace-nowrap transition-colors',
                   isActive
                     ? 'border-white bg-[var(--brand-active)] font-medium text-white'
                     : 'border-transparent text-white/80 hover:text-white',
                 )
               }
             >
-              {item.label}
+              <span>{item.label}</span>
+              {item.path === '/expiry-alerts' && expiryAlertCount > 0 && (
+                <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[var(--risk-critical-fg)] px-1.5 text-xs font-semibold tabular-nums text-white">
+                  {expiryAlertCount}
+                </span>
+              )}
             </NavLink>
           ))}
         </nav>
