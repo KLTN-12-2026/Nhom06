@@ -4,6 +4,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthenticatedUser } from '../../common/types/authenticated-user.type';
 import { AuthService, AuthUserResponse, LoginResponse } from './auth.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
 
 @ApiTags('Auth')
@@ -27,6 +28,18 @@ export class AuthController {
   @ApiNoContentResponse({ description: 'Đăng xuất thành công' })
   logout(@CurrentUser() user: AuthenticatedUser): Promise<void> {
     return this.authService.logout(user.id);
+  }
+
+  @Post('change-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tự đổi mật khẩu cho chính tài khoản đang đăng nhập và vô hiệu token cũ' })
+  @ApiNoContentResponse({ description: 'Đổi mật khẩu thành công' })
+  changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<void> {
+    return this.authService.changePassword(user.id, dto);
   }
 
   @Get('me')

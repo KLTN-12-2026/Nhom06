@@ -11,6 +11,7 @@ const ALLOWED_PUBLIC_ROUTES = new Set(['GET /health', 'POST /auth/login']);
 const ALLOWED_AUTHENTICATED_ONLY_ROUTES = new Set([
   'GET /auth/me',
   'POST /auth/logout',
+  'POST /auth/change-password',
   'GET /reports/dashboard',
 ]);
 

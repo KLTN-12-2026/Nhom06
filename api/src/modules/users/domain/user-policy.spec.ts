@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import {
   assertNotSelfLock,
+  assertNotSelfPasswordReset,
   assertNotSelfRoleChange,
   formatPermissionMatrix,
 } from './user-policy';
@@ -33,6 +34,19 @@ describe('user-policy (domain)', () => {
 
     it('cho phép đổi vai trò của người dùng khác', () => {
       expect(() => assertNotSelfRoleChange('admin-1', 'staff-2')).not.toThrow();
+    });
+  });
+
+  describe('assertNotSelfPasswordReset', () => {
+    it('chặn admin dùng route đặt lại mật khẩu cho chính mình (403)', () => {
+      expect(() => assertNotSelfPasswordReset('admin-1', 'admin-1')).toThrow(ForbiddenException);
+      expect(() => assertNotSelfPasswordReset('admin-1', 'admin-1')).toThrow(
+        'Hãy dùng chức năng Đổi mật khẩu',
+      );
+    });
+
+    it('cho phép admin đặt lại mật khẩu cho tài khoản khác', () => {
+      expect(() => assertNotSelfPasswordReset('admin-1', 'manager-2')).not.toThrow();
     });
   });
 

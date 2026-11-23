@@ -1,12 +1,16 @@
 import { createContext } from 'react';
 import { type AuthUser, type LoginPayload } from './types';
 
+export interface LogoutOptions {
+  skipServerRequest?: boolean;
+}
+
 export interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<AuthUser>;
-  logout: () => Promise<void>;
+  logout: (options?: LogoutOptions) => Promise<void>;
   hasPermission: (code?: string) => boolean;
 }
 

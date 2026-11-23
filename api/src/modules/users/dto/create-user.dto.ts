@@ -42,9 +42,9 @@ export class CreateUserDto {
   @MaxLength(30, { message: 'Số điện thoại không được vượt quá 30 ký tự' })
   phone?: string;
 
-  @ApiProperty({ example: '123456', minLength: 6 })
+  @ApiProperty({ example: 'MatKhau2026', minLength: 8 })
   @IsString({ message: 'Mật khẩu không hợp lệ' })
-  @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
+  @MinLength(8, { message: 'Mật khẩu phải có ít nhất 8 ký tự' })
   @MaxLength(100, { message: 'Mật khẩu không được vượt quá 100 ký tự' })
   password!: string;
 

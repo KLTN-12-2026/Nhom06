@@ -1,4 +1,10 @@
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UsersService } from './users.service';
 
@@ -213,5 +219,79 @@ describe('UsersService', () => {
       }),
     });
     expect(updated.role).toEqual({ code: 'WAREHOUSE_MANAGER', name: 'Quản lý kho' });
+  });
+
+  describe('resetPassword', () => {
+    it('chặn admin đặt lại mật khẩu cho chính mình (403)', async () => {
+      await expect(
+        service.resetPassword(
+          'admin-id',
+          { newPassword: 'ResetPassword2026', confirmPassword: 'ResetPassword2026' },
+          'admin-id',
+        ),
+      ).rejects.toThrow(new ForbiddenException('Hãy dùng chức năng Đổi mật khẩu'));
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('ném 400 nếu confirmPassword không khớp', async () => {
+      await expect(
+        service.resetPassword(
+          'manager-id',
+          { newPassword: 'ResetPassword2026', confirmPassword: 'OtherPassword2026' },
+          'admin-id',
+        ),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('ném 404 khi tài khoản đích không tồn tại', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.resetPassword(
+          'missing-id',
+          { newPassword: 'ResetPassword2026', confirmPassword: 'ResetPassword2026' },
+          'admin-id',
+        ),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('đặt lại mật khẩu thành công: băm bcrypt cost 10, tăng token_version, giữ nguyên status và ghi audit USER_PASSWORD_RESET không lộ mật khẩu', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'manager-id',
+        username: 'quanly',
+        status: 'locked',
+      });
+      txMock.user.update.mockResolvedValue({});
+      txMock.auditLog.create.mockResolvedValue({});
+
+      await service.resetPassword(
+        'manager-id',
+        { newPassword: 'ResetPassword2026', confirmPassword: 'ResetPassword2026' },
+        'admin-id',
+      );
+
+      expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+      const updateArg = txMock.user.update.mock.calls[0][0];
+      expect(updateArg.where).toEqual({ id: 'manager-id' });
+      expect(updateArg.data.tokenVersion).toEqual({ increment: 1 });
+      expect(updateArg.data).not.toHaveProperty('status');
+      expect(updateArg.data.passwordHash).toMatch(/^\$2[ab]\$10\$/);
+      await expect(bcrypt.compare('ResetPassword2026', updateArg.data.passwordHash)).resolves.toBe(
+        true,
+      );
+
+      expect(txMock.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          actorUserId: 'admin-id',
+          eventType: 'USER_PASSWORD_RESET',
+          entityType: 'user',
+          entityId: 'manager-id',
+        }),
+      });
+      const auditSerialized = JSON.stringify(txMock.auditLog.create.mock.calls[0][0]);
+      expect(auditSerialized).not.toContain('ResetPassword2026');
+      expect(auditSerialized).not.toContain('$2');
+    });
   });
 });

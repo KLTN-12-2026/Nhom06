@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { ChangePasswordDialog } from '@/features/auth/components/ChangePasswordDialog';
 import { useAuth } from '@/features/auth/hooks';
 import { useExpiryAlertsSummaryQuery } from '@/features/expiry/hooks';
 import { useProposalsSummaryQuery } from '@/features/proposals/hooks';
@@ -12,6 +13,7 @@ export function AppLayout() {
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuth();
   const [headerOverride, setHeaderOverride] = useState<PageHeaderConfig | null>(null);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const canReadExpiry = Boolean(user) && hasPermission('expiry.read');
   const expirySummaryQuery = useExpiryAlertsSummaryQuery(undefined, {
@@ -110,8 +112,15 @@ export function AppLayout() {
 
         <div className="border-t border-white/10 px-5 py-4">
           <div className="truncate text-sm font-medium">{user?.fullName ?? 'Chưa đăng nhập'}</div>
-          <div className="mt-1 flex items-center justify-between gap-2">
-            <span className="truncate text-xs text-white/60">{user?.role?.name ?? ''}</span>
+          <div className="mt-0.5 truncate text-xs text-white/60">{user?.role?.name ?? ''}</div>
+          <div className="mt-3 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setChangePasswordOpen(true)}
+              className="flex-1 rounded border border-white/30 px-2 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
+            >
+              Đổi mật khẩu
+            </button>
             <button
               type="button"
               onClick={() => void handleLogout()}
@@ -166,17 +175,26 @@ export function AppLayout() {
           ))}
         </nav>
 
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+        <div className="flex items-center justify-between gap-2 px-4 py-2.5">
           <span className="min-w-0 truncate text-sm font-medium">
             {user?.fullName ?? 'Chưa đăng nhập'}
           </span>
-          <button
-            type="button"
-            onClick={() => void handleLogout()}
-            className="shrink-0 rounded border border-white/30 px-2.5 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
-          >
-            Đăng xuất
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setChangePasswordOpen(true)}
+              className="shrink-0 rounded border border-white/30 px-2.5 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
+            >
+              Đổi mật khẩu
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              className="shrink-0 rounded border border-white/30 px-2.5 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
+            >
+              Đăng xuất
+            </button>
+          </div>
         </div>
       </div>
 
@@ -196,6 +214,8 @@ export function AppLayout() {
           </main>
         </div>
       </PageHeaderContext.Provider>
+
+      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { ApiError } from '@/lib/api';
 import { CreateUserDialog } from '../components/CreateUserDialog';
 import { EditUserDialog } from '../components/EditUserDialog';
 import { PermissionMatrixCard } from '../components/PermissionMatrixCard';
+import { ResetPasswordDialog } from '../components/ResetPasswordDialog';
 import { RoleNotesCard } from '../components/RoleNotesCard';
 import {
   usePermissionMatrixQuery,
@@ -36,6 +37,7 @@ export function UsersPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
+  const [resetPasswordTarget, setResetPasswordTarget] = useState<UserItem | null>(null);
   const [statusTarget, setStatusTarget] = useState<UserItem | null>(null);
 
   const canManageUsers = hasPermission('users.manage');
@@ -150,7 +152,7 @@ export function UsersPage() {
                       <TableHead>Họ tên</TableHead>
                       <TableHead>Vai trò</TableHead>
                       <TableHead>Trạng thái</TableHead>
-                      {canManageUsers && <TableHead className="w-28 text-right">Thao tác</TableHead>}
+                      {canManageUsers && <TableHead className="w-56 text-right">Thao tác</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -185,20 +187,32 @@ export function UsersPage() {
                               className="whitespace-nowrap text-right"
                               onClick={(event) => event.stopPropagation()}
                             >
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                disabled={isSelf && isActive}
-                                title={
-                                  isSelf && isActive
-                                    ? 'Không thể tự khoá tài khoản đang đăng nhập'
-                                    : undefined
-                                }
-                                onClick={() => setStatusTarget(item)}
-                              >
-                                {isActive ? 'Khoá' : 'Mở khoá'}
-                              </Button>
+                              <div className="inline-flex items-center justify-end gap-2">
+                                {!isSelf && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setResetPasswordTarget(item)}
+                                  >
+                                    Đặt lại mật khẩu
+                                  </Button>
+                                )}
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isSelf && isActive}
+                                  title={
+                                    isSelf && isActive
+                                      ? 'Không thể tự khoá tài khoản đang đăng nhập'
+                                      : undefined
+                                  }
+                                  onClick={() => setStatusTarget(item)}
+                                >
+                                  {isActive ? 'Khoá' : 'Mở khoá'}
+                                </Button>
+                              </div>
                             </TableCell>
                           )}
                         </TableRow>
@@ -240,6 +254,16 @@ export function UsersPage() {
         onOpenChange={(open) => {
           if (!open) {
             setEditingUser(null);
+          }
+        }}
+        onSuccess={(message) => showToast(message)}
+      />
+
+      <ResetPasswordDialog
+        user={resetPasswordTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setResetPasswordTarget(null);
           }
         }}
         onSuccess={(message) => showToast(message)}

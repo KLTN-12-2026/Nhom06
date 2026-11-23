@@ -36,6 +36,12 @@ export function assertNotSelfRoleChange(actorUserId: string, targetUserId: strin
   }
 }
 
+export function assertNotSelfPasswordReset(actorUserId: string, targetUserId: string): void {
+  if (actorUserId === targetUserId) {
+    throw new ForbiddenException('Hãy dùng chức năng Đổi mật khẩu');
+  }
+}
+
 export function sortRolesForDisplay<T extends { code: string }>(roles: readonly T[]): T[] {
   return [...roles].sort((a, b) => {
     const idxA = ROLE_DISPLAY_ORDER.indexOf(a.code);

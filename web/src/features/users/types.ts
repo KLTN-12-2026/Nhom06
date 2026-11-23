@@ -30,6 +30,11 @@ export interface UpdateUserProfilePayload {
   phone?: string | null;
 }
 
+export interface ResetUserPasswordPayload {
+  newPassword: string;
+  confirmPassword: string;
+}
+
 export interface RoleOption {
   id: string;
   code: string;
