@@ -1116,4 +1116,34 @@ describe('Proposal Decisions & Executions E2E trên PostgreSQL thật (T-015 AC1
     expect(execAfter.status).toBe('in_progress');
     expect(execAfter.actualQty?.toString()).toBe('50');
   });
+
+  it('T-022: quanly không có outbound.create nhưng vẫn lập phiếu hủy qua POST /api/executions/:id/disposal (201)', async () => {
+    const fDisp = await createPendingProposalFixture({
+      suffix: 'T022_MGR_DISP',
+      daysFromToday: -3,
+      onHandQty: '20',
+      actionType: 'DISPOSE',
+    });
+
+    const approved = await request(app.getHttpServer())
+      .post(`/api/proposals/${fDisp.proposal.id}/approve`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({ note: 'Quản lý duyệt hủy lô T-022' })
+      .expect(201);
+    const executionId = approved.body.execution.id as string;
+
+    const dispRes = await request(app.getHttpServer())
+      .post(`/api/executions/${executionId}/disposal`)
+      .set('Authorization', `Bearer ${managerToken}`)
+      .send({ quantity: '20', notes: 'Quản lý lập phiếu hủy T-022' })
+      .expect(201);
+
+    expect(dispRes.body.outboundReceipt.outboundType).toBe('DISPOSAL');
+    expect(dispRes.body.outboundReceipt.status).toBe('confirmed');
+
+    const bal = await prisma.inventoryLotBalance.findUniqueOrThrow({
+      where: { lotId: fDisp.lot.id },
+    });
+    expect(bal.onHandQty.toString()).toBe('0');
+  });
 });

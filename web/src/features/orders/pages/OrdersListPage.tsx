@@ -16,7 +16,8 @@ import { type AgencyOrderSummary } from '../types';
 export function OrdersListPage() {
   const { hasPermission } = useAuth();
   const canCreate = hasPermission('orders.create');
-  const canConfirmOutbound = hasPermission('outbound.confirm');
+  const canCreateOutbound =
+    hasPermission('outbound.create') && hasPermission('outbound.confirm');
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -108,7 +109,7 @@ export function OrdersListPage() {
         align: 'right',
         cellClassName: 'whitespace-nowrap',
         render: (row) =>
-          canConfirmOutbound && (row.status === 'confirmed' || row.status === 'partial') ? (
+          canCreateOutbound && (row.status === 'confirmed' || row.status === 'partial') ? (
             <Button
               asChild
               size="sm"
@@ -119,7 +120,7 @@ export function OrdersListPage() {
           ) : null,
       },
     ],
-    [canConfirmOutbound],
+    [canCreateOutbound],
   );
 
   const pendingCount = ordersQuery.data?.pendingCount ?? 0;

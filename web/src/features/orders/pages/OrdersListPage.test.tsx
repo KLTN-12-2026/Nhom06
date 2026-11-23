@@ -79,7 +79,7 @@ describe('OrdersListPage (AC10)', () => {
     localStorage.clear();
   });
 
-  it('hiển thị danh sách đơn đúng cột, ẩn nút Tạo đơn mới với quản lý nhưng vẫn cho Tạo phiếu xuất', async () => {
+  it('hiển thị danh sách đơn đúng cột, ẩn nút Tạo đơn mới và Tạo phiếu xuất với quản lý (thiếu orders.create và outbound.create)', async () => {
     const managerUser: AuthUser = {
       id: 'u-mgr',
       username: 'quanly',
@@ -111,6 +111,45 @@ describe('OrdersListPage (AC10)', () => {
     expect(screen.getByText('Đại lý Minh Tâm Hải Châu')).toBeInTheDocument();
     expect(screen.getByText('1 đơn chờ xuất')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Tạo đơn mới' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Tạo phiếu xuất' })).not.toBeInTheDocument();
+  });
+
+  it('hiển thị nút Tạo đơn mới và Tạo phiếu xuất cho nhân viên có đủ outbound.create và outbound.confirm', async () => {
+    const staffUser: AuthUser = {
+      id: 'u-staff',
+      username: 'nhanvien',
+      fullName: 'Trương Thành Lê',
+      role: { code: 'WAREHOUSE_STAFF', name: 'Nhân viên kho' },
+      permissions: [
+        'orders.read',
+        'orders.create',
+        'outbound.read',
+        'outbound.create',
+        'outbound.confirm',
+      ],
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => staffUser } as Response;
+      }
+      if (url.includes('/agencies')) {
+        return { ok: true, status: 200, json: async () => [] } as Response;
+      }
+      if (url.includes('/orders')) {
+        return { ok: true, status: 200, json: async () => SAMPLE_LIST } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('DH2611230001')).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole('link', { name: 'Tạo đơn mới' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tạo phiếu xuất' })).toBeInTheDocument();
   });
 });

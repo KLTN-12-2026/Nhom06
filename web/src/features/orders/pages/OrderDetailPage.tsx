@@ -30,7 +30,8 @@ export function OrderDetailPage() {
 
   const canEditOrder = hasPermission('orders.create');
   const canCancelOrder = hasPermission('orders.cancel');
-  const canConfirmOutbound = hasPermission('outbound.confirm');
+  const canConfirmOutbound =
+    hasPermission('outbound.create') && hasPermission('outbound.confirm');
 
   const orderQuery = useOrderDetailQuery(id);
   const cancelMutation = useCancelOrderMutation(id ?? '');
