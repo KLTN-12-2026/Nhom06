@@ -5,6 +5,9 @@ import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
+import { InboundDetailPage } from '@/features/inbound/pages/InboundDetailPage';
+import { InboundFormPage } from '@/features/inbound/pages/InboundFormPage';
+import { InboundListPage } from '@/features/inbound/pages/InboundListPage';
 import { ProductsPage } from '@/features/products/pages/ProductsPage';
 import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
@@ -32,6 +35,7 @@ const IMPLEMENTED_PATHS = new Set([
   '/products',
   '/suppliers',
   '/agencies',
+  '/inbound',
   '/users',
   '/forecast',
 ]);
@@ -85,6 +89,38 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="catalog.read">
             <AgenciesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inbound',
+        element: (
+          <ProtectedRoute requiredPermission="inbound.read">
+            <InboundListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inbound/new',
+        element: (
+          <ProtectedRoute requiredPermission="inbound.create">
+            <InboundFormPage mode="create" />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inbound/:id',
+        element: (
+          <ProtectedRoute requiredPermission="inbound.read">
+            <InboundDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'inbound/:id/edit',
+        element: (
+          <ProtectedRoute requiredPermission="inbound.create">
+            <InboundFormPage mode="edit" />
           </ProtectedRoute>
         ),
       },

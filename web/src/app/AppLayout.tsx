@@ -1,20 +1,36 @@
+import { useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/hooks';
 import { cn } from '@/lib/utils';
 import { ALL_NAV_ITEMS, filterNavGroups } from './navigation';
+import { type PageHeaderConfig, PageHeaderContext } from './page-header-context';
 
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuth();
+  const [headerOverride, setHeaderOverride] = useState<PageHeaderConfig | null>(null);
 
   const visibleGroups = filterNavGroups(hasPermission);
   const visibleItems = visibleGroups.flatMap((group) => group.items);
 
-  const currentNav = ALL_NAV_ITEMS.find((item) => item.path === location.pathname);
-  const pageTitle = currentNav?.pageTitle ?? currentNav?.label ?? 'Bảng điều khiển';
+  const currentNav =
+    ALL_NAV_ITEMS.find((item) => item.path === location.pathname) ??
+    ALL_NAV_ITEMS.find(
+      (item) => item.path !== '/' && location.pathname.startsWith(`${item.path}/`),
+    );
+  const pageTitle =
+    headerOverride?.title ?? currentNav?.pageTitle ?? currentNav?.label ?? 'Bảng điều khiển';
   const pageDescription =
-    currentNav?.pageDescription ?? 'Hệ thống quản lý kho trung tâm — KHO-AI';
+    headerOverride?.description ??
+    currentNav?.pageDescription ??
+    'Hệ thống quản lý kho trung tâm — KHO-AI';
+  const pageActions = headerOverride?.actions;
+
+  const headerContextValue = useMemo(
+    () => ({ hasLayoutHeader: true, setHeader: setHeaderOverride }),
+    [],
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -116,16 +132,21 @@ export function AppLayout() {
       </div>
 
       {/* Vùng nội dung chính */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="border-b border-border bg-[var(--surface)] px-6 py-4 lg:px-8">
-          <h1 className="text-2xl font-semibold text-[var(--text)]">{pageTitle}</h1>
-          <p className="mt-0.5 text-sm text-[var(--text-muted)]">{pageDescription}</p>
-        </header>
+      <PageHeaderContext.Provider value={headerContextValue}>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-[var(--surface)] px-6 py-4 lg:px-8">
+            <div className="min-w-0">
+              <h1 className="text-2xl font-semibold text-[var(--text)]">{pageTitle}</h1>
+              <p className="mt-0.5 text-sm text-[var(--text-muted)]">{pageDescription}</p>
+            </div>
+            {pageActions && <div className="flex flex-wrap items-center gap-2">{pageActions}</div>}
+          </header>
 
-        <main className="flex-1 p-6 lg:p-8">
-          <Outlet />
-        </main>
-      </div>
+          <main className="flex-1 p-6 lg:p-8">
+            <Outlet />
+          </main>
+        </div>
+      </PageHeaderContext.Provider>
     </div>
   );
 }
