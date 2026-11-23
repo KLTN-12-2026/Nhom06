@@ -8,6 +8,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
 import { validateEnv } from './config/env.validation';
 import { AiModule } from './modules/ai/ai.module';
 import { ExecutionsModule } from './modules/ai/executions/executions.module';
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ExpiryModule } from './modules/expiry/expiry.module';
@@ -30,6 +31,7 @@ import { PrismaModule } from './prisma/prisma.module';
     HealthModule,
     AuthModule,
     UsersModule,
+    AuditLogsModule,
     CatalogModule,
     InboundModule,
     InventoryModule,

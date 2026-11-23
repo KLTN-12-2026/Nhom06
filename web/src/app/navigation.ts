@@ -162,6 +162,13 @@ export const NAV_GROUPS: NavGroup[] = [
         pageTitle: 'Tài khoản và phân quyền',
         pageDescription: 'Ba vai trò nội bộ; đại lý và nhà cung cấp không có tài khoản đăng nhập',
       },
+      {
+        label: 'Nhật ký hệ thống',
+        path: '/audit-logs',
+        requiredPermission: 'audit.read',
+        pageTitle: 'Nhật ký hệ thống',
+        pageDescription: 'Lưu vết các thay đổi quan trọng; chỉ xem, không sửa được',
+      },
     ],
   },
 ];

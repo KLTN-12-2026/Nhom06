@@ -139,6 +139,7 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
     expect(screen.getAllByText('Trương Thành Lê').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Nhân viên kho').length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByRole('link', { name: 'Tài khoản' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nhật ký hệ thống' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Báo cáo' })).not.toBeInTheDocument();
     expect(screen.queryByText('Khác')).not.toBeInTheDocument();
 
@@ -151,13 +152,13 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
     expect(localStorage.getItem('kho_ai_access_token')).toBeNull();
   });
 
-  it('hiển thị mục Tài khoản và Báo cáo với quản trị viên', async () => {
+  it('hiển thị mục Tài khoản, Nhật ký hệ thống và Báo cáo với quản trị viên', async () => {
     const adminUser: AuthUser = {
       id: 'u-admin',
       username: 'admin',
       fullName: 'Phan Thanh Đức',
       role: { code: 'ADMIN', name: 'Quản trị viên' },
-      permissions: ['users.read', 'reports.read', 'catalog.read'],
+      permissions: ['users.read', 'audit.read', 'reports.read', 'catalog.read'],
     };
 
     localStorage.setItem('kho_ai_access_token', 'admin-token');
@@ -172,7 +173,35 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
     await waitFor(() => {
       expect(screen.getAllByRole('link', { name: 'Tài khoản' }).length).toBeGreaterThanOrEqual(1);
     });
+    expect(
+      screen.getAllByRole('link', { name: 'Nhật ký hệ thống' }).length,
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByRole('link', { name: 'Báo cáo' }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('ẩn mục Nhật ký hệ thống với quản lý kho không có quyền audit.read (T-021 AC5)', async () => {
+    const managerUser: AuthUser = {
+      id: 'u-manager',
+      username: 'quanly',
+      fullName: 'Nguyễn Văn Dương',
+      role: { code: 'WAREHOUSE_MANAGER', name: 'Quản lý kho' },
+      permissions: ['catalog.read', 'inventory.read', 'reports.read'],
+    };
+
+    localStorage.setItem('kho_ai_access_token', 'manager-token');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => managerUser,
+    } as Response);
+
+    renderAppWithAuth('/');
+
+    await waitFor(() => {
+      expect(screen.getAllByRole('link', { name: 'Báo cáo' }).length).toBeGreaterThanOrEqual(1);
+    });
+    expect(screen.queryByRole('link', { name: 'Nhật ký hệ thống' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Tài khoản' })).not.toBeInTheDocument();
   });
 
   it('dựng bố cục màn hình hẹp 3 băng theo mockup 30 với menu cuộn ngang và không tràn trang (T-018 AC2)', async () => {
