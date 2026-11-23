@@ -23,6 +23,7 @@ import { OutboundDetailPage } from '@/features/outbound/pages/OutboundDetailPage
 import { OutboundListPage } from '@/features/outbound/pages/OutboundListPage';
 import { ProductsPage } from '@/features/products/pages/ProductsPage';
 import { ReportsPage } from '@/features/reports/pages/ReportsPage';
+import { RiskAnalysisPage } from '@/features/risk/pages/RiskAnalysisPage';
 import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './AppLayout';
@@ -57,6 +58,7 @@ const IMPLEMENTED_PATHS = new Set([
   '/outbound',
   '/users',
   '/forecast',
+  '/risk',
   '/expiry-alerts',
   '/expiry-thresholds',
   '/reports',
@@ -271,6 +273,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="forecast.read">
             <ForecastPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'risk',
+        element: (
+          <ProtectedRoute requiredPermission="analysis.read">
+            <RiskAnalysisPage />
           </ProtectedRoute>
         ),
       },

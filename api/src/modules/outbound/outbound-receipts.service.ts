@@ -2,12 +2,15 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { FieldValidationError } from '../../common/filters/http-exception.filter';
 import { writeAuditLog } from '../../common/utils/audit-log.util';
 import { PrismaService } from '../../prisma/prisma.service';
+import { AnalysisTriggerService } from '../ai/pipeline/analysis-trigger.service';
 import { getVnTodayDateString } from '../expiry/domain/vn-date';
 import { ExpiryThresholdsService } from '../expiry/expiry-thresholds.service';
 import { formatUtcDate, isValidIsoDate } from '../inbound/domain/inbound-policy';
@@ -276,9 +279,12 @@ function isOutboundNoUniqueViolation(error: unknown): boolean {
 
 @Injectable()
 export class OutboundReceiptsService {
+  private readonly logger = new Logger(OutboundReceiptsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly expiryThresholdsService: ExpiryThresholdsService,
+    @Optional() private readonly analysisTrigger?: AnalysisTriggerService,
   ) {}
 
   async findAll(query: ListOutboundReceiptsQueryDto): Promise<OutboundReceiptListResponse> {
@@ -826,6 +832,20 @@ export class OutboundReceiptsService {
           },
           { timeout: 10_000 },
         );
+
+        // Hook sau commit (ngoài transaction): kích hoạt phân tích nền, không chặn response và không làm hỏng xác nhận
+        try {
+          this.analysisTrigger?.notifyStockChanged({
+            sourceType: 'OUTBOUND_RECEIPT',
+            sourceId: result.id,
+            receiptNo: result.outboundNo,
+          });
+        } catch (error) {
+          const detail = error instanceof Error ? error.message : String(error);
+          this.logger.error(
+            `Lỗi gọi hook STOCK_CHANGE sau xác nhận phiếu xuất ${result.outboundNo}: ${detail}`,
+          );
+        }
 
         return result;
       } catch (error) {

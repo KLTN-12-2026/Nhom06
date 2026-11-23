@@ -66,6 +66,19 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsIn(['true', 'false'])
   EXPIRY_CRON_ENABLED?: 'true' | 'false' = 'true';
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  ANALYSIS_CRON_ENABLED?: 'true' | 'false' = 'true';
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  ANALYSIS_AUTO_ENABLED?: 'true' | 'false' = 'true';
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  ANALYSIS_AUTO_DEBOUNCE_MS?: number = 30000;
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

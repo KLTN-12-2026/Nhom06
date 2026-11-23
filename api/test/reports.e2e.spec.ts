@@ -180,6 +180,8 @@ describe('Báo cáo NXT, Dashboard, Báo cáo rủi ro cận hạn & Xuất Exce
 
   beforeAll(async () => {
     process.env.EXPIRY_CRON_ENABLED = 'false';
+    process.env.ANALYSIS_CRON_ENABLED = 'false';
+    process.env.ANALYSIS_AUTO_ENABLED = 'false';
     testStartedAt = new Date();
     todayVn = getVnTodayDateString();
 

@@ -63,12 +63,162 @@ export interface LatestForecastResponse {
   items: ProductForecastSummaryItem[];
 }
 
+export interface GeneratedForecastBundle {
+  forecastRows: Prisma.DemandForecastCreateManyInput[];
+  dailyForecastByProduct: Map<string, Array<{ date: string; qty: Prisma.Decimal }>>;
+  modelVersion: string | null;
+  metrics: ForecastRunMetrics;
+}
+
 @Injectable()
 export class ForecastService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mlClient: MlClient,
   ) {}
+
+  /**
+   * Chạy bước dự báo cho toàn bộ sản phẩm active và trả về dữ liệu trên bộ nhớ
+   * (chưa ghi DB) để tái sử dụng chung giữa `ForecastService.runForecast` (FORECAST)
+   * và `AnalysisPipelineService.run` (FULL).
+   */
+  async generateForecastForRun(
+    runId: string,
+    horizonDays = DEFAULT_HORIZON_DAYS,
+  ): Promise<GeneratedForecastBundle> {
+    const products = await this.prisma.product.findMany({
+      where: { status: 'active' },
+      select: { id: true, code: true, name: true },
+      orderBy: { code: 'asc' },
+    });
+
+    const productIds = products.map((product) => product.id);
+    const historyRows =
+      productIds.length > 0
+        ? await this.prisma.demandHistory.findMany({
+            where: { productId: { in: productIds } },
+            select: { productId: true, historyDate: true, qty: true, source: true },
+            orderBy: { historyDate: 'asc' },
+          })
+        : [];
+
+    const historyByProduct = new Map<
+      string,
+      Array<{ date: Date; qty: Prisma.Decimal; source: string }>
+    >();
+    let hasSimulated = false;
+    let hasActual = false;
+
+    for (const row of historyRows) {
+      if (row.source === 'ACTUAL') hasActual = true;
+      if (row.source === 'SIMULATED') hasSimulated = true;
+      const list = historyByProduct.get(row.productId) ?? [];
+      list.push({ date: row.historyDate, qty: row.qty, source: row.source });
+      historyByProduct.set(row.productId, list);
+    }
+
+    const modelInfo: MlModelInfoResponse = await this.mlClient.getModelInfo();
+
+    const skipped: ForecastSkippedItem[] = [];
+    const forecastRows: Prisma.DemandForecastCreateManyInput[] = [];
+    const dailyForecastByProduct = new Map<string, Array<{ date: string; qty: Prisma.Decimal }>>();
+    let resolvedModelVersion: string | null = null;
+    let fallbackBaselineVersion: string | null = null;
+    let forecastedProductCount = 0;
+
+    // Gọi tuần tự từng sản phẩm để tránh quá tải worker ML và dừng ngay khi gặp lỗi
+    for (const product of products) {
+      const rawHistory = historyByProduct.get(product.id) ?? [];
+      const completeHistory = buildCompleteDailyHistory(rawHistory);
+
+      if (completeHistory.length < MIN_BASELINE_HISTORY_DAYS) {
+        skipped.push({
+          productCode: product.code,
+          reason: `Không đủ lịch sử tối thiểu (hiện có ${completeHistory.length} ngày, cần ≥ ${MIN_BASELINE_HISTORY_DAYS} ngày)`,
+        });
+        continue;
+      }
+
+      let modelResponse: MlForecastResponse | null = null;
+      if (completeHistory.length >= MIN_MODEL_HISTORY_DAYS) {
+        modelResponse = await this.mlClient.forecast({
+          product_code: product.code,
+          history: completeHistory,
+          horizon_days: horizonDays,
+          method: 'model',
+        });
+        resolvedModelVersion = modelResponse.model_version;
+      } else {
+        skipped.push({
+          productCode: product.code,
+          reason: `Không đủ ${MIN_MODEL_HISTORY_DAYS} ngày lịch sử cho mô hình (hiện có ${completeHistory.length} ngày), chỉ dùng baseline`,
+        });
+      }
+
+      const baselineResponse = await this.mlClient.forecast({
+        product_code: product.code,
+        history: completeHistory,
+        horizon_days: horizonDays,
+        method: 'baseline',
+      });
+      fallbackBaselineVersion = baselineResponse.model_version;
+
+      const baselineByDate = new Map(
+        baselineResponse.forecast.map((point) => [point.date, point.qty]),
+      );
+
+      const primaryForecast = modelResponse ? modelResponse.forecast : baselineResponse.forecast;
+      const productSeries: Array<{ date: string; qty: Prisma.Decimal }> = [];
+
+      for (const point of primaryForecast) {
+        const baselineQty = baselineByDate.get(point.date);
+        const forecastDecimal = new Prisma.Decimal(point.qty.toString());
+        forecastRows.push({
+          analysisRunId: runId,
+          productId: product.id,
+          forecastDate: new Date(`${point.date}T00:00:00.000Z`),
+          forecastQty: forecastDecimal,
+          baselineQty:
+            baselineQty !== undefined ? new Prisma.Decimal(baselineQty.toString()) : null,
+        });
+        productSeries.push({ date: point.date, qty: forecastDecimal });
+      }
+
+      dailyForecastByProduct.set(product.id, productSeries);
+      forecastedProductCount += 1;
+    }
+
+    const dataSource: 'SIMULATED' | 'ACTUAL' | 'MIXED' =
+      hasActual && hasSimulated ? 'MIXED' : hasActual ? 'ACTUAL' : 'SIMULATED';
+
+    const modelOverall = modelInfo.metrics?.methods?.random_forest ?? null;
+    const baselineOverall = modelInfo.metrics?.methods?.moving_average_7 ?? null;
+
+    const metrics: ForecastRunMetrics = {
+      model: modelOverall,
+      baseline: baselineOverall,
+      modelInfo: {
+        trainStart: modelInfo.train_start,
+        trainEnd: modelInfo.train_end,
+        nRows: modelInfo.n_rows,
+        dataSource: modelInfo.data_source,
+      },
+      horizonDays,
+      productCount: forecastedProductCount,
+      dataSource,
+      skipped,
+    };
+
+    const finalModelVersion =
+      resolvedModelVersion ?? modelInfo.model_version ?? fallbackBaselineVersion;
+
+    return {
+      forecastRows,
+      dailyForecastByProduct,
+      modelVersion: finalModelVersion,
+      metrics,
+    };
+  }
 
   async runForecast(horizonDays = DEFAULT_HORIZON_DAYS, requestedBy?: string) {
     let run;
@@ -90,138 +240,20 @@ export class ForecastService {
     }
 
     try {
-      const products = await this.prisma.product.findMany({
-        where: { status: 'active' },
-        select: { id: true, code: true, name: true },
-        orderBy: { code: 'asc' },
-      });
-
-      const productIds = products.map((product) => product.id);
-      const historyRows =
-        productIds.length > 0
-          ? await this.prisma.demandHistory.findMany({
-              where: { productId: { in: productIds } },
-              select: { productId: true, historyDate: true, qty: true, source: true },
-              orderBy: { historyDate: 'asc' },
-            })
-          : [];
-
-      const historyByProduct = new Map<
-        string,
-        Array<{ date: Date; qty: Prisma.Decimal; source: string }>
-      >();
-      let hasSimulated = false;
-      let hasActual = false;
-
-      for (const row of historyRows) {
-        if (row.source === 'ACTUAL') hasActual = true;
-        if (row.source === 'SIMULATED') hasSimulated = true;
-        const list = historyByProduct.get(row.productId) ?? [];
-        list.push({ date: row.historyDate, qty: row.qty, source: row.source });
-        historyByProduct.set(row.productId, list);
-      }
-
-      const modelInfo: MlModelInfoResponse = await this.mlClient.getModelInfo();
-
-      const skipped: ForecastSkippedItem[] = [];
-      const forecastRows: Prisma.DemandForecastCreateManyInput[] = [];
-      let resolvedModelVersion: string | null = null;
-      let fallbackBaselineVersion: string | null = null;
-      let forecastedProductCount = 0;
-
-      // Gọi tuần tự từng sản phẩm để tránh quá tải worker ML và dừng ngay khi gặp lỗi
-      for (const product of products) {
-        const rawHistory = historyByProduct.get(product.id) ?? [];
-        const completeHistory = buildCompleteDailyHistory(rawHistory);
-
-        if (completeHistory.length < MIN_BASELINE_HISTORY_DAYS) {
-          skipped.push({
-            productCode: product.code,
-            reason: `Không đủ lịch sử tối thiểu (hiện có ${completeHistory.length} ngày, cần ≥ ${MIN_BASELINE_HISTORY_DAYS} ngày)`,
-          });
-          continue;
-        }
-
-        let modelResponse: MlForecastResponse | null = null;
-        if (completeHistory.length >= MIN_MODEL_HISTORY_DAYS) {
-          modelResponse = await this.mlClient.forecast({
-            product_code: product.code,
-            history: completeHistory,
-            horizon_days: horizonDays,
-            method: 'model',
-          });
-          resolvedModelVersion = modelResponse.model_version;
-        } else {
-          skipped.push({
-            productCode: product.code,
-            reason: `Không đủ ${MIN_MODEL_HISTORY_DAYS} ngày lịch sử cho mô hình (hiện có ${completeHistory.length} ngày), chỉ dùng baseline`,
-          });
-        }
-
-        const baselineResponse = await this.mlClient.forecast({
-          product_code: product.code,
-          history: completeHistory,
-          horizon_days: horizonDays,
-          method: 'baseline',
-        });
-        fallbackBaselineVersion = baselineResponse.model_version;
-
-        const baselineByDate = new Map(
-          baselineResponse.forecast.map((point) => [point.date, point.qty]),
-        );
-
-        const primaryForecast = modelResponse ? modelResponse.forecast : baselineResponse.forecast;
-        for (const point of primaryForecast) {
-          const baselineQty = baselineByDate.get(point.date);
-          forecastRows.push({
-            analysisRunId: run.id,
-            productId: product.id,
-            forecastDate: new Date(`${point.date}T00:00:00.000Z`),
-            forecastQty: new Prisma.Decimal(point.qty.toString()),
-            baselineQty:
-              baselineQty !== undefined ? new Prisma.Decimal(baselineQty.toString()) : null,
-          });
-        }
-
-        forecastedProductCount += 1;
-      }
-
-      const dataSource: 'SIMULATED' | 'ACTUAL' | 'MIXED' =
-        hasActual && hasSimulated ? 'MIXED' : hasActual ? 'ACTUAL' : 'SIMULATED';
-
-      const modelOverall = modelInfo.metrics?.methods?.random_forest ?? null;
-      const baselineOverall = modelInfo.metrics?.methods?.moving_average_7 ?? null;
-
-      const metrics: ForecastRunMetrics = {
-        model: modelOverall,
-        baseline: baselineOverall,
-        modelInfo: {
-          trainStart: modelInfo.train_start,
-          trainEnd: modelInfo.train_end,
-          nRows: modelInfo.n_rows,
-          dataSource: modelInfo.data_source,
-        },
-        horizonDays,
-        productCount: forecastedProductCount,
-        dataSource,
-        skipped,
-      };
-
-      const finalModelVersion =
-        resolvedModelVersion ?? modelInfo.model_version ?? fallbackBaselineVersion;
+      const bundle = await this.generateForecastForRun(run.id, horizonDays);
 
       // Ghi toàn bộ demand_forecasts và hoàn tất analysis_runs trong một DB transaction ở cuối
       const finishedRun = await this.prisma.$transaction(async (tx) => {
-        if (forecastRows.length > 0) {
-          await tx.demandForecast.createMany({ data: forecastRows });
+        if (bundle.forecastRows.length > 0) {
+          await tx.demandForecast.createMany({ data: bundle.forecastRows });
         }
 
         return tx.analysisRun.update({
           where: { id: run.id },
           data: {
             status: 'succeeded',
-            modelVersion: finalModelVersion,
-            metrics: metrics as unknown as Prisma.InputJsonValue,
+            modelVersion: bundle.modelVersion,
+            metrics: bundle.metrics as unknown as Prisma.InputJsonValue,
             finishedAt: new Date(),
           },
         });
