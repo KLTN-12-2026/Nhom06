@@ -1,0 +1,33 @@
+:root {
+  /* Màu thương hiệu & bố cục (theo docs/DESIGN.md mục 2) */
+  --brand: #14365c;
+  --brand-active: #304e6f;
+  --brand-fg: #ffffff;
+  --bg: #fbfcfd;
+  --surface: #ffffff;
+  --surface-muted: #f4f7f9;
+  --border: #dde3e9;
+  --text: #0e2033;
+  --text-muted: #5b6b7b;
+  --primary: #2e7d5b;
+  --info: #2f6fb5;
+  --chart-out: #17917e;
+  --note-bg: #eaf5f3;
+  --note-border: #cce5e0;
+  --track: #cfd6de;
+
+  /* Màu mức rủi ro / hạn dùng */
+  --risk-expired-fg: #45525f;
+  --risk-expired-bg: #eef1f4;
+  --risk-critical-fg: #9e1b32;
+  --risk-critical-bg: #f9e6ea;
+  --risk-medium-fg: #7d5c12;
+  --risk-medium-kpi: #ce6515;
+  --risk-medium-bg: #fbf1dc;
+  --risk-medium-bar: #b5862b;
+  --risk-low-fg: #2e6b4a;
+  --risk-low-bg: #e8f3ed;
+
+  /* Dòng bị loại khỏi FEFO */
+  --excluded-row-bg: #fcfaf8;
+}
