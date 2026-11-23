@@ -99,6 +99,7 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly string[]> = {
   ],
   WAREHOUSE_MANAGER: [
     'catalog.read',
+    'catalog.manage',
     'inbound.read',
     'inbound.create',
     'inbound.confirm',
@@ -124,6 +125,7 @@ export const ROLE_PERMISSION_MATRIX: Record<RoleCode, readonly string[]> = {
   ],
   WAREHOUSE_STAFF: [
     'catalog.read',
+    'catalog.manage',
     'inbound.read',
     'inbound.create',
     'inbound.confirm',

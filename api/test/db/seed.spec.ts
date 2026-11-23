@@ -169,6 +169,10 @@ describe('Dữ liệu seed cơ bản và phân quyền (T-004)', () => {
 
     expect(staffPerms.has('inbound.confirm')).toBe(true);
     expect(staffPerms.has('outbound.confirm')).toBe(true);
+
+    expect(adminPerms.has('catalog.manage')).toBe(true);
+    expect(managerPerms.has('catalog.manage')).toBe(true);
+    expect(staffPerms.has('catalog.manage')).toBe(true);
   });
 
   // AC6 mật khẩu bcrypt
