@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AgenciesPage } from '@/features/agencies/pages/AgenciesPage';
+import { AuditLogsPage } from '@/features/audit-logs/pages/AuditLogsPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
@@ -60,6 +61,7 @@ const IMPLEMENTED_PATHS = new Set([
   '/orders',
   '/outbound',
   '/users',
+  '/audit-logs',
   '/forecast',
   '/risk',
   '/proposals',
@@ -270,6 +272,14 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="users.read">
             <UsersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'audit-logs',
+        element: (
+          <ProtectedRoute requiredPermission="audit.read">
+            <AuditLogsPage />
           </ProtectedRoute>
         ),
       },

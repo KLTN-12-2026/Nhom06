@@ -108,7 +108,17 @@ describe('Kiểm tra bảo vệ phân quyền toàn bộ route (AC7)', () => {
         }
       }
 
+      const auditLogRoutes = discoveredRoutes.filter((route) => {
+        const [, path] = route.split(' ');
+        return path === '/audit-logs' || path.startsWith('/audit-logs/');
+      });
+      const nonReadAuditRoutes = auditLogRoutes.filter((route) => !route.startsWith('GET '));
+
       expect(discoveredRoutes.length).toBeGreaterThanOrEqual(11);
+      expect(auditLogRoutes).toEqual(
+        expect.arrayContaining(['GET /audit-logs', 'GET /audit-logs/facets']),
+      );
+      expect(nonReadAuditRoutes).toEqual([]);
       expect(violations).toEqual([]);
     } finally {
       await moduleRef.close();
