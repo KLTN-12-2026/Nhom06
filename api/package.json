@@ -10,6 +10,8 @@
     "lint": "eslint \"{src,prisma,test}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:smoke": "jest --config ./jest.smoke.config.json --runInBand",
+    "seed:demo": "ts-node prisma/seed/demo.ts",
     "prisma:generate": "prisma generate"
   },
   "prisma": {
@@ -67,6 +69,10 @@
       "<rootDir>/test"
     ],
     "testRegex": ".*\\.spec\\.ts$",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/test/smoke/"
+    ],
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },

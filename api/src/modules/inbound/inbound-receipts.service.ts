@@ -500,8 +500,12 @@ export class InboundReceiptsService {
    * 5. Cộng tồn nguyên tử (INSERT ... ON CONFLICT DO UPDATE ... RETURNING) & ghi sổ biến động.
    * 6. Chốt trạng thái confirmed (kèm điều kiện where status='draft') + ghi audit log.
    */
-  async confirm(id: string, actorUserId: string): Promise<InboundReceiptDetailResponse> {
-    const confirmedAt = new Date();
+  async confirm(
+    id: string,
+    actorUserId: string,
+    internalOptions?: { confirmedAt?: Date },
+  ): Promise<InboundReceiptDetailResponse> {
+    const confirmedAt = internalOptions?.confirmedAt ?? new Date();
 
     const confirmed = await this.prisma.$transaction(
       async (tx) => {

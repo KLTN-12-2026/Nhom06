@@ -689,8 +689,12 @@ export class StockCountsService {
    * 8. Ghi `audit_logs` (`STOCK_COUNT_APPROVED`) trong cùng transaction.
    * 9. Đọc lại và trả chi tiết phiếu từ `tx`.
    */
-  async approve(id: string, actorUserId: string): Promise<StockCountDetailResponse> {
-    const approvedAt = new Date();
+  async approve(
+    id: string,
+    actorUserId: string,
+    internalOptions?: { approvedAt?: Date },
+  ): Promise<StockCountDetailResponse> {
+    const approvedAt = internalOptions?.approvedAt ?? new Date();
 
     const approved = await this.prisma.$transaction(
       async (tx) => {
