@@ -9,6 +9,8 @@ import { AiModule } from './modules/ai/ai.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { HealthModule } from './modules/health/health.module';
+import { InboundModule } from './modules/inbound/inbound.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 import { UsersModule } from './modules/users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -23,6 +25,8 @@ import { PrismaModule } from './prisma/prisma.module';
     AuthModule,
     UsersModule,
     CatalogModule,
+    InboundModule,
+    InventoryModule,
     AiModule,
   ],
   providers: [

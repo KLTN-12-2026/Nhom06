@@ -319,10 +319,58 @@ describe('Ràng buộc và lược đồ PostgreSQL (T-004)', () => {
           receiptId: inboundReceiptId,
           productId,
           lotId,
+          lotCode: 'TEST_T004_ITEM_LOT',
+          expiryDate: new Date('2026-12-31'),
           quantity: new Prisma.Decimal('0'),
         },
       }),
     ).rejects.toThrow(/chk_inbound_receipt_items_quantity/);
+  });
+
+  // D-018 (T-007)
+  it('cho phép inbound_receipt_items có lot_id = NULL khi nháp và từ chối HSD <= NSX hoặc unit_cost < 0', async () => {
+    const draftItem = await prisma.inboundReceiptItem.create({
+      data: {
+        receiptId: inboundReceiptId,
+        productId,
+        lotId: null,
+        lotCode: 'TEST_T007_DRAFT_LOT',
+        expiryDate: new Date('2027-06-30'),
+        manufacturedDate: new Date('2026-06-30'),
+        quantity: new Prisma.Decimal('5.000'),
+        unitCost: new Prisma.Decimal('10000.00'),
+      },
+    });
+    expect(draftItem.lotId).toBeNull();
+    await prisma.inboundReceiptItem.delete({ where: { id: draftItem.id } });
+
+    await expect(
+      prisma.inboundReceiptItem.create({
+        data: {
+          receiptId: inboundReceiptId,
+          productId,
+          lotId: null,
+          lotCode: 'TEST_T007_BAD_DATE',
+          expiryDate: new Date('2026-06-01'),
+          manufacturedDate: new Date('2026-06-01'),
+          quantity: new Prisma.Decimal('5.000'),
+        },
+      }),
+    ).rejects.toThrow(/chk_inbound_receipt_items_expiry_after_mfg/);
+
+    await expect(
+      prisma.inboundReceiptItem.create({
+        data: {
+          receiptId: inboundReceiptId,
+          productId,
+          lotId: null,
+          lotCode: 'TEST_T007_BAD_COST',
+          expiryDate: new Date('2027-06-01'),
+          quantity: new Prisma.Decimal('5.000'),
+          unitCost: new Prisma.Decimal('-1.00'),
+        },
+      }),
+    ).rejects.toThrow(/chk_inbound_receipt_items_unit_cost/);
   });
 
   // AC3.3
