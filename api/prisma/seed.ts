@@ -189,6 +189,7 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
         name: productDef.name,
         groupId,
         unit: productDef.unit,
+        shelfLifeDays: productDef.shelfLifeDays,
         status: 'active',
       },
       create: {
@@ -196,6 +197,7 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
         name: productDef.name,
         groupId,
         unit: productDef.unit,
+        shelfLifeDays: productDef.shelfLifeDays,
         status: 'active',
       },
     });

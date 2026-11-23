@@ -1,9 +1,12 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AgenciesPage } from '@/features/agencies/pages/AgenciesPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
 import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
 import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
+import { ProductsPage } from '@/features/products/pages/ProductsPage';
+import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
 import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './AppLayout';
 import { ALL_NAV_ITEMS } from './navigation';
@@ -24,16 +27,25 @@ function DevelopingPage({ title }: { title: string }) {
   );
 }
 
-const placeholderRoutes = ALL_NAV_ITEMS.filter(
-  (item) => item.path !== '/' && item.path !== '/users' && item.path !== '/forecast',
-).map((item) => ({
-  path: item.path.replace(/^\//, ''),
-  element: (
-    <ProtectedRoute requiredPermission={item.requiredPermission}>
-      <DevelopingPage title={item.label} />
-    </ProtectedRoute>
-  ),
-}));
+const IMPLEMENTED_PATHS = new Set([
+  '/',
+  '/products',
+  '/suppliers',
+  '/agencies',
+  '/users',
+  '/forecast',
+]);
+
+const placeholderRoutes = ALL_NAV_ITEMS.filter((item) => !IMPLEMENTED_PATHS.has(item.path)).map(
+  (item) => ({
+    path: item.path.replace(/^\//, ''),
+    element: (
+      <ProtectedRoute requiredPermission={item.requiredPermission}>
+        <DevelopingPage title={item.label} />
+      </ProtectedRoute>
+    ),
+  }),
+);
 
 const router = createBrowserRouter([
   {
@@ -51,6 +63,30 @@ const router = createBrowserRouter([
       {
         index: true,
         element: <DashboardPage />,
+      },
+      {
+        path: 'products',
+        element: (
+          <ProtectedRoute requiredPermission="catalog.read">
+            <ProductsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'suppliers',
+        element: (
+          <ProtectedRoute requiredPermission="catalog.read">
+            <SuppliersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'agencies',
+        element: (
+          <ProtectedRoute requiredPermission="catalog.read">
+            <AgenciesPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'users',
