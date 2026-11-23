@@ -19,9 +19,24 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Danh mục',
     items: [
-      { label: 'Sản phẩm', path: '/products', requiredPermission: 'catalog.read' },
-      { label: 'Nhà cung cấp', path: '/suppliers', requiredPermission: 'catalog.read' },
-      { label: 'Đại lý', path: '/agencies', requiredPermission: 'catalog.read' },
+      {
+        label: 'Sản phẩm',
+        path: '/products',
+        requiredPermission: 'catalog.read',
+        pageDescription: 'Danh mục mặt hàng lưu kho theo lô và hạn sử dụng',
+      },
+      {
+        label: 'Nhà cung cấp',
+        path: '/suppliers',
+        requiredPermission: 'catalog.read',
+        pageDescription: 'Nhà cung cấp không có tài khoản đăng nhập',
+      },
+      {
+        label: 'Đại lý',
+        path: '/agencies',
+        requiredPermission: 'catalog.read',
+        pageDescription: 'Đơn hàng do nhân viên kho nhập hộ, đại lý không tự đăng nhập',
+      },
     ],
   },
   {

@@ -11,6 +11,7 @@ export interface ProductSeed {
   name: string;
   groupCode: ProductGroupCode;
   unit: string;
+  shelfLifeDays: number;
 }
 
 export interface SupplierSeed {
@@ -42,29 +43,29 @@ export const PRODUCT_GROUPS: readonly ProductGroupSeed[] = [
  * (chép cứng giá trị vào seed, không đọc file ngoài `api/` lúc chạy).
  */
 export const PRODUCTS: readonly ProductSeed[] = [
-  { code: 'SP001', name: 'Sữa tươi tiệt trùng 1L', groupCode: 'SUA', unit: 'thùng' },
-  { code: 'SP002', name: 'Sữa tươi ít đường 180ml lốc 4', groupCode: 'SUA', unit: 'thùng' },
-  { code: 'SP003', name: 'Sữa đặc có đường lon 380g', groupCode: 'SUA', unit: 'thùng' },
-  { code: 'SP004', name: 'Sữa hạt nguyên chất 1L', groupCode: 'SUA', unit: 'thùng' },
-  { code: 'SP005', name: 'Sữa tiệt trùng sô-cô-la lốc 4', groupCode: 'SUA', unit: 'thùng' },
+  { code: 'SP001', name: 'Sữa tươi tiệt trùng 1L', groupCode: 'SUA', unit: 'thùng', shelfLifeDays: 180 },
+  { code: 'SP002', name: 'Sữa tươi ít đường 180ml lốc 4', groupCode: 'SUA', unit: 'thùng', shelfLifeDays: 180 },
+  { code: 'SP003', name: 'Sữa đặc có đường lon 380g', groupCode: 'SUA', unit: 'thùng', shelfLifeDays: 365 },
+  { code: 'SP004', name: 'Sữa hạt nguyên chất 1L', groupCode: 'SUA', unit: 'thùng', shelfLifeDays: 180 },
+  { code: 'SP005', name: 'Sữa tiệt trùng sô-cô-la lốc 4', groupCode: 'SUA', unit: 'thùng', shelfLifeDays: 180 },
 
-  { code: 'SP006', name: 'Sữa chua trắng có đường lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng' },
-  { code: 'SP007', name: 'Sữa chua không đường lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng' },
-  { code: 'SP008', name: 'Sữa chua trái cây lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng' },
-  { code: 'SP009', name: 'Sữa chua uống hương cam lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng' },
-  { code: 'SP010', name: 'Sữa chua uống hương dâu lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng' },
+  { code: 'SP006', name: 'Sữa chua trắng có đường lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng', shelfLifeDays: 45 },
+  { code: 'SP007', name: 'Sữa chua không đường lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng', shelfLifeDays: 45 },
+  { code: 'SP008', name: 'Sữa chua trái cây lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng', shelfLifeDays: 45 },
+  { code: 'SP009', name: 'Sữa chua uống hương cam lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng', shelfLifeDays: 45 },
+  { code: 'SP010', name: 'Sữa chua uống hương dâu lốc 4', groupCode: 'SUA_CHUA', unit: 'thùng', shelfLifeDays: 45 },
 
-  { code: 'SP011', name: 'Nước lọc đóng chai thùng 24', groupCode: 'NGK', unit: 'thùng' },
-  { code: 'SP012', name: 'Trà xanh đóng chai thùng 24', groupCode: 'NGK', unit: 'thùng' },
-  { code: 'SP013', name: 'Nước ngọt có ga thùng 24', groupCode: 'NGK', unit: 'thùng' },
-  { code: 'SP014', name: 'Nước tăng lực thùng 24', groupCode: 'NGK', unit: 'thùng' },
-  { code: 'SP015', name: 'Nước ép trái cây hộp 1L', groupCode: 'NGK', unit: 'thùng' },
+  { code: 'SP011', name: 'Nước lọc đóng chai thùng 24', groupCode: 'NGK', unit: 'thùng', shelfLifeDays: 540 },
+  { code: 'SP012', name: 'Trà xanh đóng chai thùng 24', groupCode: 'NGK', unit: 'thùng', shelfLifeDays: 300 },
+  { code: 'SP013', name: 'Nước ngọt có ga thùng 24', groupCode: 'NGK', unit: 'thùng', shelfLifeDays: 365 },
+  { code: 'SP014', name: 'Nước tăng lực thùng 24', groupCode: 'NGK', unit: 'thùng', shelfLifeDays: 365 },
+  { code: 'SP015', name: 'Nước ép trái cây hộp 1L', groupCode: 'NGK', unit: 'thùng', shelfLifeDays: 270 },
 
-  { code: 'SP016', name: 'Bánh quy bơ hộp thiếc', groupCode: 'BANH_KEO', unit: 'thùng' },
-  { code: 'SP017', name: 'Bánh bông lan đóng gói thùng', groupCode: 'BANH_KEO', unit: 'thùng' },
-  { code: 'SP018', name: 'Kẹo mềm trái cây gói', groupCode: 'BANH_KEO', unit: 'thùng' },
-  { code: 'SP019', name: 'Snack khoai tây thùng', groupCode: 'BANH_KEO', unit: 'thùng' },
-  { code: 'SP020', name: 'Bánh gạo giòn gói', groupCode: 'BANH_KEO', unit: 'thùng' },
+  { code: 'SP016', name: 'Bánh quy bơ hộp thiếc', groupCode: 'BANH_KEO', unit: 'thùng', shelfLifeDays: 300 },
+  { code: 'SP017', name: 'Bánh bông lan đóng gói thùng', groupCode: 'BANH_KEO', unit: 'thùng', shelfLifeDays: 240 },
+  { code: 'SP018', name: 'Kẹo mềm trái cây gói', groupCode: 'BANH_KEO', unit: 'thùng', shelfLifeDays: 365 },
+  { code: 'SP019', name: 'Snack khoai tây thùng', groupCode: 'BANH_KEO', unit: 'thùng', shelfLifeDays: 240 },
+  { code: 'SP020', name: 'Bánh gạo giòn gói', groupCode: 'BANH_KEO', unit: 'thùng', shelfLifeDays: 300 },
 ] as const;
 
 export const SUPPLIERS: readonly SupplierSeed[] = [
