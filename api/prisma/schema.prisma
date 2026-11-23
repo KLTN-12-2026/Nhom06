@@ -15,3 +15,613 @@ model AppMeta {
 
   @@map("app_meta")
 }
+
+// ============================================================================
+// AUTH
+// ============================================================================
+
+model User {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username     String    @unique @db.VarChar(100)
+  email        String    @unique @db.VarChar(255)
+  passwordHash String    @map("password_hash") @db.Text
+  fullName     String    @map("full_name") @db.VarChar(150)
+  phone        String?   @db.VarChar(30)
+  status       String    @default("active") @db.VarChar(20)
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  userRoles                 UserRole[]                 @relation("UserRoleUser")
+  assignedUserRoles         UserRole[]                 @relation("UserRoleAssignedBy")
+  grantedRolePermissions    RolePermission[]
+  auditLogs                 AuditLog[]
+  createdInboundReceipts    InboundReceipt[]           @relation("InboundReceiptCreatedBy")
+  confirmedInboundReceipts  InboundReceipt[]           @relation("InboundReceiptConfirmedBy")
+  stockMovements            StockMovement[]
+  createdAgencyOrders       AgencyOrder[]              @relation("AgencyOrderCreatedBy")
+  cancelledAgencyOrders     AgencyOrder[]              @relation("AgencyOrderCancelledBy")
+  createdOutboundReceipts   OutboundReceipt[]          @relation("OutboundReceiptCreatedBy")
+  confirmedOutboundReceipts OutboundReceipt[]          @relation("OutboundReceiptConfirmedBy")
+  createdStockCounts        StockCount[]               @relation("StockCountCreatedBy")
+  approvedStockCounts       StockCount[]               @relation("StockCountApprovedBy")
+  createdExpiryThresholds   ExpiryThreshold[]
+  requestedAnalysisRuns     AnalysisRun[]
+  proposalDecisions         ProposalDecision[]
+  responsibleExecutions     TreatmentExecution[]
+  executionUpdates          TreatmentExecutionUpdate[]
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(100)
+  description String?  @db.Text
+  status      String   @default("active") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(100)
+  module      String   @db.VarChar(50)
+  action      String   @db.VarChar(30)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId     String   @map("user_id") @db.Uuid
+  roleId     String   @map("role_id") @db.Uuid
+  assignedBy String?  @map("assigned_by") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+
+  user     User  @relation("UserRoleUser", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  role     Role  @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  assigner User? @relation("UserRoleAssignedBy", fields: [assignedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  grantedBy    String?  @map("granted_by") @db.Uuid
+  grantedAt    DateTime @default(now()) @map("granted_at") @db.Timestamptz(6)
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  granter    User?      @relation(fields: [grantedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement())
+  actorUserId String?  @map("actor_user_id") @db.Uuid
+  eventType   String   @map("event_type") @db.VarChar(50)
+  entityType  String   @map("entity_type") @db.VarChar(80)
+  entityId    String?  @map("entity_id") @db.VarChar(80)
+  oldData     Json?    @map("old_data") @db.JsonB
+  newData     Json?    @map("new_data") @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// CATALOG
+// ============================================================================
+
+model ProductGroup {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  status      String   @default("active") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  products Product[]
+
+  @@map("product_groups")
+}
+
+model Product {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code      String   @unique @db.VarChar(80)
+  name      String   @db.VarChar(200)
+  groupId   String   @map("group_id") @db.Uuid
+  unit      String   @db.VarChar(30)
+  status    String   @default("active") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  group               ProductGroup         @relation(fields: [groupId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lots                Lot[]
+  inboundReceiptItems InboundReceiptItem[]
+  agencyOrderItems    AgencyOrderItem[]
+  demandForecasts     DemandForecast[]
+
+  @@map("products")
+}
+
+model Supplier {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code      String   @unique @db.VarChar(50)
+  name      String   @db.VarChar(200)
+  phone     String?  @db.VarChar(30)
+  email     String?  @db.VarChar(255)
+  address   String?  @db.Text
+  status    String   @default("active") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  inboundReceipts InboundReceipt[]
+  lots            Lot[]
+
+  @@map("suppliers")
+}
+
+model Agency {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String   @unique @db.VarChar(50)
+  name        String   @db.VarChar(200)
+  contactName String?  @map("contact_name") @db.VarChar(150)
+  phone       String?  @db.VarChar(30)
+  email       String?  @db.VarChar(255)
+  address     String?  @db.Text
+  status      String   @default("active") @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  agencyOrders AgencyOrder[]
+
+  @@map("agencies")
+}
+
+// ============================================================================
+// INBOUND
+// ============================================================================
+
+model InboundReceipt {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receiptNo   String    @unique @map("receipt_no") @db.VarChar(50)
+  supplierId  String    @map("supplier_id") @db.Uuid
+  receiptDate DateTime  @map("receipt_date") @db.Date
+  status      String    @default("draft") @db.VarChar(20)
+  createdBy   String    @map("created_by") @db.Uuid
+  confirmedBy String?   @map("confirmed_by") @db.Uuid
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  supplier  Supplier             @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  creator   User                 @relation("InboundReceiptCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  confirmer User?                @relation("InboundReceiptConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items     InboundReceiptItem[]
+
+  @@map("inbound_receipts")
+}
+
+model InboundReceiptItem {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  receiptId String   @map("receipt_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  lotId     String   @map("lot_id") @db.Uuid
+  quantity  Decimal  @db.Decimal(14, 3)
+  unitCost  Decimal? @map("unit_cost") @db.Decimal(14, 2)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  receipt InboundReceipt @relation(fields: [receiptId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product Product        @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lot     Lot            @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("inbound_receipt_items")
+}
+
+model Lot {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId        String    @map("product_id") @db.Uuid
+  supplierId       String?   @map("supplier_id") @db.Uuid
+  lotCode          String    @map("lot_code") @db.VarChar(80)
+  manufacturedDate DateTime? @map("manufactured_date") @db.Date
+  expiryDate       DateTime  @map("expiry_date") @db.Date
+  receivedAt       DateTime  @map("received_at") @db.Date
+  initialQuantity  Decimal   @map("initial_quantity") @db.Decimal(14, 3)
+  status           String    @default("active") @db.VarChar(20)
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  product              Product               @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  supplier             Supplier?             @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  balance              InventoryLotBalance?
+  inboundReceiptItems  InboundReceiptItem[]
+  stockMovements       StockMovement[]
+  orderLotAllocations  OrderLotAllocation[]
+  outboundReceiptItems OutboundReceiptItem[]
+  stockCountItems      StockCountItem[]
+  expiryAlerts         ExpiryAlert[]
+  lotRiskAssessments   LotRiskAssessment[]
+  treatmentProposals   TreatmentProposal[]
+
+  @@unique([productId, lotCode])
+  @@index([productId, expiryDate])
+  @@map("lots")
+}
+
+// ============================================================================
+// INVENTORY
+// ============================================================================
+
+model InventoryLotBalance {
+  lotId     String   @id @map("lot_id") @db.Uuid
+  onHandQty Decimal  @default(0) @map("on_hand_qty") @db.Decimal(14, 3)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  version   Int      @default(0)
+
+  lot Lot @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("inventory_lot_balances")
+}
+
+model StockMovement {
+  id            BigInt   @id @default(autoincrement())
+  lotId         String   @map("lot_id") @db.Uuid
+  movementType  String   @map("movement_type") @db.VarChar(20)
+  quantityDelta Decimal  @map("quantity_delta") @db.Decimal(14, 3)
+  balanceAfter  Decimal  @map("balance_after") @db.Decimal(14, 3)
+  sourceType    String   @map("source_type") @db.VarChar(30)
+  sourceId      String   @map("source_id") @db.Uuid
+  actorUserId   String   @map("actor_user_id") @db.Uuid
+  occurredAt    DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  lot   Lot  @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actor User @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([lotId, occurredAt])
+  @@index([sourceType, sourceId])
+  @@map("stock_movements")
+}
+
+model StockCount {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  countNo    String    @unique @map("count_no") @db.VarChar(50)
+  status     String    @default("draft") @db.VarChar(20)
+  countedAt  DateTime  @map("counted_at") @db.Timestamptz(6)
+  createdBy  String    @map("created_by") @db.Uuid
+  approvedBy String?   @map("approved_by") @db.Uuid
+  approvedAt DateTime? @map("approved_at") @db.Timestamptz(6)
+  note       String?   @db.Text
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  creator  User             @relation("StockCountCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  approver User?            @relation("StockCountApprovedBy", fields: [approvedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items    StockCountItem[]
+
+  @@map("stock_counts")
+}
+
+model StockCountItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  countId     String   @map("count_id") @db.Uuid
+  lotId       String   @map("lot_id") @db.Uuid
+  systemQty   Decimal  @map("system_qty") @db.Decimal(14, 3)
+  countedQty  Decimal  @map("counted_qty") @db.Decimal(14, 3)
+  varianceQty Decimal  @map("variance_qty") @db.Decimal(14, 3)
+  reason      String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  stockCount StockCount @relation(fields: [countId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lot        Lot        @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([countId, lotId])
+  @@map("stock_count_items")
+}
+
+// ============================================================================
+// OUTBOUND
+// ============================================================================
+
+model AgencyOrder {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNo     String    @unique @map("order_no") @db.VarChar(50)
+  agencyId    String    @map("agency_id") @db.Uuid
+  orderDate   DateTime  @map("order_date") @db.Date
+  status      String    @default("draft") @db.VarChar(20)
+  createdBy   String    @map("created_by") @db.Uuid
+  cancelledBy String?   @map("cancelled_by") @db.Uuid
+  cancelledAt DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  agency           Agency            @relation(fields: [agencyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  creator          User              @relation("AgencyOrderCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  canceller        User?             @relation("AgencyOrderCancelledBy", fields: [cancelledBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items            AgencyOrderItem[]
+  outboundReceipts OutboundReceipt[]
+
+  @@map("agency_orders")
+}
+
+model AgencyOrderItem {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId      String   @map("order_id") @db.Uuid
+  productId    String   @map("product_id") @db.Uuid
+  requestedQty Decimal  @map("requested_qty") @db.Decimal(14, 3)
+  fulfilledQty Decimal  @default(0) @map("fulfilled_qty") @db.Decimal(14, 3)
+  status       String   @default("pending") @db.VarChar(20)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order                AgencyOrder           @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product              Product               @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  allocations          OrderLotAllocation[]
+  outboundReceiptItems OutboundReceiptItem[]
+
+  @@map("agency_order_items")
+}
+
+model OrderLotAllocation {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderItemId    String   @map("order_item_id") @db.Uuid
+  lotId          String   @map("lot_id") @db.Uuid
+  allocatedQty   Decimal  @map("allocated_qty") @db.Decimal(14, 3)
+  allocationRank Int      @map("allocation_rank")
+  status         String   @default("allocated") @db.VarChar(20)
+  allocatedAt    DateTime @default(now()) @map("allocated_at") @db.Timestamptz(6)
+
+  orderItem AgencyOrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lot       Lot             @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([orderItemId, lotId])
+  @@map("order_lot_allocations")
+}
+
+model OutboundReceipt {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  outboundNo   String    @unique @map("outbound_no") @db.VarChar(50)
+  outboundType String    @map("outbound_type") @db.VarChar(30)
+  orderId      String?   @map("order_id") @db.Uuid
+  status       String    @default("draft") @db.VarChar(20)
+  createdBy    String    @map("created_by") @db.Uuid
+  confirmedBy  String?   @map("confirmed_by") @db.Uuid
+  confirmedAt  DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  notes        String?   @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  order               AgencyOrder?          @relation(fields: [orderId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  creator             User                  @relation("OutboundReceiptCreatedBy", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  confirmer           User?                 @relation("OutboundReceiptConfirmedBy", fields: [confirmedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items               OutboundReceiptItem[]
+  treatmentExecutions TreatmentExecution[]
+
+  @@map("outbound_receipts")
+}
+
+model OutboundReceiptItem {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  outboundId  String   @map("outbound_id") @db.Uuid
+  orderItemId String?  @map("order_item_id") @db.Uuid
+  lotId       String   @map("lot_id") @db.Uuid
+  quantity    Decimal  @db.Decimal(14, 3)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  outbound  OutboundReceipt  @relation(fields: [outboundId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  orderItem AgencyOrderItem? @relation(fields: [orderItemId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lot       Lot              @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("outbound_receipt_items")
+}
+
+// ============================================================================
+// EXPIRY
+// ============================================================================
+
+model ExpiryThreshold {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  warningDays   Int       @map("warning_days")
+  criticalDays  Int       @default(0) @map("critical_days")
+  effectiveFrom DateTime  @map("effective_from") @db.Date
+  effectiveTo   DateTime? @map("effective_to") @db.Date
+  createdBy     String    @map("created_by") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  creator      User          @relation(fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  expiryAlerts ExpiryAlert[]
+
+  @@map("expiry_thresholds")
+}
+
+model ExpiryAlert {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lotId          String   @map("lot_id") @db.Uuid
+  thresholdId    String?  @map("threshold_id") @db.Uuid
+  evaluationDate DateTime @map("evaluation_date") @db.Date
+  daysRemaining  Int      @map("days_remaining")
+  severity       String   @db.VarChar(20)
+  onHandQty      Decimal  @map("on_hand_qty") @db.Decimal(14, 3)
+  status         String   @default("open") @db.VarChar(20)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  lot       Lot              @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  threshold ExpiryThreshold? @relation(fields: [thresholdId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([lotId, evaluationDate])
+  @@map("expiry_alerts")
+}
+
+// ============================================================================
+// AI
+// ============================================================================
+
+model AnalysisRun {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  runType      String    @map("run_type") @db.VarChar(20)
+  triggerType  String    @map("trigger_type") @db.VarChar(20)
+  status       String    @default("queued") @db.VarChar(20)
+  requestedBy  String?   @map("requested_by") @db.Uuid
+  modelVersion String?   @map("model_version") @db.VarChar(50)
+  metrics      Json?     @db.JsonB
+  startedAt    DateTime? @map("started_at") @db.Timestamptz(6)
+  finishedAt   DateTime? @map("finished_at") @db.Timestamptz(6)
+  errorMessage String?   @map("error_message") @db.Text
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  requester          User?               @relation(fields: [requestedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  demandForecasts    DemandForecast[]
+  lotRiskAssessments LotRiskAssessment[]
+  treatmentProposals TreatmentProposal[]
+
+  @@map("analysis_runs")
+}
+
+model DemandForecast {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisRunId String   @map("analysis_run_id") @db.Uuid
+  productId     String   @map("product_id") @db.Uuid
+  forecastDate  DateTime @map("forecast_date") @db.Date
+  forecastQty   Decimal  @map("forecast_qty") @db.Decimal(14, 3)
+  baselineQty   Decimal? @map("baseline_qty") @db.Decimal(14, 3)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  analysisRun        AnalysisRun         @relation(fields: [analysisRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lotRiskAssessments LotRiskAssessment[]
+
+  @@unique([analysisRunId, productId, forecastDate])
+  @@map("demand_forecasts")
+}
+
+model LotRiskAssessment {
+  id                          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  analysisRunId               String   @map("analysis_run_id") @db.Uuid
+  lotId                       String   @map("lot_id") @db.Uuid
+  forecastId                  String?  @map("forecast_id") @db.Uuid
+  onHandSnapshot              Decimal  @map("on_hand_snapshot") @db.Decimal(14, 3)
+  estimatedDemandBeforeExpiry Decimal  @map("estimated_demand_before_expiry") @db.Decimal(14, 3)
+  estimatedSurplusQty         Decimal  @map("estimated_surplus_qty") @db.Decimal(14, 3)
+  riskLevel                   String   @map("risk_level") @db.VarChar(20)
+  basis                       Json     @db.JsonB
+  calculatedAt                DateTime @default(now()) @map("calculated_at") @db.Timestamptz(6)
+
+  analysisRun        AnalysisRun         @relation(fields: [analysisRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lot                Lot                 @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  forecast           DemandForecast?     @relation(fields: [forecastId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  treatmentProposals TreatmentProposal[]
+
+  @@unique([analysisRunId, lotId])
+  @@map("lot_risk_assessments")
+}
+
+model TreatmentProposal {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  riskAssessmentId String    @map("risk_assessment_id") @db.Uuid
+  lotId            String    @map("lot_id") @db.Uuid
+  actionType       String    @map("action_type") @db.VarChar(30)
+  proposedQty      Decimal   @map("proposed_qty") @db.Decimal(14, 3)
+  rationale        String    @db.Text
+  sourceRunId      String    @map("source_run_id") @db.Uuid
+  status           String    @default("new") @db.VarChar(20)
+  snapshot         Json      @db.JsonB
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz(6)
+
+  riskAssessment  LotRiskAssessment   @relation(fields: [riskAssessmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  lot             Lot                 @relation(fields: [lotId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  sourceRun       AnalysisRun         @relation(fields: [sourceRunId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  llmExplanations LlmExplanation[]
+  decision        ProposalDecision?
+  execution       TreatmentExecution?
+
+  @@map("treatment_proposals")
+}
+
+model LlmExplanation {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  proposalId       String   @map("proposal_id") @db.Uuid
+  provider         String   @db.VarChar(50)
+  modelName        String   @map("model_name") @db.VarChar(80)
+  promptVersion    String   @map("prompt_version") @db.VarChar(30)
+  inputSnapshot    Json     @map("input_snapshot") @db.JsonB
+  explanationText  String   @map("explanation_text") @db.Text
+  validationStatus String   @default("pending") @map("validation_status") @db.VarChar(20)
+  errorMessage     String?  @map("error_message") @db.Text
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  proposal TreatmentProposal @relation(fields: [proposalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("llm_explanations")
+}
+
+model ProposalDecision {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  proposalId String   @unique @map("proposal_id") @db.Uuid
+  decision   String   @db.VarChar(20)
+  decidedBy  String   @map("decided_by") @db.Uuid
+  reason     String?  @db.Text
+  decidedAt  DateTime @default(now()) @map("decided_at") @db.Timestamptz(6)
+
+  proposal TreatmentProposal @relation(fields: [proposalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  decider  User              @relation(fields: [decidedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("proposal_decisions")
+}
+
+model TreatmentExecution {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  proposalId        String    @unique @map("proposal_id") @db.Uuid
+  status            String    @default("planned") @db.VarChar(20)
+  plannedQty        Decimal   @map("planned_qty") @db.Decimal(14, 3)
+  actualQty         Decimal?  @map("actual_qty") @db.Decimal(14, 3)
+  responsibleUserId String    @map("responsible_user_id") @db.Uuid
+  linkedOutboundId  String?   @map("linked_outbound_id") @db.Uuid
+  startedAt         DateTime? @map("started_at") @db.Timestamptz(6)
+  completedAt       DateTime? @map("completed_at") @db.Timestamptz(6)
+  note              String?   @db.Text
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  proposal        TreatmentProposal          @relation(fields: [proposalId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  responsibleUser User                       @relation(fields: [responsibleUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  linkedOutbound  OutboundReceipt?           @relation(fields: [linkedOutboundId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updates         TreatmentExecutionUpdate[]
+
+  @@map("treatment_executions")
+}
+
+model TreatmentExecutionUpdate {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  executionId String   @map("execution_id") @db.Uuid
+  status      String   @db.VarChar(20)
+  actualQty   Decimal? @map("actual_qty") @db.Decimal(14, 3)
+  note        String?  @db.Text
+  updatedBy   String   @map("updated_by") @db.Uuid
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  execution TreatmentExecution @relation(fields: [executionId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updater   User               @relation(fields: [updatedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("treatment_execution_updates")
+}
