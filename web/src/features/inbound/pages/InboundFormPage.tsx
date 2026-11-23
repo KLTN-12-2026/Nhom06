@@ -465,12 +465,12 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[780px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-border bg-[var(--surface-muted)] text-left font-medium text-[var(--text)]">
+                <tr className="border-b border-border bg-[var(--surface-muted)] text-left font-medium text-[var(--text-muted)]">
                   <th className="px-4 py-3 w-[34%]">Sản phẩm</th>
                   <th className="px-3 py-3 w-[16%]">Mã lô</th>
                   <th className="px-3 py-3 w-[17%]">Hạn sử dụng</th>
-                  <th className="px-3 py-3 w-[12%]">Số lượng</th>
-                  <th className="px-3 py-3 w-[14%]">Đơn giá</th>
+                  <th className="px-3 py-3 w-[12%] text-right">Số lượng</th>
+                  <th className="px-3 py-3 w-[14%] text-right">Đơn giá</th>
                   <th className="px-4 py-3 w-[7%] text-right">
                     <span className="sr-only">Thao tác</span>
                   </th>

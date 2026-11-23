@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/common/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -19,17 +19,10 @@ interface ProductForecastTableCardProps {
 function AssessmentBadge({ assessment }: { assessment: ForecastAssessment }) {
   const isOverstock = assessment === 'OVERSTOCK';
   return (
-    <Badge variant={isOverstock ? 'warning' : 'default'}>
-      <span
-        className={
-          isOverstock
-            ? 'h-2 w-2 rounded-full bg-[var(--risk-medium-bar)]'
-            : 'h-2 w-2 rounded-full bg-[var(--risk-low-fg)]'
-        }
-        aria-hidden="true"
-      />
-      {isOverstock ? 'Tồn nhiều hơn nhu cầu' : 'Cân đối'}
-    </Badge>
+    <StatusBadge
+      tone={isOverstock ? 'warning' : 'active'}
+      label={isOverstock ? 'Tồn nhiều hơn nhu cầu' : 'Cân đối'}
+    />
   );
 }
 

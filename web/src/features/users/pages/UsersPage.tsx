@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { PageHeader } from '@/components/common/PageHeader';
+import { StatusBadge } from '@/components/common/StatusBadge';
 import { useToast } from '@/components/common/toast-context';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,23 +27,6 @@ import {
   useUsersQuery,
 } from '../hooks';
 import { type UserItem } from '../types';
-
-function UserStatusBadge({ status }: { status: string }) {
-  const isActive = status === 'active';
-  return (
-    <Badge variant={isActive ? 'default' : 'critical'}>
-      <span
-        className={
-          isActive
-            ? 'h-2 w-2 rounded-full bg-[var(--risk-low-fg)]'
-            : 'h-2 w-2 rounded-full bg-[var(--risk-critical-fg)]'
-        }
-        aria-hidden="true"
-      />
-      {isActive ? 'Hoạt động' : 'Đã khoá'}
-    </Badge>
-  );
-}
 
 export function UsersPage() {
   const { user: currentUser, hasPermission } = useAuth();
@@ -83,26 +67,31 @@ export function UsersPage() {
     }
   };
 
+  const headerActions = useMemo(
+    () =>
+      canManageUsers ? (
+        <Button
+          type="button"
+          className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
+          onClick={() => setCreateOpen(true)}
+        >
+          Thêm tài khoản
+        </Button>
+      ) : undefined,
+    [canManageUsers],
+  );
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="text-sm text-[var(--text-muted)]">
-          Quản lý tài khoản nội bộ và theo dõi ma trận quyền hạn theo từng vai trò.
-        </div>
-        {canManageUsers && (
-          <Button
-            type="button"
-            className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
-            onClick={() => setCreateOpen(true)}
-          >
-            Thêm tài khoản
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Tài khoản và phân quyền"
+        description="Ba vai trò nội bộ; đại lý và nhà cung cấp không có tài khoản đăng nhập"
+        actions={headerActions}
+      />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Cột trái: Tài khoản + Ma trận quyền (8/12) */}
-        <div className="space-y-6 lg:col-span-8">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        {/* Cột trái: Tài khoản + Ma trận quyền (8/12 trên màn rộng >= 1280px; xếp dọc thoáng ở 390–1024px) */}
+        <div className="min-w-0 space-y-6 xl:col-span-8">
           <Card>
             <CardHeader className="flex flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-lg">Tài khoản</CardTitle>
@@ -112,13 +101,13 @@ export function UsersPage() {
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Tìm theo tên đăng nhập, họ tên, email..."
                   aria-label="Tìm kiếm tài khoản"
-                  className="h-9 w-64"
+                  className="h-9 w-full sm:w-64"
                 />
                 <Select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                   aria-label="Lọc theo trạng thái"
-                  className="h-9 w-40"
+                  className="h-9 w-full sm:w-40"
                 >
                   <option value="">Tất cả trạng thái</option>
                   <option value="active">Hoạt động</option>
@@ -175,20 +164,25 @@ export function UsersPage() {
                           onClick={() => setEditingUser(item)}
                           className="cursor-pointer hover:bg-[var(--surface-muted)]/60"
                         >
-                          <TableCell className="font-medium text-[var(--text)]">
+                          <TableCell className="whitespace-nowrap font-medium text-[var(--text)]">
                             {item.username}
                           </TableCell>
                           <TableCell>
-                            <div>{item.fullName}</div>
+                            <div className="whitespace-nowrap">{item.fullName}</div>
                             <div className="text-xs text-[var(--text-muted)]">{item.email}</div>
                           </TableCell>
-                          <TableCell>{item.role?.name ?? 'Chưa gán'}</TableCell>
-                          <TableCell>
-                            <UserStatusBadge status={item.status} />
+                          <TableCell className="whitespace-nowrap">
+                            {item.role?.name ?? 'Chưa gán'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <StatusBadge
+                              tone={isActive ? 'active' : 'critical'}
+                              label={isActive ? 'Hoạt động' : 'Đã khoá'}
+                            />
                           </TableCell>
                           {canManageUsers && (
                             <TableCell
-                              className="text-right"
+                              className="whitespace-nowrap text-right"
                               onClick={(event) => event.stopPropagation()}
                             >
                               <Button
@@ -226,8 +220,8 @@ export function UsersPage() {
           )}
         </div>
 
-        {/* Cột phải: Ghi chú phân quyền (4/12) */}
-        <div className="lg:col-span-4">
+        {/* Cột phải: Ghi chú phân quyền (4/12 trên màn rộng >= 1280px) */}
+        <div className="min-w-0 xl:col-span-4">
           <RoleNotesCard />
         </div>
       </div>

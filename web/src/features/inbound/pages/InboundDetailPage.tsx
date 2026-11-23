@@ -273,34 +273,38 @@ export function InboundDetailPage() {
             <dl className="space-y-3 text-sm">
               <div className="grid grid-cols-12 gap-2">
                 <dt className="col-span-5 text-[var(--text-muted)]">Số phiếu</dt>
-                <dd className="col-span-7 font-medium text-[var(--text)]">{receipt.receiptNo}</dd>
+                <dd className="col-span-7 min-w-0 break-words font-medium text-[var(--text)]">
+                  {receipt.receiptNo}
+                </dd>
               </div>
               <div className="grid grid-cols-12 gap-2">
                 <dt className="col-span-5 text-[var(--text-muted)]">Nhà cung cấp</dt>
-                <dd className="col-span-7 font-medium text-[var(--text)]">
+                <dd className="col-span-7 min-w-0 break-words font-medium text-[var(--text)]">
                   {receipt.supplier.name}
                 </dd>
               </div>
               <div className="grid grid-cols-12 gap-2">
                 <dt className="col-span-5 text-[var(--text-muted)]">Ngày chứng từ</dt>
-                <dd className="col-span-7 tabular-nums text-[var(--text)]">
+                <dd className="col-span-7 min-w-0 tabular-nums text-[var(--text)]">
                   {formatDate(receipt.receiptDate)}
                 </dd>
               </div>
               <div className="grid grid-cols-12 gap-2">
                 <dt className="col-span-5 text-[var(--text-muted)]">Người lập</dt>
-                <dd className="col-span-7 text-[var(--text)]">{receipt.creator.fullName}</dd>
+                <dd className="col-span-7 min-w-0 break-words text-[var(--text)]">
+                  {receipt.creator.fullName}
+                </dd>
               </div>
               <div className="grid grid-cols-12 gap-2">
                 <dt className="col-span-5 text-[var(--text-muted)]">Người xác nhận</dt>
-                <dd className="col-span-7 text-[var(--text)]">
+                <dd className="col-span-7 min-w-0 break-words text-[var(--text)]">
                   {receipt.confirmer ? receipt.confirmer.fullName : '—'}
                 </dd>
               </div>
               <div className="grid grid-cols-12 gap-2">
                 <dt className="col-span-5 text-[var(--text-muted)]">Thời điểm xác nhận</dt>
                 <dd
-                  className="col-span-7 text-[var(--text)]"
+                  className="col-span-7 min-w-0 text-[var(--text)]"
                   title={receipt.confirmedAt ? formatDateTime(receipt.confirmedAt) : undefined}
                 >
                   {receipt.confirmedAt ? formatRelativeTime(receipt.confirmedAt) : '—'}
@@ -309,7 +313,9 @@ export function InboundDetailPage() {
               {receipt.status !== 'draft' && receipt.notes && (
                 <div className="grid grid-cols-12 gap-2">
                   <dt className="col-span-5 text-[var(--text-muted)]">Ghi chú</dt>
-                  <dd className="col-span-7 text-[var(--text)]">{receipt.notes}</dd>
+                  <dd className="col-span-7 min-w-0 break-words text-[var(--text)]">
+                    {receipt.notes}
+                  </dd>
                 </div>
               )}
             </dl>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { FilterBar } from '@/components/common/FilterBar';
+import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
@@ -90,39 +91,47 @@ export function AgenciesPage() {
     return base;
   }, [canManage]);
 
+  const headerActions = useMemo(
+    () =>
+      canManage ? (
+        <Button
+          type="button"
+          className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
+          onClick={openCreate}
+        >
+          Thêm đại lý
+        </Button>
+      ) : undefined,
+    [canManage],
+  );
+
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <FilterBar className="flex-1">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm theo mã hoặc tên"
-            aria-label="Tìm theo mã hoặc tên đại lý"
-            className="h-10 w-full sm:w-72"
-          />
-          <Select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            aria-label="Lọc theo trạng thái"
-            className="h-10 w-full sm:w-48"
-          >
-            <option value="">Tất cả trạng thái</option>
-            <option value="active">Hoạt động</option>
-            <option value="inactive">Ngừng hoạt động</option>
-          </Select>
-        </FilterBar>
+      <PageHeader
+        title="Đại lý"
+        description="Đơn hàng do nhân viên kho nhập hộ, đại lý không tự đăng nhập"
+        actions={headerActions}
+      />
 
-        {canManage && (
-          <Button
-            type="button"
-            className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
-            onClick={openCreate}
-          >
-            Thêm đại lý
-          </Button>
-        )}
-      </div>
+      <FilterBar>
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm theo mã hoặc tên"
+          aria-label="Tìm theo mã hoặc tên đại lý"
+          className="h-10 w-full sm:w-72"
+        />
+        <Select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          aria-label="Lọc theo trạng thái"
+          className="h-10 w-full sm:w-48"
+        >
+          <option value="">Tất cả trạng thái</option>
+          <option value="active">Hoạt động</option>
+          <option value="inactive">Ngừng hoạt động</option>
+        </Select>
+      </FilterBar>
 
       <DataTable
         columns={columns}

@@ -4,6 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/components/common/ToastProvider';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { AuthProvider } from '@/features/auth/AuthContext';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { type AuthUser } from '@/features/auth/types';
@@ -159,5 +165,57 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
       expect(screen.getAllByRole('link', { name: 'Tài khoản' }).length).toBeGreaterThanOrEqual(1);
     });
     expect(screen.getAllByRole('link', { name: 'Báo cáo' }).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('dựng bố cục màn hình hẹp 3 băng theo mockup 30 với menu cuộn ngang và không tràn trang (T-018 AC2)', async () => {
+    const managerUser: AuthUser = {
+      id: 'u-manager',
+      username: 'quanly',
+      fullName: 'Nguyễn Văn Dương',
+      role: { code: 'WAREHOUSE_MANAGER', name: 'Quản lý kho' },
+      permissions: ['catalog.read', 'inventory.read', 'reports.read'],
+    };
+
+    localStorage.setItem('kho_ai_access_token', 'manager-token');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => managerUser,
+    } as Response);
+
+    const { container } = renderAppWithAuth('/');
+
+    await waitFor(() => {
+      expect(screen.getByText('Nội dung bảng điều khiển')).toBeInTheDocument();
+    });
+
+    const outerWrapper = container.firstElementChild as HTMLElement;
+    expect(outerWrapper.className).toContain('overflow-x-clip');
+
+    const mobileTopbar = screen.getByTestId('mobile-topbar');
+    expect(mobileTopbar.className).toContain('lg:hidden');
+    expect(mobileTopbar.className).toContain('bg-[var(--brand)]');
+    expect(mobileTopbar).toHaveTextContent('Quản lý kho');
+    expect(mobileTopbar).toHaveTextContent('Kho trung tâm Đà Nẵng');
+    expect(mobileTopbar).toHaveTextContent('Nguyễn Văn Dương');
+    expect(mobileTopbar).toHaveTextContent('Đăng xuất');
+
+    const mobileNav = screen.getByRole('navigation', { name: 'Điều hướng di động' });
+    expect(mobileNav.className).toContain('overflow-x-auto');
+  });
+
+  it('DialogContent dùng kích thước co giãn và cuộn dọc phù hợp màn 390px (T-018 AC2)', () => {
+    render(
+      <Dialog open>
+        <DialogContent>
+          <DialogTitle>Xác nhận thao tác</DialogTitle>
+          <DialogDescription>Mô tả hậu quả</DialogDescription>
+        </DialogContent>
+      </Dialog>,
+    );
+
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.className).toContain('w-[calc(100vw-2rem)]');
+    expect(dialog.className).toContain('overflow-y-auto');
   });
 });

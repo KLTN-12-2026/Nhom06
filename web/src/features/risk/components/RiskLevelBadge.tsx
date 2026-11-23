@@ -1,5 +1,4 @@
-import { StatusBadge } from '@/components/common/StatusBadge';
-import { RISK_BADGE_META } from '../constants';
+import { RiskLevelBadge as SharedRiskLevelBadge } from '@/components/common/RiskStatusBadge';
 import { type RiskLevel } from '../types';
 
 export function RiskLevelBadge({
@@ -9,7 +8,5 @@ export function RiskLevelBadge({
   riskLevel: RiskLevel;
   isExpired?: boolean;
 }) {
-  const effectiveLevel: RiskLevel = isExpired ? 'critical' : riskLevel;
-  const meta = RISK_BADGE_META[effectiveLevel];
-  return <StatusBadge tone={meta.tone} label={meta.label} />;
+  return <SharedRiskLevelBadge level={riskLevel} isExpired={isExpired} />;
 }

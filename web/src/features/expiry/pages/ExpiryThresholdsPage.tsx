@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { PageHeader } from '@/components/common/PageHeader';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -65,10 +66,9 @@ export function ExpiryThresholdsPage() {
     }
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Thanh hành động đầu trang theo mockup 18 */}
-      <div className="flex flex-wrap items-center justify-end gap-2">
+  const headerActions = useMemo(
+    () => (
+      <>
         <Button type="button" variant="outline" onClick={() => setHistoryOpen(true)}>
           Lịch sử thay đổi
         </Button>
@@ -81,7 +81,18 @@ export function ExpiryThresholdsPage() {
             Thêm ngưỡng riêng
           </Button>
         )}
-      </div>
+      </>
+    ),
+    [canManage],
+  );
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Ngưỡng cảnh báo hạn sử dụng"
+        description="Ngưỡng theo sản phẩm được ưu tiên hơn ngưỡng theo nhóm hàng, nhóm hàng ưu tiên hơn ngưỡng chung"
+        actions={headerActions}
+      />
 
       {thresholdsQuery.isLoading ? (
         <Card>

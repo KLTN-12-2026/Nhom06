@@ -30,7 +30,7 @@ export function DemandHistoryChartCard({
 
   return (
     <Card className="h-full">
-      <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 border-b border-border pb-4">
+      <CardHeader className="flex flex-col gap-1 space-y-0 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-lg font-semibold text-[var(--text)]">
           Nhu cầu thực tế 90 ngày gần nhất
         </CardTitle>
@@ -51,7 +51,7 @@ export function DemandHistoryChartCard({
           </div>
         ) : (
           <div className="h-64 w-full" data-testid="demand-history-chart">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <LineChart data={chartData} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
                 <XAxis

@@ -21,7 +21,7 @@ const BAR_STYLES: Record<ExpiryBarSeverity, { fillClass: string; textClass: stri
   },
   warning: {
     fillClass: 'bg-[var(--risk-medium-bar)]',
-    textClass: 'text-[var(--risk-medium-bar)]',
+    textClass: 'text-[var(--risk-medium-fg)]',
   },
   normal: {
     fillClass: 'bg-[var(--primary)]',

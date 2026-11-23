@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ExpiryBar } from '@/components/common/ExpiryBar';
 import { PageHeader } from '@/components/common/PageHeader';
-import { StatusBadge, type StatusTone } from '@/components/common/StatusBadge';
+import { ExpirySeverityBadge, RiskLevelBadge } from '@/components/common/RiskStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -17,30 +17,6 @@ import { formatDateVi, formatQuantity, formatVndCompact } from '@/lib/format';
 import { MonthlyInOutChartCard } from '../components/MonthlyInOutChartCard';
 import { SystemHealthCompactCard } from '../components/SystemHealthCompactCard';
 import { useDashboardQuery } from '../hooks';
-import { type DashboardTopLotItem, type RiskLevel } from '../types';
-
-const RISK_LEVEL_BADGE: Record<RiskLevel, { tone: StatusTone; label: string }> = {
-  critical: { tone: 'neutral', label: 'Hết hạn' },
-  high: { tone: 'critical', label: 'Nguy cấp' },
-  medium: { tone: 'warning', label: 'Trung bình' },
-  low: { tone: 'active', label: 'Thấp' },
-};
-
-function getTopLotBadge(lot: DashboardTopLotItem): { tone: StatusTone; label: string } {
-  if (lot.riskLevel) {
-    return RISK_LEVEL_BADGE[lot.riskLevel];
-  }
-  switch (lot.expirySeverity) {
-    case 'expired':
-      return { tone: 'neutral', label: 'Hết hạn' };
-    case 'critical':
-      return { tone: 'critical', label: 'Nguy cấp' };
-    case 'warning':
-      return { tone: 'warning', label: 'Trung bình' };
-    default:
-      return { tone: 'active', label: 'Bình thường' };
-  }
-}
 
 export function DashboardPage() {
   const { user, hasPermission } = useAuth();
@@ -98,7 +74,7 @@ export function DashboardPage() {
               className="block rounded-lg border border-border bg-[var(--surface)] p-5 transition-colors hover:border-[var(--info)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
             >
               <div className="text-sm font-medium text-[var(--text-muted)]">Tổng tồn kho</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--text)]">
+              <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
                 {formatQuantity(data.totalOnHand)}
               </div>
               <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -111,7 +87,7 @@ export function DashboardPage() {
               className="block rounded-lg border border-border bg-[var(--surface)] p-5 transition-colors hover:border-[var(--info)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
             >
               <div className="text-sm font-medium text-[var(--text-muted)]">Lô cận hạn</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--risk-medium-kpi)]">
+              <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--risk-medium-kpi)]">
                 {formatQuantity(data.nearExpiry.lots)}
               </div>
               <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -124,7 +100,7 @@ export function DashboardPage() {
               className="block rounded-lg border border-border bg-[var(--surface)] p-5 transition-colors hover:border-[var(--info)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
             >
               <div className="text-sm font-medium text-[var(--text-muted)]">Lô đã hết hạn</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--risk-critical-fg)]">
+              <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--risk-critical-fg)]">
                 {formatQuantity(data.expired.lots)}
               </div>
               <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -143,7 +119,7 @@ export function DashboardPage() {
                 {data.valueAtRisk && valueAtRiskFormatted ? (
                   <>
                     <div className="mt-2 flex items-baseline gap-1.5">
-                      <span className="text-3xl font-semibold tabular-nums text-[var(--risk-critical-fg)]">
+                      <span className="text-4xl font-semibold tabular-nums text-[var(--risk-critical-fg)]">
                         {valueAtRiskFormatted.valueText}
                       </span>
                       <span className="text-sm font-medium text-[var(--text-muted)]">
@@ -191,25 +167,22 @@ export function DashboardPage() {
                   <CardContent className="pt-4">
                     {data.riskSummary ? (
                       <div className="divide-y divide-border">
-                        {data.riskSummary.map((row) => {
-                          const badge = RISK_LEVEL_BADGE[row.level];
-                          return (
-                            <div
-                              key={row.level}
-                              className="flex items-center justify-between gap-2 py-3 text-sm"
-                            >
-                              <StatusBadge tone={badge.tone} label={badge.label} />
-                              <div className="flex items-center gap-5 tabular-nums">
-                                <span className="font-medium text-[var(--text)]">
-                                  {formatQuantity(row.lots)} lô
-                                </span>
-                                <span className="w-20 text-right text-[var(--text-muted)]">
-                                  {formatQuantity(row.surplusQty)} dư
-                                </span>
-                              </div>
+                        {data.riskSummary.map((row) => (
+                          <div
+                            key={row.level}
+                            className="flex items-center justify-between gap-2 py-3 text-sm"
+                          >
+                            <RiskLevelBadge level={row.level} />
+                            <div className="flex items-center gap-3 tabular-nums sm:gap-5">
+                              <span className="whitespace-nowrap font-medium text-[var(--text)]">
+                                {formatQuantity(row.lots)} lô
+                              </span>
+                              <span className="min-w-[68px] whitespace-nowrap text-right text-[var(--text-muted)]">
+                                {formatQuantity(row.surplusQty)} dư
+                              </span>
                             </div>
-                          );
-                        })}
+                          </div>
+                        ))}
                       </div>
                     ) : (
                       <p className="py-6 text-sm text-[var(--text-muted)]">
@@ -263,39 +236,40 @@ export function DashboardPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {data.topLots.map((lot) => {
-                            const badge = getTopLotBadge(lot);
-                            return (
-                              <TableRow key={lot.lotId}>
-                                <TableCell>
-                                  <div className="min-w-[160px]">
-                                    <span className="font-medium text-[var(--text)]">
-                                      {lot.product.code}
-                                    </span>{' '}
-                                    <span className="text-[var(--text-muted)]">
-                                      {lot.product.name}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="font-medium whitespace-nowrap text-[var(--text)]">
-                                  {lot.lotCode}
-                                </TableCell>
-                                <TableCell className="text-right tabular-nums whitespace-nowrap text-[var(--text)]">
-                                  {formatQuantity(lot.onHandQty)}
-                                </TableCell>
-                                <TableCell>
-                                  <ExpiryBar
-                                    daysRemaining={lot.daysRemaining}
-                                    severity={lot.expirySeverity}
-                                    maxDays={Math.max(lot.warningDays, 30)}
-                                  />
-                                </TableCell>
-                                <TableCell className="whitespace-nowrap">
-                                  <StatusBadge tone={badge.tone} label={badge.label} />
-                                </TableCell>
-                              </TableRow>
-                            );
-                          })}
+                          {data.topLots.map((lot) => (
+                            <TableRow key={lot.lotId}>
+                              <TableCell>
+                                <div className="min-w-[160px]">
+                                  <span className="font-medium text-[var(--text)]">
+                                    {lot.product.code}
+                                  </span>{' '}
+                                  <span className="text-[var(--text-muted)]">
+                                    {lot.product.name}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium whitespace-nowrap text-[var(--text)]">
+                                {lot.lotCode}
+                              </TableCell>
+                              <TableCell className="text-right tabular-nums whitespace-nowrap text-[var(--text)]">
+                                {formatQuantity(lot.onHandQty)}
+                              </TableCell>
+                              <TableCell>
+                                <ExpiryBar
+                                  daysRemaining={lot.daysRemaining}
+                                  severity={lot.expirySeverity}
+                                  maxDays={Math.max(lot.warningDays, 30)}
+                                />
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {lot.riskLevel ? (
+                                  <RiskLevelBadge level={lot.riskLevel} />
+                                ) : (
+                                  <ExpirySeverityBadge severity={lot.expirySeverity} />
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
                         </TableBody>
                       </Table>
                     </div>

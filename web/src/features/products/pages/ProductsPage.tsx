@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { FilterBar } from '@/components/common/FilterBar';
+import { PageHeader } from '@/components/common/PageHeader';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
@@ -118,25 +119,29 @@ export function ProductsPage() {
         ? `${totalCount} mặt hàng ngừng kinh doanh`
         : `${totalCount} mặt hàng`;
 
+  const headerActions = useMemo(
+    () => (
+      <>
+        <Button type="button" variant="secondary" onClick={() => setGroupsOpen(true)}>
+          Nhóm hàng
+        </Button>
+        {canManage && (
+          <Button
+            type="button"
+            className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
+            onClick={openCreate}
+          >
+            Thêm sản phẩm
+          </Button>
+        )}
+      </>
+    ),
+    [canManage],
+  );
+
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[var(--text-muted)]">{countLabel}</p>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="secondary" onClick={() => setGroupsOpen(true)}>
-            Nhóm hàng
-          </Button>
-          {canManage && (
-            <Button
-              type="button"
-              className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
-              onClick={openCreate}
-            >
-              Thêm sản phẩm
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader title="Sản phẩm" description={countLabel} actions={headerActions} />
 
       <FilterBar>
         <Input

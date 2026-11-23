@@ -82,7 +82,7 @@ export function MonthlyInOutChartCard({
 
         {!isLoading && !isError && hasAnyMovement && (
           <div className="h-[240px] w-full" data-testid="monthly-inout-chart">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart
                 data={chartData}
                 margin={{ top: 8, right: 8, left: 0, bottom: 0 }}

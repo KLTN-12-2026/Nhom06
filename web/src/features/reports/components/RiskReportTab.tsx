@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { StatusBadge, type StatusTone } from '@/components/common/StatusBadge';
+import { RiskLevelBadge } from '@/components/common/RiskStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,13 +18,6 @@ import { useProductsQuery } from '@/features/products/hooks';
 import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
 import { useRiskReportQuery } from '../hooks';
 import { type RiskReportParams } from '../types';
-
-const RISK_LEVEL_BADGE: Record<RiskLevel, { tone: StatusTone; label: string }> = {
-  critical: { tone: 'neutral', label: 'Hết hạn' },
-  high: { tone: 'critical', label: 'Nguy cấp' },
-  medium: { tone: 'warning', label: 'Trung bình' },
-  low: { tone: 'active', label: 'Thấp' },
-};
 
 const PROPOSAL_STATUS_LABELS: Record<string, string> = {
   new: 'Mới tạo',
@@ -98,7 +91,7 @@ export function RiskReportTab() {
       {/* Bộ lọc báo cáo rủi ro */}
       <form onSubmit={handleSubmit} className="space-y-2">
         <div className="flex flex-wrap items-end gap-3">
-          <div className="w-[155px]">
+          <div className="w-full sm:w-[155px]">
             <label
               htmlFor="risk-from"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -113,7 +106,7 @@ export function RiskReportTab() {
             />
           </div>
 
-          <div className="w-[155px]">
+          <div className="w-full sm:w-[155px]">
             <label
               htmlFor="risk-to"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -128,7 +121,7 @@ export function RiskReportTab() {
             />
           </div>
 
-          <div className="w-[210px]">
+          <div className="w-full sm:w-[210px]">
             <label
               htmlFor="risk-product"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -149,7 +142,7 @@ export function RiskReportTab() {
             </Select>
           </div>
 
-          <div className="w-[155px]">
+          <div className="w-full sm:w-[155px]">
             <label
               htmlFor="risk-level"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -169,7 +162,7 @@ export function RiskReportTab() {
             </Select>
           </div>
 
-          <div className="w-[165px]">
+          <div className="w-full sm:w-[165px]">
             <label
               htmlFor="risk-proposal-status"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -190,7 +183,7 @@ export function RiskReportTab() {
             </Select>
           </div>
 
-          <div className="w-[175px]">
+          <div className="w-full sm:w-[175px]">
             <label
               htmlFor="risk-exec-status"
               className="mb-1 block text-xs font-medium text-[var(--text-muted)]"
@@ -250,7 +243,7 @@ export function RiskReportTab() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-lg border border-border bg-[var(--surface)] p-5">
               <div className="text-sm font-medium text-[var(--text-muted)]">Lô cận hạn</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--risk-medium-kpi)]">
+              <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--risk-medium-kpi)]">
                 {formatQuantity(data.expiry.nearExpiry.lots)}
               </div>
               <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -261,7 +254,7 @@ export function RiskReportTab() {
 
             <div className="rounded-lg border border-border bg-[var(--surface)] p-5">
               <div className="text-sm font-medium text-[var(--text-muted)]">Lô đã hết hạn</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--risk-critical-fg)]">
+              <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--risk-critical-fg)]">
                 {formatQuantity(data.expiry.expired.lots)}
               </div>
               <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -271,7 +264,7 @@ export function RiskReportTab() {
 
             <div className="rounded-lg border border-border bg-[var(--surface)] p-5">
               <div className="text-sm font-medium text-[var(--text-muted)]">Lô có đề xuất xử lý</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--text)]">
+              <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
                 {formatQuantity(totalProposalsCount)}
               </div>
               <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -281,7 +274,7 @@ export function RiskReportTab() {
 
             <div className="rounded-lg border border-border bg-[var(--surface)] p-5">
               <div className="text-sm font-medium text-[var(--text-muted)]">Hoàn tất thực hiện</div>
-              <div className="mt-2 text-3xl font-semibold tabular-nums text-[var(--risk-low-fg)]">
+              <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--risk-low-fg)]">
                 {formatQuantity(completedExecutionsCount)}
               </div>
               <div className="mt-1.5 text-xs text-[var(--text-muted)]">
@@ -396,31 +389,29 @@ export function RiskReportTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {data.lots.map((row) => {
-                        const badge = RISK_LEVEL_BADGE[row.riskLevel];
-                        return (
-                          <TableRow key={row.lot.id}>
-                            <TableCell>
-                              <div className="min-w-[160px]">
-                                <span className="font-medium text-[var(--text)]">
-                                  {row.product.code}
-                                </span>{' '}
-                                <span className="text-[var(--text-muted)]">
-                                  {row.product.name}
-                                </span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <div className="font-medium text-[var(--text)]">
-                                {row.lot.lotCode}
-                              </div>
-                              <div className="text-xs text-[var(--text-muted)] tabular-nums">
-                                HSD {formatDateVi(row.lot.expiryDate)}
-                              </div>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <StatusBadge tone={badge.tone} label={badge.label} />
-                            </TableCell>
+                      {data.lots.map((row) => (
+                        <TableRow key={row.lot.id}>
+                          <TableCell>
+                            <div className="min-w-[160px]">
+                              <span className="font-medium text-[var(--text)]">
+                                {row.product.code}
+                              </span>{' '}
+                              <span className="text-[var(--text-muted)]">
+                                {row.product.name}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <div className="font-medium text-[var(--text)]">
+                              {row.lot.lotCode}
+                            </div>
+                            <div className="text-xs text-[var(--text-muted)] tabular-nums">
+                              HSD {formatDateVi(row.lot.expiryDate)}
+                            </div>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            <RiskLevelBadge level={row.riskLevel} />
+                          </TableCell>
                             <TableCell className="text-right tabular-nums whitespace-nowrap text-[var(--text)]">
                               {formatQuantity(row.forecastDemand)} {row.product.unit}
                             </TableCell>
@@ -461,8 +452,7 @@ export function RiskReportTab() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        );
-                      })}
+                      ))}
                     </TableBody>
                   </Table>
                 </div>

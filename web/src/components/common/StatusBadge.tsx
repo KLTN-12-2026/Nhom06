@@ -8,7 +8,7 @@ const TONE_MAP: Record<
 > = {
   active: { variant: 'default', dotClass: 'bg-[var(--risk-low-fg)]' },
   inactive: { variant: 'neutral', dotClass: 'bg-[var(--risk-expired-fg)]' },
-  warning: { variant: 'warning', dotClass: 'bg-[var(--risk-medium-fg)]' },
+  warning: { variant: 'warning', dotClass: 'bg-[var(--risk-medium-bar)]' },
   critical: { variant: 'critical', dotClass: 'bg-[var(--risk-critical-fg)]' },
   neutral: { variant: 'neutral', dotClass: 'bg-[var(--risk-expired-fg)]' },
 };

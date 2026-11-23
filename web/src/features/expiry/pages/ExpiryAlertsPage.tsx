@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { ExpiryBar } from '@/components/common/ExpiryBar';
 import { FilterBar } from '@/components/common/FilterBar';
-import { StatusBadge, type StatusTone } from '@/components/common/StatusBadge';
+import { PageHeader } from '@/components/common/PageHeader';
+import { ExpirySeverityBadge } from '@/components/common/RiskStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -16,12 +17,6 @@ import {
   useExpiryAlertsSummaryQuery,
 } from '../hooks';
 import { type ExpiryAlertItem, type ExpiryAlertSeverity } from '../types';
-
-const SEVERITY_BADGE: Record<ExpiryAlertSeverity, { tone: StatusTone; label: string }> = {
-  expired: { tone: 'neutral', label: 'Hết hạn' },
-  critical: { tone: 'critical', label: 'Nguy cấp' },
-  warning: { tone: 'warning', label: 'Trung bình' },
-};
 
 export function ExpiryAlertsPage() {
   const { hasPermission } = useAuth();
@@ -141,10 +136,7 @@ export function ExpiryAlertsPage() {
         key: 'severity',
         header: 'Tình trạng',
         cellClassName: 'whitespace-nowrap',
-        render: (row) => {
-          const badge = SEVERITY_BADGE[row.severity];
-          return <StatusBadge tone={badge.tone} label={badge.label} />;
-        },
+        render: (row) => <ExpirySeverityBadge severity={row.severity} />,
       },
       {
         key: 'actions',
@@ -163,30 +155,35 @@ export function ExpiryAlertsPage() {
     [canReadProposals],
   );
 
+  const headerActions = useMemo(
+    () => (
+      <>
+        <Button asChild type="button" variant="secondary">
+          <Link to="/expiry-thresholds">Ngưỡng cảnh báo</Link>
+        </Button>
+        {canReadProposals && (
+          <Button
+            asChild
+            type="button"
+            className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
+          >
+            <Link to="/proposals">Xem đề xuất xử lý</Link>
+          </Button>
+        )}
+      </>
+    ),
+    [canReadProposals],
+  );
+
   const summary = summaryQuery.data;
 
   return (
     <div className="space-y-6">
-      {/* Dòng phụ ngày đánh giá và 2 nút điều hướng theo mockup 17 */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[var(--text-muted)]">
-          Đánh giá ngày {evaluationDateLabel} theo múi giờ Asia/Ho_Chi_Minh
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button asChild type="button" variant="secondary">
-            <Link to="/expiry-thresholds">Ngưỡng cảnh báo</Link>
-          </Button>
-          {canReadProposals && (
-            <Button
-              asChild
-              type="button"
-              className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
-            >
-              <Link to="/proposals">Xem đề xuất xử lý</Link>
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Cảnh báo hàng cận hạn"
+        description={`Đánh giá ngày ${evaluationDateLabel} theo múi giờ Asia/Ho_Chi_Minh`}
+        actions={headerActions}
+      />
 
       {/* 3 KPI cards đúng mockup 17 */}
       <div className="grid gap-6 md:grid-cols-3">

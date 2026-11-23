@@ -47,7 +47,7 @@ export function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] lg:flex">
+    <div className="min-h-screen w-full overflow-x-clip bg-[var(--bg)] text-[var(--text)] lg:flex">
       {/* Sidebar desktop (256px, cố định trái theo DESIGN.md mục 4 & mockup 02) */}
       <aside className="hidden lg:flex lg:w-64 lg:shrink-0 lg:flex-col lg:bg-[var(--brand)] lg:text-[var(--brand-fg)]">
         <div className="border-b border-white/10 px-5 py-5">
@@ -106,26 +106,18 @@ export function AppLayout() {
         </div>
       </aside>
 
-      {/* Thanh điều hướng trên cùng cho màn hẹp (< 1024px, theo mockup 30) */}
-      <div className="bg-[var(--brand)] text-[var(--brand-fg)] lg:hidden">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div>
-            <div className="text-base font-semibold leading-tight">Quản lý kho</div>
-            <div className="text-xs text-white/60">
-              {user ? `${user.fullName} · ${user.role?.name ?? ''}` : 'Kho trung tâm Đà Nẵng'}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => void handleLogout()}
-            className="rounded border border-white/30 px-2.5 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
-          >
-            Đăng xuất
-          </button>
+      {/* Thanh điều hướng trên cùng cho màn hẹp (< 1024px, 3 băng theo mockup 30) */}
+      <div
+        data-testid="mobile-topbar"
+        className="bg-[var(--brand)] text-[var(--brand-fg)] lg:hidden"
+      >
+        <div className="px-4 py-3">
+          <div className="text-base font-semibold leading-tight">Quản lý kho</div>
+          <div className="mt-0.5 text-xs text-white/60">Kho trung tâm Đà Nẵng</div>
         </div>
 
         <nav
-          className="flex overflow-x-auto border-t border-white/10"
+          className="flex overflow-x-auto border-y border-white/10"
           aria-label="Điều hướng di động"
         >
           {visibleItems.map((item) => (
@@ -151,12 +143,25 @@ export function AppLayout() {
             </NavLink>
           ))}
         </nav>
+
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5">
+          <span className="min-w-0 truncate text-sm font-medium">
+            {user?.fullName ?? 'Chưa đăng nhập'}
+          </span>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="shrink-0 rounded border border-white/30 px-2.5 py-1 text-xs text-white/90 transition-colors hover:bg-white/10"
+          >
+            Đăng xuất
+          </button>
+        </div>
       </div>
 
       {/* Vùng nội dung chính */}
       <PageHeaderContext.Provider value={headerContextValue}>
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-[var(--surface)] px-6 py-4 lg:px-8">
+          <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-[var(--surface)] px-4 py-4 sm:px-6 lg:px-8">
             <div className="min-w-0">
               <h1 className="text-2xl font-semibold text-[var(--text)]">{pageTitle}</h1>
               <p className="mt-0.5 text-sm text-[var(--text-muted)]">{pageDescription}</p>
@@ -164,7 +169,7 @@ export function AppLayout() {
             {pageActions && <div className="flex flex-wrap items-center gap-2">{pageActions}</div>}
           </header>
 
-          <main className="flex-1 p-6 lg:p-8">
+          <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
             <Outlet />
           </main>
         </div>

@@ -188,7 +188,7 @@ export function OrdersListPage() {
             />
           </FilterBar>
         </div>
-        <p className="shrink-0 text-sm text-[var(--text-muted)]">
+        <p className="shrink-0 text-sm tabular-nums text-[var(--text-muted)]">
           {pendingCount} đơn chờ xuất
         </p>
       </div>

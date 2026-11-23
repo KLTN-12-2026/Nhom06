@@ -100,8 +100,12 @@ export function ReportsPage() {
       />
 
       {/* Thanh chuyển 2 tab theo docs/DESIGN.md (gạch chân 2px --brand) */}
-      <div className="border-b border-border" role="tablist" aria-label="Loại báo cáo">
-        <div className="flex gap-6">
+      <div
+        className="overflow-x-auto border-b border-border"
+        role="tablist"
+        aria-label="Loại báo cáo"
+      >
+        <div className="flex gap-6 whitespace-nowrap">
           <button
             type="button"
             role="tab"

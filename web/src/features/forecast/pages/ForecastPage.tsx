@@ -1,3 +1,5 @@
+import { useCallback, useMemo } from 'react';
+import { PageHeader } from '@/components/common/PageHeader';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,7 +25,7 @@ export function ForecastPage() {
   const historyQuery = useDailyHistoryQuery(90);
   const runMutation = useRunForecastMutation();
 
-  const handleRunForecast = async () => {
+  const handleRunForecast = useCallback(async () => {
     try {
       await runMutation.mutateAsync({ horizonDays: 60 });
       showToast('Đã hoàn tất chạy dự báo nhu cầu.');
@@ -34,31 +36,37 @@ export function ForecastPage() {
           : 'Không thể chạy dự báo nhu cầu, vui lòng thử lại sau.';
       showToast(message, 'error');
     }
-  };
+  }, [runMutation, showToast]);
 
   const latestRun = latestQuery.data?.run ?? null;
   const items = latestQuery.data?.items ?? [];
 
+  const headerDescription = latestRun
+    ? `Lượt chạy ${latestRun.modelVersion ?? 'chưa xác định'} · ${formatDateTimeVi(latestRun.finishedAt)}`
+    : 'Chưa có lượt chạy dự báo nào';
+
+  const headerActions = useMemo(
+    () =>
+      canRunAnalysis ? (
+        <Button
+          type="button"
+          onClick={() => void handleRunForecast()}
+          disabled={runMutation.isPending}
+          className="bg-[var(--brand)] text-[var(--brand-fg)] hover:opacity-95"
+        >
+          {runMutation.isPending ? 'Đang chạy dự báo...' : 'Chạy dự báo'}
+        </Button>
+      ) : undefined,
+    [canRunAnalysis, handleRunForecast, runMutation.isPending],
+  );
+
   return (
     <div className="space-y-6">
-      {/* Thanh thông tin lượt chạy và nút hành động */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-[var(--text-muted)]">
-          {latestRun
-            ? `Lượt chạy ${latestRun.modelVersion ?? 'chưa xác định'} · ${formatDateTimeVi(latestRun.finishedAt)}`
-            : 'Chưa có lượt chạy dự báo nào'}
-        </p>
-
-        {canRunAnalysis ? (
-          <Button
-            type="button"
-            onClick={() => void handleRunForecast()}
-            disabled={runMutation.isPending}
-          >
-            {runMutation.isPending ? 'Đang chạy dự báo...' : 'Chạy dự báo'}
-          </Button>
-        ) : null}
-      </div>
+      <PageHeader
+        title="Dự báo nhu cầu tiêu thụ"
+        description={headerDescription}
+        actions={headerActions}
+      />
 
       {/* Hộp thông tin giới hạn dữ liệu mô phỏng (mockup 19) */}
       <div
