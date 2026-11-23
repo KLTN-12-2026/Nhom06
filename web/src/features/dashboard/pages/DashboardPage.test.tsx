@@ -33,7 +33,7 @@ describe('DashboardPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Ổn định (ok)')).toBeInTheDocument();
     });
-    expect(screen.getAllByText('Hoạt động (up)')).toHaveLength(2);
+    expect(screen.getAllByText('Hoạt động (up)')).toHaveLength(999);
   });
 
   it('hiển thị thông báo lỗi thân thiện khi API không phản hồi', async () => {
