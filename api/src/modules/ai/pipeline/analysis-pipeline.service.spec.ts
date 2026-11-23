@@ -4,13 +4,26 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { ExpiryThresholdsService } from '../../expiry/expiry-thresholds.service';
 import { ForecastService, GeneratedForecastBundle } from '../forecast/forecast.service';
 import { MlServiceError } from '../forecast/ml-client.service';
+import { ProposalsLlmService } from '../proposals/proposals-llm.service';
 import { ActualDemandSyncService } from './actual-demand-sync.service';
 import { AnalysisPipelineService } from './analysis-pipeline.service';
 
-describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
+describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6 & T-014 pipeline hook)', () => {
   function createMocks() {
     const txDemandForecastCreateMany = jest.fn().mockResolvedValue({ count: 0 });
-    const txLotRiskCreateMany = jest.fn().mockResolvedValue({ count: 0 });
+    const txLotRiskCreateManyAndReturn = jest.fn().mockImplementation(async ({ data }) =>
+      (data as Array<{ lotId: string }>).map((row, idx) => ({
+        id: `risk-${idx + 1}`,
+        lotId: row.lotId,
+      })),
+    );
+    const txProposalFindMany = jest.fn().mockResolvedValue([]);
+    const txProposalCreateManyAndReturn = jest.fn().mockImplementation(async ({ data }) =>
+      (data as Array<{ lotId: string }>).map((row, idx) => ({
+        id: `proposal-${idx + 1}`,
+        lotId: row.lotId,
+      })),
+    );
     const txAnalysisRunUpdate = jest.fn().mockImplementation(async ({ data }) => ({
       id: 'run-full-1',
       runType: 'FULL',
@@ -42,7 +55,11 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
       $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
         fn({
           demandForecast: { createMany: txDemandForecastCreateMany },
-          lotRiskAssessment: { createMany: txLotRiskCreateMany },
+          lotRiskAssessment: { createManyAndReturn: txLotRiskCreateManyAndReturn },
+          treatmentProposal: {
+            findMany: txProposalFindMany,
+            createManyAndReturn: txProposalCreateManyAndReturn,
+          },
           analysisRun: { update: txAnalysisRunUpdate },
         }),
       ),
@@ -60,11 +77,16 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
       syncFromConfirmedOrderOutbounds: jest.fn().mockResolvedValue(0),
     } as unknown as ActualDemandSyncService;
 
+    const proposalsLlmService = {
+      explainProposalsBatch: jest.fn().mockResolvedValue(undefined),
+    } as unknown as ProposalsLlmService;
+
     const service = new AnalysisPipelineService(
       prisma,
       forecastService,
       expiryThresholdsService,
       actualDemandSyncService,
+      proposalsLlmService,
     );
 
     return {
@@ -73,8 +95,11 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
       forecastService,
       expiryThresholdsService,
       actualDemandSyncService,
+      proposalsLlmService,
       txDemandForecastCreateMany,
-      txLotRiskCreateMany,
+      txLotRiskCreateManyAndReturn,
+      txProposalFindMany,
+      txProposalCreateManyAndReturn,
       txAnalysisRunUpdate,
     };
   }
@@ -92,9 +117,16 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
     );
   });
 
-  it('AC4: khi ML lỗi → đánh dấu run failed kèm errorMessage, không ghi demand_forecasts / lot_risk_assessments nào và ném 502', async () => {
-    const { service, prisma, forecastService, txDemandForecastCreateMany, txLotRiskCreateMany } =
-      createMocks();
+  it('AC4: khi ML lỗi → đánh dấu run failed kèm errorMessage, không ghi demand_forecasts / lot_risk_assessments / proposals nào và ném 502', async () => {
+    const {
+      service,
+      prisma,
+      forecastService,
+      proposalsLlmService,
+      txDemandForecastCreateMany,
+      txLotRiskCreateManyAndReturn,
+      txProposalCreateManyAndReturn,
+    } = createMocks();
 
     (forecastService.generateForecastForRun as jest.Mock).mockRejectedValueOnce(
       new MlServiceError('Dịch vụ dự báo không phản hồi sau 10 giây tại SP005'),
@@ -106,7 +138,9 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
 
     expect(prisma.$transaction).not.toHaveBeenCalled();
     expect(txDemandForecastCreateMany).not.toHaveBeenCalled();
-    expect(txLotRiskCreateMany).not.toHaveBeenCalled();
+    expect(txLotRiskCreateManyAndReturn).not.toHaveBeenCalled();
+    expect(txProposalCreateManyAndReturn).not.toHaveBeenCalled();
+    expect(proposalsLlmService.explainProposalsBatch).not.toHaveBeenCalled();
     expect(prisma.analysisRun.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'run-full-1' },
@@ -119,14 +153,17 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
     );
   });
 
-  it('AC2 + AC6: lưu dự báo + đánh giá rủi ro trong 1 transaction cuối, bỏ qua sản phẩm thiếu dự báo và ghi vào metrics.warnings', async () => {
+  it('AC2 + AC6 + T-014: lưu dự báo, rủi ro, đề xuất trong 1 transaction; bỏ qua lô đã có đề xuất hoạt động; gọi LLM sau commit', async () => {
     const {
       service,
       prisma,
       forecastService,
       actualDemandSyncService,
+      proposalsLlmService,
       txDemandForecastCreateMany,
-      txLotRiskCreateMany,
+      txLotRiskCreateManyAndReturn,
+      txProposalFindMany,
+      txProposalCreateManyAndReturn,
     } = createMocks();
 
     const bundle: GeneratedForecastBundle = {
@@ -160,6 +197,9 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
     (forecastService.generateForecastForRun as jest.Mock).mockResolvedValueOnce(bundle);
     (actualDemandSyncService.syncFromConfirmedOrderOutbounds as jest.Mock).mockResolvedValueOnce(2);
 
+    // Giả lập lot-existing đã có đề xuất hoạt động nên phải được bỏ qua
+    txProposalFindMany.mockResolvedValueOnce([{ lotId: 'lot-existing' }]);
+
     (prisma.lot.findMany as jest.Mock).mockResolvedValueOnce([
       {
         id: 'lot-1',
@@ -168,8 +208,30 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
         expiryDate: new Date('2026-12-03T00:00:00.000Z'),
         receivedAt: new Date('2026-10-01T00:00:00.000Z'),
         status: 'active',
-        product: { id: 'prod-1', code: 'SP001', name: 'Sản phẩm 1', status: 'active' },
+        product: {
+          id: 'prod-1',
+          code: 'SP001',
+          name: 'Sản phẩm 1',
+          unit: 'Lốc',
+          status: 'active',
+        },
         balance: { onHandQty: new Prisma.Decimal('100') },
+      },
+      {
+        id: 'lot-existing',
+        productId: 'prod-1',
+        lotCode: 'L002',
+        expiryDate: new Date('2026-11-01T00:00:00.000Z'),
+        receivedAt: new Date('2026-09-01T00:00:00.000Z'),
+        status: 'active',
+        product: {
+          id: 'prod-1',
+          code: 'SP001',
+          name: 'Sản phẩm 1',
+          unit: 'Lốc',
+          status: 'active',
+        },
+        balance: { onHandQty: new Prisma.Decimal('40') },
       },
       {
         id: 'lot-missing-forecast',
@@ -178,7 +240,13 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
         expiryDate: new Date('2026-12-10T00:00:00.000Z'),
         receivedAt: new Date('2026-11-01T00:00:00.000Z'),
         status: 'active',
-        product: { id: 'prod-999', code: 'SP999', name: 'Sản phẩm mới', status: 'active' },
+        product: {
+          id: 'prod-999',
+          code: 'SP999',
+          name: 'Sản phẩm mới',
+          unit: 'Thùng',
+          status: 'active',
+        },
         balance: { onHandQty: new Prisma.Decimal('50') },
       },
     ]);
@@ -187,22 +255,73 @@ describe('AnalysisPipelineService (T-013 AC2, AC4, AC5, AC6)', () => {
 
     expect(actualDemandSyncService.syncFromConfirmedOrderOutbounds).toHaveBeenCalledTimes(1);
     expect(txDemandForecastCreateMany).toHaveBeenCalledTimes(1);
-    expect(txLotRiskCreateMany).toHaveBeenCalledTimes(1);
+    expect(txLotRiskCreateManyAndReturn).toHaveBeenCalledTimes(1);
+    expect(txProposalCreateManyAndReturn).toHaveBeenCalledTimes(1);
 
-    const savedRiskRows = (txLotRiskCreateMany.mock.calls[0][0] as { data: Array<{ lotId: string; forecastId: null }> }).data;
-    expect(savedRiskRows).toHaveLength(1);
-    expect(savedRiskRows[0].lotId).toBe('lot-1');
-    expect(savedRiskRows[0].forecastId).toBeNull();
+    const savedProposals = (
+      txProposalCreateManyAndReturn.mock.calls[0][0] as {
+        data: Array<{ lotId: string; status: string; actionType: string }>;
+      }
+    ).data;
+    expect(savedProposals).toHaveLength(1);
+    expect(savedProposals[0].lotId).toBe('lot-1');
+    expect(savedProposals[0].status).toBe('pending');
+    expect(savedProposals[0].actionType).toBe('CONTACT_AGENCY');
 
     expect(result.status).toBe('succeeded');
-    expect(result.lotCount).toBe(1);
+    expect(result.lotCount).toBe(2);
+    expect(result.metrics.createdProposals).toBe(1);
+    expect(result.metrics.skippedProposals).toBe(1);
     expect(result.metrics.warnings).toHaveLength(1);
-    expect(result.metrics.warnings[0]).toEqual(
-      expect.objectContaining({
-        code: 'MISSING_FORECAST',
-        productCode: 'SP999',
-        lotCount: 1,
-      }),
+    expect(proposalsLlmService.explainProposalsBatch).toHaveBeenCalledWith(
+      [expect.objectContaining({ proposalId: 'proposal-1' })],
+      3,
     );
+  });
+
+  it('T-014 bất biến 7: lỗi ngoài ý muốn ở batch LLM sau commit không làm đổi kết quả succeeded của lượt phân tích', async () => {
+    const { service, prisma, forecastService, proposalsLlmService } = createMocks();
+
+    const bundle: GeneratedForecastBundle = {
+      forecastRows: [],
+      dailyForecastByProduct: new Map([
+        ['prod-1', [{ date: '2026-11-23', qty: new Prisma.Decimal('0') }]],
+      ]),
+      modelVersion: 'rf-v1',
+      metrics: {
+        model: { mean_mae: 1, mean_rmse: 1 },
+        baseline: { mean_mae: 2, mean_rmse: 2 },
+        horizonDays: 60,
+        productCount: 1,
+        dataSource: 'SIMULATED',
+        skipped: [],
+      },
+    };
+    (forecastService.generateForecastForRun as jest.Mock).mockResolvedValueOnce(bundle);
+    (prisma.lot.findMany as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 'lot-1',
+        productId: 'prod-1',
+        lotCode: 'L001',
+        expiryDate: new Date('2026-11-28T00:00:00.000Z'),
+        receivedAt: new Date('2026-10-01T00:00:00.000Z'),
+        status: 'active',
+        product: {
+          id: 'prod-1',
+          code: 'SP001',
+          name: 'Sản phẩm 1',
+          unit: 'Lốc',
+          status: 'active',
+        },
+        balance: { onHandQty: new Prisma.Decimal('20') },
+      },
+    ]);
+    (proposalsLlmService.explainProposalsBatch as jest.Mock).mockRejectedValueOnce(
+      new Error('Unexpected LLM batch crash'),
+    );
+
+    const result = await service.run({ trigger: 'MANUAL', requestedBy: 'u-1' });
+    expect(result.status).toBe('succeeded');
+    expect(prisma.analysisRun.update).not.toHaveBeenCalled();
   });
 });

@@ -22,6 +22,8 @@ import { OrderFefoOutboundPage } from '@/features/outbound/pages/OrderFefoOutbou
 import { OutboundDetailPage } from '@/features/outbound/pages/OutboundDetailPage';
 import { OutboundListPage } from '@/features/outbound/pages/OutboundListPage';
 import { ProductsPage } from '@/features/products/pages/ProductsPage';
+import { ProposalDetailPage } from '@/features/proposals/pages/ProposalDetailPage';
+import { ProposalsListPage } from '@/features/proposals/pages/ProposalsListPage';
 import { ReportsPage } from '@/features/reports/pages/ReportsPage';
 import { RiskAnalysisPage } from '@/features/risk/pages/RiskAnalysisPage';
 import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
@@ -59,6 +61,7 @@ const IMPLEMENTED_PATHS = new Set([
   '/users',
   '/forecast',
   '/risk',
+  '/proposals',
   '/expiry-alerts',
   '/expiry-thresholds',
   '/reports',
@@ -281,6 +284,22 @@ const router = createBrowserRouter([
         element: (
           <ProtectedRoute requiredPermission="analysis.read">
             <RiskAnalysisPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'proposals',
+        element: (
+          <ProtectedRoute requiredPermission="proposals.read">
+            <ProposalsListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'proposals/:id',
+        element: (
+          <ProtectedRoute requiredPermission="proposals.read">
+            <ProposalDetailPage />
           </ProtectedRoute>
         ),
       },

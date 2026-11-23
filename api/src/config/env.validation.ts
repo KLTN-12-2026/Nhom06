@@ -47,8 +47,12 @@ export class EnvironmentVariables {
   CORS_ORIGIN?: string = 'http://localhost:5173';
 
   @IsOptional()
+  @IsIn(['none', 'mock', 'openai_compatible'])
+  LLM_PROVIDER?: 'none' | 'mock' | 'openai_compatible' = 'none';
+
+  @IsOptional()
   @IsString()
-  LLM_PROVIDER?: string = 'none';
+  LLM_BASE_URL?: string = '';
 
   @IsOptional()
   @IsString()
@@ -62,6 +66,10 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(1000)
   LLM_TIMEOUT_MS?: number = 20000;
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  LLM_DEMO_TOGGLE?: 'true' | 'false' = 'false';
 
   @IsOptional()
   @IsIn(['true', 'false'])

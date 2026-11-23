@@ -108,6 +108,13 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
           }),
         } as Response;
       }
+      if (url.includes('/proposals/summary')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ pending: 8 }),
+        } as Response;
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     });
 
@@ -120,6 +127,7 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
 
     await waitFor(() => {
       expect(screen.getByLabelText('7 lô cảnh báo cận hạn')).toBeInTheDocument();
+      expect(screen.getByLabelText('8 đề xuất chờ quyết định')).toBeInTheDocument();
     });
 
     expect(screen.getAllByText('Trương Thành Lê').length).toBeGreaterThanOrEqual(1);
