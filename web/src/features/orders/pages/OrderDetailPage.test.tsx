@@ -93,6 +93,7 @@ describe('OrderDetailPage (AC10)', () => {
         'orders.create',
         'orders.cancel',
         'outbound.read',
+        'outbound.create',
         'outbound.confirm',
       ],
     };
@@ -150,7 +151,7 @@ describe('OrderDetailPage (AC10)', () => {
     expect(screen.queryByRole('link', { name: 'Tạo phiếu xuất' })).not.toBeInTheDocument();
   });
 
-  it('ẩn nút Sửa đơn và Hủy đơn với quản lý (không có orders.create/orders.cancel) nhưng hiện Tạo phiếu xuất', async () => {
+  it('ẩn nút Sửa đơn, Hủy đơn và Tạo phiếu xuất với quản lý (không có orders.create/orders.cancel/outbound.create)', async () => {
     const managerUser: AuthUser = {
       id: 'u-mgr',
       username: 'quanly',
@@ -178,6 +179,6 @@ describe('OrderDetailPage (AC10)', () => {
 
     expect(screen.queryByRole('link', { name: 'Sửa đơn' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Hủy đơn' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Tạo phiếu xuất' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Tạo phiếu xuất' })).not.toBeInTheDocument();
   });
 });

@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/components/common/ToastProvider';
 import { AuthProvider } from '@/features/auth/AuthContext';
+import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { type AuthUser } from '@/features/auth/types';
 import { type OrderFefoPlan } from '../types';
 import { OrderFefoOutboundPage } from './OrderFefoOutboundPage';
@@ -116,7 +117,7 @@ describe('OrderFefoOutboundPage (AC10)', () => {
       username: 'nhanvien',
       fullName: 'Trương Thành Lê',
       role: { code: 'WAREHOUSE_STAFF', name: 'Nhân viên kho' },
-      permissions: ['orders.read', 'outbound.read', 'outbound.confirm'],
+      permissions: ['orders.read', 'outbound.read', 'outbound.create', 'outbound.confirm'],
     };
 
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
@@ -171,7 +172,7 @@ describe('OrderFefoOutboundPage (AC10)', () => {
       username: 'nhanvien',
       fullName: 'Trương Thành Lê',
       role: { code: 'WAREHOUSE_STAFF', name: 'Nhân viên kho' },
-      permissions: ['orders.read', 'outbound.read', 'outbound.confirm'],
+      permissions: ['orders.read', 'outbound.read', 'outbound.create', 'outbound.confirm'],
     };
 
     let planFetchCount = 0;
@@ -214,5 +215,64 @@ describe('OrderFefoOutboundPage (AC10)', () => {
       ).toBeGreaterThanOrEqual(1);
     });
     expect(planFetchCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('T-022: quản lý (thiếu outbound.create) không thấy nút Xác nhận xuất kho và bị ProtectedRoute chặn khi vào thẳng /orders/:id/outbound', async () => {
+    const managerUser: AuthUser = {
+      id: 'u-mgr',
+      username: 'quanly',
+      fullName: 'Nguyễn Văn Dương',
+      role: { code: 'WAREHOUSE_MANAGER', name: 'Quản lý kho' },
+      permissions: ['orders.read', 'outbound.read', 'outbound.confirm'],
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => managerUser } as Response;
+      }
+      if (url.endsWith('/orders/ord-1/fefo-plan')) {
+        return { ok: true, status: 200, json: async () => SAMPLE_FEFO_PLAN } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    // 1. Render trực tiếp component: nút Xác nhận xuất kho phải bị ẩn
+    const { unmount } = renderFefoPage();
+    await waitFor(() => {
+      expect(screen.getByText('Phiếu xuất cho đơn DH2611230001')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Xác nhận xuất kho' })).not.toBeInTheDocument();
+    unmount();
+
+    // 2. Bọc ProtectedRoute(outbound.create) giống router: hiện "Không có quyền truy cập"
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthProvider>
+            <MemoryRouter initialEntries={['/orders/ord-1/outbound']}>
+              <Routes>
+                <Route
+                  path="/orders/:id/outbound"
+                  element={
+                    <ProtectedRoute requiredPermission="outbound.create">
+                      <OrderFefoOutboundPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </MemoryRouter>
+          </AuthProvider>
+        </ToastProvider>
+      </QueryClientProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Không có quyền truy cập')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('button', { name: 'Xác nhận xuất kho' })).not.toBeInTheDocument();
   });
 });

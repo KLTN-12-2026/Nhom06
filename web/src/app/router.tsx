@@ -244,7 +244,7 @@ const router = createBrowserRouter([
       {
         path: 'orders/:id/outbound',
         element: (
-          <ProtectedRoute requiredPermission="outbound.read">
+          <ProtectedRoute requiredPermission="outbound.create">
             <OrderFefoOutboundPage />
           </ProtectedRoute>
         ),

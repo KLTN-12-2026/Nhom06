@@ -39,7 +39,8 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
   let staffToken: string;
   let staffUserId: string;
   let managerToken: string;
-  let managerUserId: string;
+  let adminToken: string;
+  let adminUserId: string;
 
   let activeAgencyId: string;
   let inactiveAgencyId: string;
@@ -73,7 +74,10 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
 
     const managerLogin = await loginAs('quanly');
     managerToken = managerLogin.accessToken;
-    managerUserId = managerLogin.user.id;
+
+    const adminLogin = await loginAs('admin');
+    adminToken = adminLogin.accessToken;
+    adminUserId = adminLogin.user.id;
 
     const agency = await prisma.agency.findUniqueOrThrow({ where: { code: 'DL001' } });
     const supplier = await prisma.supplier.findUniqueOrThrow({ where: { code: 'NCC001' } });
@@ -525,7 +529,7 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
       // Cố tình lấy 20 từ lot1 (còn 10) và 25 từ lot2 để kiểm cả warnings FEFO
       const outRes = await request(app.getHttpServer())
         .post(`/api/orders/${orderRes.body.id}/outbound`)
-        .set('Authorization', `Bearer ${managerToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           notes: 'Giao đủ đợt 1',
           items: [
@@ -539,7 +543,7 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
       expect(outRes.body.outboundType).toBe('ORDER');
       expect(outRes.body.status).toBe('confirmed');
       expect(outRes.body.orderStatus).toBe('fulfilled');
-      expect(outRes.body.confirmer.id).toBe(managerUserId);
+      expect(outRes.body.confirmer.id).toBe(adminUserId);
       expect(outRes.body.totalQuantity).toBe('45');
       expect(outRes.body.warnings).toHaveLength(1);
       expect(outRes.body.warnings[0].code).toBe('FEFO_ORDER_BYPASSED');
@@ -559,7 +563,7 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
       expect(movByLot.get(lot1.id)?.movementType).toBe('OUTBOUND');
       expect(movByLot.get(lot1.id)?.quantityDelta.toString()).toBe('-20');
       expect(movByLot.get(lot1.id)?.balanceAfter.toString()).toBe('10');
-      expect(movByLot.get(lot1.id)?.actorUserId).toBe(managerUserId);
+      expect(movByLot.get(lot1.id)?.actorUserId).toBe(adminUserId);
 
       expect(movByLot.get(lot2.id)?.quantityDelta.toString()).toBe('-25');
       expect(movByLot.get(lot2.id)?.balanceAfter.toString()).toBe('25');
@@ -835,7 +839,7 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
           .send({ items: [{ orderItemId: o1.body.items[0].id, lotId: lot.id, quantity: '70' }] }),
         request(app.getHttpServer())
           .post(`/api/orders/${o2.body.id}/outbound`)
-          .set('Authorization', `Bearer ${managerToken}`)
+          .set('Authorization', `Bearer ${adminToken}`)
           .send({ items: [{ orderItemId: o2.body.items[0].id, lotId: lot.id, quantity: '70' }] }),
       ]);
 
@@ -877,7 +881,7 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
           .send({ items: [{ orderItemId, lotId: lot.id, quantity: '70' }] }),
         request(app.getHttpServer())
           .post(`/api/orders/${orderRes.body.id}/outbound`)
-          .set('Authorization', `Bearer ${managerToken}`)
+          .set('Authorization', `Bearer ${adminToken}`)
           .send({ items: [{ orderItemId, lotId: lot.id, quantity: '70' }] }),
       ]);
 
@@ -955,7 +959,7 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
           }),
         request(app.getHttpServer())
           .post(`/api/orders/${o2.body.id}/outbound`)
-          .set('Authorization', `Bearer ${managerToken}`)
+          .set('Authorization', `Bearer ${adminToken}`)
           .send({
             items: [
               { orderItemId: o2Item2.id, lotId: lot2.id, quantity: '15' },
@@ -1159,9 +1163,9 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
     });
   });
 
-  // AC10
-  describe('AC10: Phân quyền theo D-016', () => {
-    it('không token → 401; quanly không tạo/sửa/hủy đơn (403) nhưng xem FEFO và xác nhận xuất được; nhanvien tạo + xuất được', async () => {
+  // AC10 & T-022
+  describe('AC10: Phân quyền theo D-016 (và T-022 outbound.create + outbound.confirm)', () => {
+    it('không token → 401; quanly xem đơn và FEFO (200) nhưng không tạo/sửa/hủy đơn và không lập phiếu xuất theo đơn (403, tồn không đổi); nhanvien và admin lập phiếu xuất theo đơn được (201)', async () => {
       const prod = await createTestProduct('AC10');
       const lot = await createTestLot({
         productId: prod.id,
@@ -1185,17 +1189,24 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
         })
         .expect(403);
 
-      // nhanvien tạo đơn thành công
+      // nhanvien tạo đơn thành công (20 thùng để test cả nhanvien lẫn admin xuất)
       const orderRes = await request(app.getHttpServer())
         .post('/api/orders')
         .set('Authorization', `Bearer ${staffToken}`)
         .send({
           agencyId: activeAgencyId,
           orderDate: todayVn,
-          items: [{ productId: prod.id, requestedQty: '10' }],
+          items: [{ productId: prod.id, requestedQty: '20' }],
         })
         .expect(201);
       createdOrderIds.push(orderRes.body.id);
+      const orderItemId = orderRes.body.items[0].id as string;
+
+      // Không token gọi POST /api/orders/:id/outbound → 401
+      await request(app.getHttpServer())
+        .post(`/api/orders/${orderRes.body.id}/outbound`)
+        .send({ items: [{ orderItemId, lotId: lot.id, quantity: '5' }] })
+        .expect(401);
 
       // quanly không có orders.create / orders.cancel → 403
       await request(app.getHttpServer())
@@ -1214,17 +1225,50 @@ describe('Đơn đại lý, phân bổ FEFO & xác nhận xuất kho (T-009 E2E 
         .send({ reason: 'Thử hủy bằng quản lý' })
         .expect(403);
 
-      // quanly xem được FEFO plan và xác nhận xuất được
+      // quanly vẫn xem đơn và xem được FEFO plan (200)
+      await request(app.getHttpServer())
+        .get(`/api/orders/${orderRes.body.id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200);
+
       await request(app.getHttpServer())
         .get(`/api/orders/${orderRes.body.id}/fefo-plan`)
         .set('Authorization', `Bearer ${managerToken}`)
         .expect(200);
 
+      // quanly không có outbound.create → POST /api/orders/:id/outbound bị chặn 403, tồn không đổi
+      const movBefore = await prisma.stockMovement.count({ where: { lotId: lot.id } });
       await request(app.getHttpServer())
         .post(`/api/orders/${orderRes.body.id}/outbound`)
         .set('Authorization', `Bearer ${managerToken}`)
-        .send({ items: [{ orderItemId: orderRes.body.items[0].id, lotId: lot.id, quantity: '10' }] })
+        .send({ items: [{ orderItemId, lotId: lot.id, quantity: '10' }] })
+        .expect(403);
+
+      const balAfterManager = await prisma.inventoryLotBalance.findUniqueOrThrow({
+        where: { lotId: lot.id },
+      });
+      const movAfterManager = await prisma.stockMovement.count({ where: { lotId: lot.id } });
+      expect(balAfterManager.onHandQty.toString()).toBe('50');
+      expect(movAfterManager).toBe(movBefore);
+
+      // nhanvien có outbound.create + outbound.confirm → 201
+      await request(app.getHttpServer())
+        .post(`/api/orders/${orderRes.body.id}/outbound`)
+        .set('Authorization', `Bearer ${staffToken}`)
+        .send({ items: [{ orderItemId, lotId: lot.id, quantity: '10' }] })
         .expect(201);
+
+      // admin có outbound.create + outbound.confirm → 201
+      await request(app.getHttpServer())
+        .post(`/api/orders/${orderRes.body.id}/outbound`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ items: [{ orderItemId, lotId: lot.id, quantity: '10' }] })
+        .expect(201);
+
+      const balAfterBoth = await prisma.inventoryLotBalance.findUniqueOrThrow({
+        where: { lotId: lot.id },
+      });
+      expect(balAfterBoth.onHandQty.toString()).toBe('30');
     });
   });
 });

@@ -101,7 +101,7 @@ export class OrdersController {
   }
 
   @Post(':id/outbound')
-  @Permissions('outbound.confirm')
+  @Permissions('outbound.create', 'outbound.confirm')
   @ApiOperation({ summary: 'Tạo và xác nhận phiếu xuất kho cho đơn đại lý (nguyên tử trong 1 transaction)' })
   confirmOutbound(
     @Param('id', orderUuidPipe) id: string,

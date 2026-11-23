@@ -46,7 +46,7 @@ export function OrderFefoOutboundPage() {
   const { hasPermission } = useAuth();
   const { showToast } = useToast();
 
-  const canConfirm = hasPermission('outbound.confirm');
+  const canConfirm = hasPermission('outbound.create') && hasPermission('outbound.confirm');
 
   const planQuery = useOrderFefoPlanQuery(id);
   const confirmMutation = useConfirmOrderOutboundMutation(id ?? '');
