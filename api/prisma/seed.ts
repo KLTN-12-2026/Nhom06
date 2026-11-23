@@ -249,10 +249,10 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
     });
   }
 
-  // 10. 1 ngưỡng cảnh báo HSD chung (idempotent theo effective_from + effective_to NULL)
+  // 10. 1 ngưỡng cảnh báo HSD chung GLOBAL (30 / critical 7 / min_delivery 7, idempotent)
   const existingThreshold = await prisma.expiryThreshold.findFirst({
     where: {
-      effectiveFrom: DEFAULT_THRESHOLD_EFFECTIVE_FROM,
+      scope: 'GLOBAL',
       effectiveTo: null,
     },
   });
@@ -263,14 +263,19 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
       data: {
         warningDays: 30,
         criticalDays: 7,
+        minDeliveryDays: 7,
         createdBy: adminId,
       },
     });
   } else {
     await prisma.expiryThreshold.create({
       data: {
+        scope: 'GLOBAL',
+        productGroupId: null,
+        productId: null,
         warningDays: 30,
         criticalDays: 7,
+        minDeliveryDays: 7,
         effectiveFrom: DEFAULT_THRESHOLD_EFFECTIVE_FROM,
         effectiveTo: null,
         createdBy: adminId,

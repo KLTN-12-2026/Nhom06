@@ -1,5 +1,6 @@
 import { plainToInstance } from 'class-transformer';
 import {
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -61,6 +62,10 @@ export class EnvironmentVariables {
   @IsInt()
   @Min(1000)
   LLM_TIMEOUT_MS?: number = 20000;
+
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  EXPIRY_CRON_ENABLED?: 'true' | 'false' = 'true';
 }
 
 export function validateEnv(config: Record<string, unknown>): EnvironmentVariables {

@@ -57,8 +57,21 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     title: 'Hàng cận hạn',
     items: [
-      { label: 'Cảnh báo cận hạn', path: '/expiry-alerts', requiredPermission: 'expiry.read' },
-      { label: 'Ngưỡng cảnh báo', path: '/expiry-thresholds', requiredPermission: 'expiry.read' },
+      {
+        label: 'Cảnh báo cận hạn',
+        path: '/expiry-alerts',
+        requiredPermission: 'expiry.read',
+        pageTitle: 'Cảnh báo hàng cận hạn',
+        pageDescription: 'Theo dõi các lô đã hết hạn và cận hạn còn tồn theo múi giờ Asia/Ho_Chi_Minh',
+      },
+      {
+        label: 'Ngưỡng cảnh báo',
+        path: '/expiry-thresholds',
+        requiredPermission: 'expiry.read',
+        pageTitle: 'Ngưỡng cảnh báo hạn sử dụng',
+        pageDescription:
+          'Ngưỡng theo sản phẩm được ưu tiên hơn ngưỡng theo nhóm hàng, nhóm hàng ưu tiên hơn ngưỡng chung',
+      },
     ],
   },
   {

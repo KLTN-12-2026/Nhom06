@@ -94,6 +94,20 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
           headers: new Headers({ 'content-length': '0' }),
         } as Response;
       }
+      if (url.includes('/expiry-alerts/summary')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            evaluationDate: '2026-11-23',
+            expired: { lots: 4, qty: '837' },
+            nearExpiry: { lots: 3, qty: '1029' },
+            totalAlertLots: 7,
+            global: { warningDays: 30, criticalDays: 7, minDeliveryDays: 7 },
+            overridesSummary: 'Chưa có ngưỡng riêng',
+          }),
+        } as Response;
+      }
       throw new Error(`Unexpected fetch: ${url}`);
     });
 
@@ -102,6 +116,10 @@ describe('AppLayout & ProtectedRoute (AC8)', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Nội dung bảng điều khiển')).toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('7 lô cảnh báo cận hạn')).toBeInTheDocument();
     });
 
     expect(screen.getAllByText('Trương Thành Lê').length).toBeGreaterThanOrEqual(1);
