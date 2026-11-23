@@ -462,7 +462,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
             </p>
           )}
 
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[780px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-[var(--surface-muted)] text-left font-medium text-[var(--text-muted)]">

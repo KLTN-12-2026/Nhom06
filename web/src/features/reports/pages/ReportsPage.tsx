@@ -101,7 +101,7 @@ export function ReportsPage() {
 
       {/* Thanh chuyển 2 tab theo docs/DESIGN.md (gạch chân 2px --brand) */}
       <div
-        className="overflow-x-auto border-b border-border"
+        className="overflow-x-auto overflow-y-hidden border-b border-border"
         role="tablist"
         aria-label="Loại báo cáo"
       >
@@ -111,7 +111,7 @@ export function ReportsPage() {
             role="tab"
             aria-selected={activeTab === 'stock-ledger'}
             onClick={() => handleTabChange('stock-ledger')}
-            className={`-mb-px border-b-2 pb-2.5 text-sm font-medium transition-colors ${
+            className={`border-b-2 pb-2.5 text-sm font-medium transition-colors ${
               activeTab === 'stock-ledger'
                 ? 'border-[var(--brand)] text-[var(--brand)]'
                 : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]'
@@ -125,7 +125,7 @@ export function ReportsPage() {
             role="tab"
             aria-selected={activeTab === 'risk'}
             onClick={() => handleTabChange('risk')}
-            className={`-mb-px border-b-2 pb-2.5 text-sm font-medium transition-colors ${
+            className={`border-b-2 pb-2.5 text-sm font-medium transition-colors ${
               activeTab === 'risk'
                 ? 'border-[var(--brand)] text-[var(--brand)]'
                 : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]'
