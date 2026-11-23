@@ -1,0 +1,3 @@
+# Mô hình và metadata sinh động theo lần huấn luyện (tự sinh lại bằng python -m training.train)
+models/*.joblib
+models/*.json
