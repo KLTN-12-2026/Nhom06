@@ -195,8 +195,13 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     expect(screen.getByRole('button', { name: 'Phê duyệt' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Từ chối' })).toBeEnabled();
 
-    await user.click(screen.getByText('Số liệu thô đã gửi sang mô hình ngôn ngữ'));
+    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    expect(screen.getByText('Phương án được phép')).toBeInTheDocument();
+    expect(screen.getByText('Cân nhắc khuyến mãi')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Xem dạng JSON' }));
     expect(screen.getByText(/"ton_du_uoc_tinh": 251/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Ẩn dạng JSON' }));
+    expect(screen.queryByText(/"ton_du_uoc_tinh": 251/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Mô phỏng lỗi dịch vụ' }));
     await waitFor(() => {
@@ -268,6 +273,39 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     expect(
       screen.getByText(/Đề xuất đang chờ quản lý kho xem xét và phê duyệt/i),
     ).toBeInTheDocument();
+    expect(screen.queryByText('Dữ liệu AI đã dùng để giải thích')).not.toBeInTheDocument();
+  });
+
+  it('T-023 AC4: chỉ Quản lý kho (proposals.approve) và Admin (users.manage) thấy khối "Dữ liệu AI đã dùng để giải thích"', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => makeDetail(),
+    } as Response);
+
+    // Admin: có users.manage, không có proposals.approve → vẫn thấy khối dữ liệu AI
+    const { unmount } = renderDetailPage(['proposals.read', 'users.manage']);
+    await waitFor(() => {
+      expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Dữ liệu AI đã dùng để giải thích')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Phê duyệt' })).not.toBeInTheDocument();
+    unmount();
+
+    // Quản lý kho: có proposals.approve, không có users.manage → thấy khối dữ liệu AI
+    const managerRender = renderDetailPage(['proposals.read', 'proposals.approve']);
+    await waitFor(() => {
+      expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Dữ liệu AI đã dùng để giải thích')).toBeInTheDocument();
+    managerRender.unmount();
+
+    // Nhân viên kho: không có proposals.approve và không có users.manage → ẩn hoàn toàn
+    renderDetailPage(['proposals.read', 'executions.read', 'executions.update']);
+    await waitFor(() => {
+      expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('Dữ liệu AI đã dùng để giải thích')).not.toBeInTheDocument();
   });
 
   it('bắt buộc nhập lý do khi từ chối; phê duyệt mở hộp thoại mockup 25 → chuyển trạng thái đã phê duyệt (mockup 26) + toast', async () => {

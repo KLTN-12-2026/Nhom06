@@ -138,7 +138,7 @@ export interface ProposalDetailResponse {
     estimatedSurplus: string;
     riskLevel: RiskLevel;
   };
-  llmInput: LlmExplanationInput;
+  llmInput: LlmExplanationInput | null;
   explanation: ProposalExplanation | null;
   displayMode: ProposalDisplayMode;
   fallbackReason: ProposalFallbackReason;
