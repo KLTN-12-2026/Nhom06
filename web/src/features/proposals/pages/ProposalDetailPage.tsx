@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/common/PageHeader';
 import { RiskLevelBadge } from '@/components/common/RiskStatusBadge';
@@ -9,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/hooks';
 import { ApiError } from '@/lib/api';
 import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
+import { LlmInputPanel } from '../components/LlmInputPanel';
 import { ProposalDecisionCard } from '../components/ProposalDecisionCard';
 import { ProposalExplanationBlock } from '../components/ProposalExplanationBlock';
 import { formatRemainingDaysText, PROPOSAL_STATUS_META } from '../constants';
@@ -24,6 +24,7 @@ export function ProposalDetailPage() {
 
   const proposal = detailQuery.data;
   const canRunExplain = hasPermission('analysis.run');
+  const canViewLlmInput = hasPermission('proposals.approve') || hasPermission('users.manage');
 
   const handleExplain = async (simulateFailure: boolean) => {
     try {
@@ -181,19 +182,8 @@ export function ProposalDetailPage() {
                 </div>
               </div>
 
-              {/* Mục thu gọn native <details> "Số liệu thô đã gửi sang mô hình ngôn ngữ" (mockup 23) */}
-              <details className="group border-t border-border pt-4">
-                <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm text-[var(--text-muted)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)] [&::-webkit-details-marker]:hidden">
-                  <ChevronRight
-                    className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
-                    aria-hidden="true"
-                  />
-                  <span>Số liệu thô đã gửi sang mô hình ngôn ngữ</span>
-                </summary>
-                <pre className="mt-3 overflow-x-auto rounded-lg border border-border bg-[var(--surface-muted)] p-4 text-xs leading-relaxed text-[var(--text)]">
-                  <code>{JSON.stringify(proposal.llmInput, null, 2)}</code>
-                </pre>
-              </details>
+              {/* Khối thu gọn "Dữ liệu AI đã dùng để giải thích" — chỉ Quản lý kho / Admin thấy (T-023) */}
+              {canViewLlmInput && <LlmInputPanel llmInput={proposal.llmInput} />}
             </CardContent>
           </Card>
         </div>
