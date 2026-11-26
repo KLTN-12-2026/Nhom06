@@ -98,6 +98,22 @@ docker compose exec -e ALLOW_DEMO_SEED=true api npm run test:smoke
   - Chạy lại 1 lệnh duy nhất (mất dưới 2 phút, giữ nguyên tài khoản/danh mục/ngưỡng):
     `docker compose exec -e ALLOW_DEMO_SEED=true api npm run seed:demo -- --reset`
 
+### 6. Chạy E2E và lấy ảnh cho báo cáo
+
+Bộ test trình duyệt bằng **Playwright** (`e2e/`) chạy toàn bộ kịch bản demo 12 bước trên Chromium thật và tự động chụp ảnh từng bước (1440×900, kèm ảnh màn hẹp 390×844) để dùng cho quyển báo cáo.
+
+- **Cô lập dữ liệu**: E2E tự tạo/reset và nạp dữ liệu demo lên DB riêng `kho_ai_e2e_test` (cấu hình qua `E2E_DATABASE_URL`, rào chắn an toàn 2 lớp từ chối nếu trỏ vào DB dev `kho_ai`), đồng thời tự khởi chạy `api` (cổng `3099`, `LLM_PROVIDER=mock`, `LLM_DEMO_TOGGLE=true`) và `web` (cổng `5199`) rồi tự tắt khi xong — **không làm thay đổi dữ liệu dev `kho_ai`** và không cần dừng stack dev.
+- **Điều kiện tiên quyết**: dịch vụ `db`, `ml`, `api`, `web` đang chạy qua Docker Compose (`docker compose up -d --build`) — hoặc trên môi trường host/CI đã `npm ci` ở `api/` và `web/` (script tự động chọn chế độ Docker hoặc host).
+
+```bash
+cd e2e
+npm ci && npx playwright install chromium
+npm run test:e2e
+```
+
+- **Lấy ảnh cục bộ**: ảnh được xuất vào `e2e/artifacts/screenshots/NN-ten-buoc.png` và báo cáo HTML tại `e2e/artifacts/playwright-report/index.html` (mở xem bằng `npm run report`). Thư mục `e2e/artifacts/` đã đưa vào `.gitignore` và **không commit** vào git.
+- **Lấy ảnh từ CI**: trên GitHub Actions, job **E2E (Playwright Demo)** chạy tự động mỗi khi push lên `main` (hoặc bấm **Run workflow** thủ công) và đính kèm artifact `e2e-demo-artifacts` chứa đủ ảnh chụp và báo cáo HTML.
+
 ## Thành viên
 
 Trương Thành Lê, Nguyễn Văn Dương, Phan Thanh Đức, Phan Nhật Tuyến, Lê Trương Hồng Long
