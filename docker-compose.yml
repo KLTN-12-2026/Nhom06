@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-kho_ai}
+      POSTGRES_TEST_DB: ${POSTGRES_TEST_DB:-kho_ai_test}
       POSTGRES_USER: ${POSTGRES_USER:-kho_ai}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kho_ai_dev}
       TZ: UTC
@@ -14,6 +15,7 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -46,6 +48,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       DATABASE_URL: postgresql://${POSTGRES_USER:-kho_ai}:${POSTGRES_PASSWORD:-kho_ai_dev}@db:5432/${POSTGRES_DB:-kho_ai}?schema=public
+      TEST_DATABASE_URL: ${TEST_DATABASE_URL:-postgresql://${POSTGRES_USER:-kho_ai}:${POSTGRES_PASSWORD:-kho_ai_dev}@db:5432/${POSTGRES_TEST_DB:-kho_ai_test}?schema=public}
       JWT_SECRET: ${JWT_SECRET:-change-me-in-env}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       ML_SERVICE_URL: http://ml:8000

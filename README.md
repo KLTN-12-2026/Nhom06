@@ -73,11 +73,16 @@ Mật khẩu mặc định cho cả 3 tài khoản là `123456` (có thể đổ
 | 11 | `nhanvien` | Theo dõi thực hiện (`/executions`) | Xem phương án `PRIORITIZE_FEFO` của `SP004` đang thực hiện `120` đơn vị → bấm **"Lập phiếu hủy"** trên đề xuất `DISPOSE` vừa duyệt → xác nhận hủy hết tồn lô hết hạn → đánh dấu hoàn thành & kiểm tra `/inventory`, `/stock-movements`. | **Chỉ khi lập & xác nhận phiếu hủy (`DISPOSAL`) tồn kho mới giảm về `0`** và ghi dòng `DISPOSAL` trong sổ biến động; phương án ghi nhận lượng thực tế gắn mã phiếu xuất hủy. |
 | 12 | `quanly` | Báo cáo (`/reports`) | Xem tab **Báo cáo Nhập – Xuất – Tồn**, bấm **Xuất Excel (`.xlsx`)**, chuyển sang tab **Báo cáo rủi ro cận hạn**; đăng nhập lại `nhanvien` để chứng minh không truy cập được báo cáo. | Tồn cuối kỳ = `Đầu kỳ + Nhập − Xuất ± Điều chỉnh` **khớp 100%** với tổng tồn hiện tại theo từng sản phẩm (tách ĐVT, không gộp sai đơn vị); phân quyền chặn `WAREHOUSE_STAFF` xem báo cáo. |
 
-### 4. Kiểm thử tự động (Smoke test)
+### 4. Kiểm thử tự động
+
+Bộ test API (`npm test` và `npm run test:smoke`) tự động chạy trên database riêng `kho_ai_test` (cấu hình qua `TEST_DATABASE_URL`), tự tạo DB nếu chưa có, chạy migration + seed cơ bản trước mỗi lượt và **không làm thay đổi dữ liệu demo trên DB dev `kho_ai`**. Rào chắn an toàn sẽ chặn ngay nếu `TEST_DATABASE_URL` trùng DB dev hoặc tên DB không kết thúc bằng `_test`.
 
 ```bash
-# Chạy smoke test toàn hệ thống qua HTTP + kiểm tra bất biến dữ liệu demo
-docker compose exec api npm run test:smoke
+# Chạy toàn bộ unit test & e2e test API trên DB test kho_ai_test
+docker compose exec api npm test
+
+# Chạy smoke test toàn hệ thống qua HTTP + kiểm tra bất biến dữ liệu demo trên DB test kho_ai_test
+docker compose exec -e ALLOW_DEMO_SEED=true api npm run test:smoke
 ```
 
 ### 5. Xử lý sự cố nhanh khi demo

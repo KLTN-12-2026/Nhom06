@@ -7,6 +7,8 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "testEnvironment": "node",
+  "globalSetup": "<rootDir>/test/jest-global-setup.ts",
+  "setupFiles": ["<rootDir>/test/jest-env-setup.ts"],
   "maxWorkers": 1,
   "testTimeout": 120000
 }
