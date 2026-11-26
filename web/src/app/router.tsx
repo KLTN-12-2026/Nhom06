@@ -1,37 +1,147 @@
+import { lazy, type ReactNode, Suspense } from 'react';
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { AgenciesPage } from '@/features/agencies/pages/AgenciesPage';
-import { AuditLogsPage } from '@/features/audit-logs/pages/AuditLogsPage';
 import { ProtectedRoute } from '@/features/auth/components/ProtectedRoute';
 import { LoginPage } from '@/features/auth/pages/LoginPage';
-import { DashboardPage } from '@/features/dashboard/pages/DashboardPage';
-import { ExecutionsPage } from '@/features/executions/pages/ExecutionsPage';
-import { ExpiryAlertsPage } from '@/features/expiry/pages/ExpiryAlertsPage';
-import { ExpiryThresholdsPage } from '@/features/expiry/pages/ExpiryThresholdsPage';
-import { ForecastPage } from '@/features/forecast/pages/ForecastPage';
-import { InboundDetailPage } from '@/features/inbound/pages/InboundDetailPage';
-import { InboundFormPage } from '@/features/inbound/pages/InboundFormPage';
-import { InboundListPage } from '@/features/inbound/pages/InboundListPage';
-import { InventoryLotsPage } from '@/features/inventory/pages/InventoryLotsPage';
-import { StockCountDetailPage } from '@/features/inventory/pages/StockCountDetailPage';
-import { StockCountFormPage } from '@/features/inventory/pages/StockCountFormPage';
-import { StockCountListPage } from '@/features/inventory/pages/StockCountListPage';
-import { StockMovementsPage } from '@/features/inventory/pages/StockMovementsPage';
-import { OrderDetailPage } from '@/features/orders/pages/OrderDetailPage';
-import { OrderFormPage } from '@/features/orders/pages/OrderFormPage';
-import { OrdersListPage } from '@/features/orders/pages/OrdersListPage';
-import { OrderFefoOutboundPage } from '@/features/outbound/pages/OrderFefoOutboundPage';
-import { OutboundDetailPage } from '@/features/outbound/pages/OutboundDetailPage';
-import { OutboundListPage } from '@/features/outbound/pages/OutboundListPage';
-import { ProductsPage } from '@/features/products/pages/ProductsPage';
-import { ProposalDetailPage } from '@/features/proposals/pages/ProposalDetailPage';
-import { ProposalsListPage } from '@/features/proposals/pages/ProposalsListPage';
-import { ReportsPage } from '@/features/reports/pages/ReportsPage';
-import { RiskAnalysisPage } from '@/features/risk/pages/RiskAnalysisPage';
-import { SuppliersPage } from '@/features/suppliers/pages/SuppliersPage';
-import { UsersPage } from '@/features/users/pages/UsersPage';
 import { AppLayout } from './AppLayout';
 import { ALL_NAV_ITEMS } from './navigation';
+
+const AgenciesPage = lazy(() =>
+  import('@/features/agencies/pages/AgenciesPage').then((m) => ({ default: m.AgenciesPage })),
+);
+const AuditLogsPage = lazy(() =>
+  import('@/features/audit-logs/pages/AuditLogsPage').then((m) => ({ default: m.AuditLogsPage })),
+);
+const DashboardPage = lazy(() =>
+  import('@/features/dashboard/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })),
+);
+const ExecutionsPage = lazy(() =>
+  import('@/features/executions/pages/ExecutionsPage').then((m) => ({ default: m.ExecutionsPage })),
+);
+const ExpiryAlertsPage = lazy(() =>
+  import('@/features/expiry/pages/ExpiryAlertsPage').then((m) => ({
+    default: m.ExpiryAlertsPage,
+  })),
+);
+const ExpiryThresholdsPage = lazy(() =>
+  import('@/features/expiry/pages/ExpiryThresholdsPage').then((m) => ({
+    default: m.ExpiryThresholdsPage,
+  })),
+);
+const ForecastPage = lazy(() =>
+  import('@/features/forecast/pages/ForecastPage').then((m) => ({ default: m.ForecastPage })),
+);
+const InboundDetailPage = lazy(() =>
+  import('@/features/inbound/pages/InboundDetailPage').then((m) => ({
+    default: m.InboundDetailPage,
+  })),
+);
+const InboundFormPage = lazy(() =>
+  import('@/features/inbound/pages/InboundFormPage').then((m) => ({
+    default: m.InboundFormPage,
+  })),
+);
+const InboundListPage = lazy(() =>
+  import('@/features/inbound/pages/InboundListPage').then((m) => ({
+    default: m.InboundListPage,
+  })),
+);
+const InventoryLotsPage = lazy(() =>
+  import('@/features/inventory/pages/InventoryLotsPage').then((m) => ({
+    default: m.InventoryLotsPage,
+  })),
+);
+const StockCountDetailPage = lazy(() =>
+  import('@/features/inventory/pages/StockCountDetailPage').then((m) => ({
+    default: m.StockCountDetailPage,
+  })),
+);
+const StockCountFormPage = lazy(() =>
+  import('@/features/inventory/pages/StockCountFormPage').then((m) => ({
+    default: m.StockCountFormPage,
+  })),
+);
+const StockCountListPage = lazy(() =>
+  import('@/features/inventory/pages/StockCountListPage').then((m) => ({
+    default: m.StockCountListPage,
+  })),
+);
+const StockMovementsPage = lazy(() =>
+  import('@/features/inventory/pages/StockMovementsPage').then((m) => ({
+    default: m.StockMovementsPage,
+  })),
+);
+const OrderDetailPage = lazy(() =>
+  import('@/features/orders/pages/OrderDetailPage').then((m) => ({
+    default: m.OrderDetailPage,
+  })),
+);
+const OrderFormPage = lazy(() =>
+  import('@/features/orders/pages/OrderFormPage').then((m) => ({ default: m.OrderFormPage })),
+);
+const OrdersListPage = lazy(() =>
+  import('@/features/orders/pages/OrdersListPage').then((m) => ({ default: m.OrdersListPage })),
+);
+const OrderFefoOutboundPage = lazy(() =>
+  import('@/features/outbound/pages/OrderFefoOutboundPage').then((m) => ({
+    default: m.OrderFefoOutboundPage,
+  })),
+);
+const OutboundDetailPage = lazy(() =>
+  import('@/features/outbound/pages/OutboundDetailPage').then((m) => ({
+    default: m.OutboundDetailPage,
+  })),
+);
+const OutboundListPage = lazy(() =>
+  import('@/features/outbound/pages/OutboundListPage').then((m) => ({
+    default: m.OutboundListPage,
+  })),
+);
+const ProductsPage = lazy(() =>
+  import('@/features/products/pages/ProductsPage').then((m) => ({ default: m.ProductsPage })),
+);
+const ProposalDetailPage = lazy(() =>
+  import('@/features/proposals/pages/ProposalDetailPage').then((m) => ({
+    default: m.ProposalDetailPage,
+  })),
+);
+const ProposalsListPage = lazy(() =>
+  import('@/features/proposals/pages/ProposalsListPage').then((m) => ({
+    default: m.ProposalsListPage,
+  })),
+);
+const ReportsPage = lazy(() =>
+  import('@/features/reports/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
+);
+const RiskAnalysisPage = lazy(() =>
+  import('@/features/risk/pages/RiskAnalysisPage').then((m) => ({
+    default: m.RiskAnalysisPage,
+  })),
+);
+const SuppliersPage = lazy(() =>
+  import('@/features/suppliers/pages/SuppliersPage').then((m) => ({
+    default: m.SuppliersPage,
+  })),
+);
+const UsersPage = lazy(() =>
+  import('@/features/users/pages/UsersPage').then((m) => ({ default: m.UsersPage })),
+);
+
+function RouteLoadingFallback() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="flex min-h-[200px] items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 text-sm text-[var(--text-muted)]"
+    >
+      Đang tải trang...
+    </div>
+  );
+}
+
+function withSuspense(element: ReactNode) {
+  return <Suspense fallback={<RouteLoadingFallback />}>{element}</Suspense>;
+}
 
 function DevelopingPage({ title }: { title: string }) {
   return (
@@ -97,13 +207,13 @@ const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <DashboardPage />,
+        element: withSuspense(<DashboardPage />),
       },
       {
         path: 'products',
         element: (
           <ProtectedRoute requiredPermission="catalog.read">
-            <ProductsPage />
+            {withSuspense(<ProductsPage />)}
           </ProtectedRoute>
         ),
       },
@@ -111,7 +221,7 @@ const router = createBrowserRouter([
         path: 'suppliers',
         element: (
           <ProtectedRoute requiredPermission="catalog.read">
-            <SuppliersPage />
+            {withSuspense(<SuppliersPage />)}
           </ProtectedRoute>
         ),
       },
@@ -119,7 +229,7 @@ const router = createBrowserRouter([
         path: 'agencies',
         element: (
           <ProtectedRoute requiredPermission="catalog.read">
-            <AgenciesPage />
+            {withSuspense(<AgenciesPage />)}
           </ProtectedRoute>
         ),
       },
@@ -127,7 +237,7 @@ const router = createBrowserRouter([
         path: 'inbound',
         element: (
           <ProtectedRoute requiredPermission="inbound.read">
-            <InboundListPage />
+            {withSuspense(<InboundListPage />)}
           </ProtectedRoute>
         ),
       },
@@ -135,7 +245,7 @@ const router = createBrowserRouter([
         path: 'inbound/new',
         element: (
           <ProtectedRoute requiredPermission="inbound.create">
-            <InboundFormPage mode="create" />
+            {withSuspense(<InboundFormPage mode="create" />)}
           </ProtectedRoute>
         ),
       },
@@ -143,7 +253,7 @@ const router = createBrowserRouter([
         path: 'inbound/:id',
         element: (
           <ProtectedRoute requiredPermission="inbound.read">
-            <InboundDetailPage />
+            {withSuspense(<InboundDetailPage />)}
           </ProtectedRoute>
         ),
       },
@@ -151,7 +261,7 @@ const router = createBrowserRouter([
         path: 'inbound/:id/edit',
         element: (
           <ProtectedRoute requiredPermission="inbound.create">
-            <InboundFormPage mode="edit" />
+            {withSuspense(<InboundFormPage mode="edit" />)}
           </ProtectedRoute>
         ),
       },
@@ -159,7 +269,7 @@ const router = createBrowserRouter([
         path: 'inventory',
         element: (
           <ProtectedRoute requiredPermission="inventory.read">
-            <InventoryLotsPage />
+            {withSuspense(<InventoryLotsPage />)}
           </ProtectedRoute>
         ),
       },
@@ -167,7 +277,7 @@ const router = createBrowserRouter([
         path: 'stock-movements',
         element: (
           <ProtectedRoute requiredPermission="inventory.read">
-            <StockMovementsPage />
+            {withSuspense(<StockMovementsPage />)}
           </ProtectedRoute>
         ),
       },
@@ -183,7 +293,7 @@ const router = createBrowserRouter([
         path: 'stock-counts',
         element: (
           <ProtectedRoute requiredPermission="inventory.read">
-            <StockCountListPage />
+            {withSuspense(<StockCountListPage />)}
           </ProtectedRoute>
         ),
       },
@@ -191,7 +301,7 @@ const router = createBrowserRouter([
         path: 'stock-counts/new',
         element: (
           <ProtectedRoute requiredPermission="stock_count.create">
-            <StockCountFormPage mode="create" />
+            {withSuspense(<StockCountFormPage mode="create" />)}
           </ProtectedRoute>
         ),
       },
@@ -199,7 +309,7 @@ const router = createBrowserRouter([
         path: 'stock-counts/:id',
         element: (
           <ProtectedRoute requiredPermission="inventory.read">
-            <StockCountDetailPage />
+            {withSuspense(<StockCountDetailPage />)}
           </ProtectedRoute>
         ),
       },
@@ -207,7 +317,7 @@ const router = createBrowserRouter([
         path: 'stock-counts/:id/edit',
         element: (
           <ProtectedRoute requiredPermission="stock_count.create">
-            <StockCountFormPage mode="edit" />
+            {withSuspense(<StockCountFormPage mode="edit" />)}
           </ProtectedRoute>
         ),
       },
@@ -215,7 +325,7 @@ const router = createBrowserRouter([
         path: 'orders',
         element: (
           <ProtectedRoute requiredPermission="orders.read">
-            <OrdersListPage />
+            {withSuspense(<OrdersListPage />)}
           </ProtectedRoute>
         ),
       },
@@ -223,7 +333,7 @@ const router = createBrowserRouter([
         path: 'orders/new',
         element: (
           <ProtectedRoute requiredPermission="orders.create">
-            <OrderFormPage mode="create" />
+            {withSuspense(<OrderFormPage mode="create" />)}
           </ProtectedRoute>
         ),
       },
@@ -231,7 +341,7 @@ const router = createBrowserRouter([
         path: 'orders/:id',
         element: (
           <ProtectedRoute requiredPermission="orders.read">
-            <OrderDetailPage />
+            {withSuspense(<OrderDetailPage />)}
           </ProtectedRoute>
         ),
       },
@@ -239,7 +349,7 @@ const router = createBrowserRouter([
         path: 'orders/:id/edit',
         element: (
           <ProtectedRoute requiredPermission="orders.create">
-            <OrderFormPage mode="edit" />
+            {withSuspense(<OrderFormPage mode="edit" />)}
           </ProtectedRoute>
         ),
       },
@@ -247,7 +357,7 @@ const router = createBrowserRouter([
         path: 'orders/:id/outbound',
         element: (
           <ProtectedRoute requiredPermission="outbound.create">
-            <OrderFefoOutboundPage />
+            {withSuspense(<OrderFefoOutboundPage />)}
           </ProtectedRoute>
         ),
       },
@@ -255,7 +365,7 @@ const router = createBrowserRouter([
         path: 'outbound',
         element: (
           <ProtectedRoute requiredPermission="outbound.read">
-            <OutboundListPage />
+            {withSuspense(<OutboundListPage />)}
           </ProtectedRoute>
         ),
       },
@@ -263,7 +373,7 @@ const router = createBrowserRouter([
         path: 'outbound/:id',
         element: (
           <ProtectedRoute requiredPermission="outbound.read">
-            <OutboundDetailPage />
+            {withSuspense(<OutboundDetailPage />)}
           </ProtectedRoute>
         ),
       },
@@ -271,7 +381,7 @@ const router = createBrowserRouter([
         path: 'users',
         element: (
           <ProtectedRoute requiredPermission="users.read">
-            <UsersPage />
+            {withSuspense(<UsersPage />)}
           </ProtectedRoute>
         ),
       },
@@ -279,7 +389,7 @@ const router = createBrowserRouter([
         path: 'audit-logs',
         element: (
           <ProtectedRoute requiredPermission="audit.read">
-            <AuditLogsPage />
+            {withSuspense(<AuditLogsPage />)}
           </ProtectedRoute>
         ),
       },
@@ -287,7 +397,7 @@ const router = createBrowserRouter([
         path: 'forecast',
         element: (
           <ProtectedRoute requiredPermission="forecast.read">
-            <ForecastPage />
+            {withSuspense(<ForecastPage />)}
           </ProtectedRoute>
         ),
       },
@@ -295,7 +405,7 @@ const router = createBrowserRouter([
         path: 'risk',
         element: (
           <ProtectedRoute requiredPermission="analysis.read">
-            <RiskAnalysisPage />
+            {withSuspense(<RiskAnalysisPage />)}
           </ProtectedRoute>
         ),
       },
@@ -303,7 +413,7 @@ const router = createBrowserRouter([
         path: 'proposals',
         element: (
           <ProtectedRoute requiredPermission="proposals.read">
-            <ProposalsListPage />
+            {withSuspense(<ProposalsListPage />)}
           </ProtectedRoute>
         ),
       },
@@ -311,7 +421,7 @@ const router = createBrowserRouter([
         path: 'proposals/:id',
         element: (
           <ProtectedRoute requiredPermission="proposals.read">
-            <ProposalDetailPage />
+            {withSuspense(<ProposalDetailPage />)}
           </ProtectedRoute>
         ),
       },
@@ -319,7 +429,7 @@ const router = createBrowserRouter([
         path: 'executions',
         element: (
           <ProtectedRoute requiredPermission="executions.read">
-            <ExecutionsPage />
+            {withSuspense(<ExecutionsPage />)}
           </ProtectedRoute>
         ),
       },
@@ -327,7 +437,7 @@ const router = createBrowserRouter([
         path: 'expiry-alerts',
         element: (
           <ProtectedRoute requiredPermission="expiry.read">
-            <ExpiryAlertsPage />
+            {withSuspense(<ExpiryAlertsPage />)}
           </ProtectedRoute>
         ),
       },
@@ -335,7 +445,7 @@ const router = createBrowserRouter([
         path: 'expiry-thresholds',
         element: (
           <ProtectedRoute requiredPermission="expiry.read">
-            <ExpiryThresholdsPage />
+            {withSuspense(<ExpiryThresholdsPage />)}
           </ProtectedRoute>
         ),
       },
@@ -343,7 +453,7 @@ const router = createBrowserRouter([
         path: 'reports',
         element: (
           <ProtectedRoute requiredPermission="reports.read">
-            <ReportsPage />
+            {withSuspense(<ReportsPage />)}
           </ProtectedRoute>
         ),
       },
