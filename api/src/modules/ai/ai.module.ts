@@ -19,6 +19,21 @@ import { ProposalsService } from './proposals/proposals.service';
 import { AnalysisController } from './risk/analysis.controller';
 import { RiskQueryService } from './risk/risk-query.service';
 
+function parseOptionalTimeoutMs(raw: unknown): number | undefined {
+  if (typeof raw === 'number') {
+    return Number.isInteger(raw) && raw > 0 ? raw : undefined;
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+  }
+  return undefined;
+}
+
 export function createLlmProvider(configService: ConfigService): LlmProvider {
   const provider = configService.get<string>('LLM_PROVIDER') ?? 'none';
   if (provider === 'mock') {
@@ -36,13 +51,16 @@ export function createLlmProvider(configService: ConfigService): LlmProvider {
     const fallbackApiKey = (configService.get<string>('LLM_FALLBACK_API_KEY') ?? '').trim();
 
     if (fallbackBaseUrl && fallbackModel && fallbackApiKey) {
+      const fallbackTimeoutMs = parseOptionalTimeoutMs(
+        configService.get<number | string>('LLM_FALLBACK_TIMEOUT_MS'),
+      );
       const fallback = new OpenAiCompatibleProvider({
         baseUrl: fallbackBaseUrl,
         apiKey: fallbackApiKey,
         model: fallbackModel,
         retryDelaysMs: FALLBACK_RETRY_DELAYS_MS,
       });
-      return new FallbackLlmProvider(primary, fallback, fallbackModel);
+      return new FallbackLlmProvider(primary, fallback, fallbackModel, fallbackTimeoutMs);
     }
 
     return primary;

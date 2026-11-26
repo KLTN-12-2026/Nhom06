@@ -6,7 +6,12 @@ import { createLlmProvider } from '../../ai.module';
 import { LlmExplanationInput } from '../domain/llm-guard';
 import { ProposalsLlmService } from '../proposals-llm.service';
 import { FALLBACK_RETRY_DELAYS_MS, FallbackLlmProvider } from './fallback.provider';
-import { PROMPT_VERSION } from './llm-provider.interface';
+import {
+  LlmExplainOptions,
+  LlmProvider,
+  LlmProviderError,
+  PROMPT_VERSION,
+} from './llm-provider.interface';
 import { MockProvider } from './mock.provider';
 import { OpenAiCompatibleProvider } from './openai-compatible.provider';
 
@@ -356,5 +361,161 @@ describe('FallbackLlmProvider — provider dự phòng tùy chọn (T-030 lượ
     });
     expect(envWithFallback.LLM_FALLBACK_BASE_URL).toBe(FALLBACK_URL);
     expect(envWithFallback.LLM_FALLBACK_MODEL).toBe(FALLBACK_MODEL);
+  });
+
+  describe('LLM_FALLBACK_TIMEOUT_MS — thời gian chờ riêng cho nhánh dự phòng (T-031)', () => {
+    it('có fallbackTimeoutMs = 60000 → dự phòng nhận timeoutMs = 60000, model chính vẫn nhận LLM_TIMEOUT_MS', async () => {
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+      const primaryExplain = jest
+        .fn<ReturnType<LlmProvider['explain']>, [LlmExplanationInput, LlmExplainOptions]>()
+        .mockRejectedValueOnce(
+          new LlmProviderError('Hết thời gian chờ', {
+            provider: 'openai_compatible',
+            modelName: PRIMARY_MODEL,
+            code: 'TIMEOUT',
+          }),
+        );
+      const fallbackExplain = jest
+        .fn<ReturnType<LlmProvider['explain']>, [LlmExplanationInput, LlmExplainOptions]>()
+        .mockResolvedValueOnce({
+          provider: 'openai_compatible',
+          modelName: FALLBACK_MODEL,
+          rawText: validContent,
+        });
+
+      const primary: LlmProvider = {
+        providerName: 'openai_compatible',
+        explain: primaryExplain,
+      };
+      const fallback: LlmProvider = {
+        providerName: 'openai_compatible',
+        explain: fallbackExplain,
+      };
+
+      const provider = new FallbackLlmProvider(primary, fallback, FALLBACK_MODEL, 60_000);
+      const result = await provider.explain(sampleInput, { timeoutMs: 30_000 });
+
+      expect(result.modelName).toBe(FALLBACK_MODEL);
+      expect(primaryExplain).toHaveBeenCalledWith(sampleInput, { timeoutMs: 30_000 });
+      expect(fallbackExplain).toHaveBeenCalledWith(sampleInput, { timeoutMs: 60_000 });
+    });
+
+    it('không đặt fallbackTimeoutMs → dự phòng nhận LLM_TIMEOUT_MS như cũ', async () => {
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+      const primaryExplain = jest
+        .fn<ReturnType<LlmProvider['explain']>, [LlmExplanationInput, LlmExplainOptions]>()
+        .mockRejectedValueOnce(
+          new LlmProviderError('HTTP 503', {
+            provider: 'openai_compatible',
+            modelName: PRIMARY_MODEL,
+            code: 'HTTP_ERROR',
+            httpStatus: 503,
+          }),
+        );
+      const fallbackExplain = jest
+        .fn<ReturnType<LlmProvider['explain']>, [LlmExplanationInput, LlmExplainOptions]>()
+        .mockResolvedValueOnce({
+          provider: 'openai_compatible',
+          modelName: FALLBACK_MODEL,
+          rawText: validContent,
+        });
+
+      const primary: LlmProvider = {
+        providerName: 'openai_compatible',
+        explain: primaryExplain,
+      };
+      const fallback: LlmProvider = {
+        providerName: 'openai_compatible',
+        explain: fallbackExplain,
+      };
+
+      const provider = new FallbackLlmProvider(primary, fallback, FALLBACK_MODEL);
+      await provider.explain(sampleInput, { timeoutMs: 30_000 });
+
+      expect(primaryExplain).toHaveBeenCalledWith(sampleInput, { timeoutMs: 30_000 });
+      expect(fallbackExplain).toHaveBeenCalledWith(sampleInput, { timeoutMs: 30_000 });
+    });
+
+    it('createLlmProvider đọc đúng LLM_FALLBACK_TIMEOUT_MS (số, chuỗi số, chuỗi rỗng, không đặt)', async () => {
+      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+
+      const baseValues: Record<string, unknown> = {
+        LLM_PROVIDER: 'openai_compatible',
+        LLM_BASE_URL: PRIMARY_URL,
+        LLM_API_KEY: PRIMARY_KEY,
+        LLM_MODEL: PRIMARY_MODEL,
+        LLM_FALLBACK_BASE_URL: FALLBACK_URL,
+        LLM_FALLBACK_MODEL: FALLBACK_MODEL,
+        LLM_FALLBACK_API_KEY: FALLBACK_KEY,
+      };
+
+      const runWithTimeoutConfig = async (rawTimeout: unknown) => {
+        const receivedTimeouts: number[] = [];
+        const explainSpy = jest
+          .spyOn(OpenAiCompatibleProvider.prototype, 'explain')
+          .mockImplementationOnce(async (_input, opts) => {
+            receivedTimeouts.push(opts.timeoutMs);
+            throw new LlmProviderError('HTTP 503', {
+              provider: 'openai_compatible',
+              modelName: PRIMARY_MODEL,
+              code: 'HTTP_ERROR',
+              httpStatus: 503,
+            });
+          })
+          .mockImplementationOnce(async (_input, opts) => {
+            receivedTimeouts.push(opts.timeoutMs);
+            return {
+              provider: 'openai_compatible',
+              modelName: FALLBACK_MODEL,
+              rawText: validContent,
+            };
+          });
+
+        const config = {
+          get: (key: string) =>
+            key === 'LLM_FALLBACK_TIMEOUT_MS' ? rawTimeout : baseValues[key],
+        } as unknown as ConfigService;
+
+        const provider = createLlmProvider(config);
+        expect(provider).toBeInstanceOf(FallbackLlmProvider);
+        await provider.explain(sampleInput, { timeoutMs: 30_000 });
+        explainSpy.mockRestore();
+        return receivedTimeouts;
+      };
+
+      expect(await runWithTimeoutConfig(60_000)).toEqual([30_000, 60_000]);
+      expect(await runWithTimeoutConfig('60000')).toEqual([30_000, 60_000]);
+      expect(await runWithTimeoutConfig('')).toEqual([30_000, 30_000]);
+      expect(await runWithTimeoutConfig('   ')).toEqual([30_000, 30_000]);
+      expect(await runWithTimeoutConfig(undefined)).toEqual([30_000, 30_000]);
+    });
+
+    it('validateEnv chấp nhận LLM_FALLBACK_TIMEOUT_MS tùy chọn, chuỗi rỗng và số nguyên >= 1000; từ chối giá trị sai', () => {
+      const baseEnv = {
+        DATABASE_URL: 'postgresql://kho_ai:dev@db:5432/kho_ai_test?schema=public',
+        JWT_SECRET: 'test-secret',
+        ML_SERVICE_URL: 'http://ml:8000',
+      };
+
+      expect(validateEnv(baseEnv).LLM_FALLBACK_TIMEOUT_MS).toBeUndefined();
+      expect(
+        validateEnv({ ...baseEnv, LLM_FALLBACK_TIMEOUT_MS: '' }).LLM_FALLBACK_TIMEOUT_MS,
+      ).toBeUndefined();
+      expect(
+        validateEnv({ ...baseEnv, LLM_FALLBACK_TIMEOUT_MS: '   ' }).LLM_FALLBACK_TIMEOUT_MS,
+      ).toBeUndefined();
+      expect(
+        validateEnv({ ...baseEnv, LLM_FALLBACK_TIMEOUT_MS: '60000' }).LLM_FALLBACK_TIMEOUT_MS,
+      ).toBe(60_000);
+      expect(
+        validateEnv({ ...baseEnv, LLM_FALLBACK_TIMEOUT_MS: 60_000 }).LLM_FALLBACK_TIMEOUT_MS,
+      ).toBe(60_000);
+
+      expect(() => validateEnv({ ...baseEnv, LLM_FALLBACK_TIMEOUT_MS: '500' })).toThrow();
+      expect(() => validateEnv({ ...baseEnv, LLM_FALLBACK_TIMEOUT_MS: 'abc' })).toThrow();
+      expect(() => validateEnv({ ...baseEnv, LLM_FALLBACK_TIMEOUT_MS: '1200.5' })).toThrow();
+    });
   });
 });
