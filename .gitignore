@@ -32,3 +32,7 @@ ml/data/raw/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Playwright E2E artifacts (ảnh chụp màn hình, báo cáo HTML, trace)
+e2e/artifacts/
+artifacts/
