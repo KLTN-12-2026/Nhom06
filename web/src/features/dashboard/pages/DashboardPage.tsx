@@ -23,8 +23,10 @@ export function DashboardPage() {
   const dashboardQuery = useDashboardQuery();
   const data = dashboardQuery.data;
 
+  const canReadReports = hasPermission('reports.read');
   const canReadAnalysis = hasPermission('analysis.read');
   const canReadProposals = hasPermission('proposals.read');
+  const showValueAtRisk = canReadReports && canReadAnalysis;
   const isAdmin = user?.role?.code === 'ADMIN';
 
   const description = data
@@ -63,10 +65,10 @@ export function DashboardPage() {
 
       {data && (
         <>
-          {/* Hàng 1: 4 thẻ KPI (ẩn ô Giá trị có nguy cơ mất khi thiếu analysis.read) */}
+          {/* Hàng 1: 4 thẻ KPI (ẩn ô Giá trị có nguy cơ mất khi thiếu reports.read hoặc analysis.read) */}
           <div
             className={`grid gap-4 sm:grid-cols-2 ${
-              canReadAnalysis ? 'xl:grid-cols-4' : 'xl:grid-cols-3'
+              showValueAtRisk ? 'xl:grid-cols-4' : 'xl:grid-cols-3'
             }`}
           >
             <Link
@@ -108,7 +110,7 @@ export function DashboardPage() {
               </div>
             </Link>
 
-            {canReadAnalysis && (
+            {showValueAtRisk && (
               <Link
                 to="/risk"
                 className="block rounded-lg border border-border bg-[var(--surface)] p-5 transition-colors hover:border-[var(--info)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"

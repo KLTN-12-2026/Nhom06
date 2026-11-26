@@ -53,7 +53,7 @@ export interface InboundReceiptSummaryResponse {
   updatedAt: string;
   lineCount: number;
   totalQuantity: string;
-  totalAmount: string;
+  totalAmount?: string;
 }
 
 export interface InboundReceiptItemResponse {
@@ -70,8 +70,8 @@ export interface InboundReceiptItemResponse {
   expiryDate: string;
   manufacturedDate: string | null;
   quantity: string;
-  unitCost: string | null;
-  lineTotal: string | null;
+  unitCost?: string | null;
+  lineTotal?: string | null;
 }
 
 export interface InboundReceiptDetailResponse extends InboundReceiptSummaryResponse {
@@ -171,9 +171,12 @@ type ReceiptDetailRecord = Prisma.InboundReceiptGetPayload<{
   select: typeof RECEIPT_DETAIL_SELECT;
 }>;
 
-function toReceiptSummary(record: ReceiptDetailRecord): InboundReceiptSummaryResponse {
+function toReceiptSummary(
+  record: ReceiptDetailRecord,
+  includeMoney = false,
+): InboundReceiptSummaryResponse {
   const summary = summarizeReceiptItems(record.items);
-  return {
+  const result: InboundReceiptSummaryResponse = {
     id: record.id,
     receiptNo: record.receiptNo,
     receiptDate: formatUtcDate(record.receiptDate),
@@ -187,26 +190,37 @@ function toReceiptSummary(record: ReceiptDetailRecord): InboundReceiptSummaryRes
     updatedAt: record.updatedAt.toISOString(),
     lineCount: summary.lineCount,
     totalQuantity: summary.totalQuantity,
-    totalAmount: summary.totalAmount,
   };
+  if (includeMoney) {
+    result.totalAmount = summary.totalAmount;
+  }
+  return result;
 }
 
-function toReceiptDetail(record: ReceiptDetailRecord): InboundReceiptDetailResponse {
+function toReceiptDetail(
+  record: ReceiptDetailRecord,
+  includeMoney = false,
+): InboundReceiptDetailResponse {
   const summary = summarizeReceiptItems(record.items);
   return {
-    ...toReceiptSummary(record),
-    items: record.items.map((item, idx) => ({
-      id: item.id,
-      productId: item.productId,
-      product: item.product,
-      lotId: item.lotId,
-      lotCode: item.lotCode,
-      expiryDate: formatUtcDate(item.expiryDate),
-      manufacturedDate: item.manufacturedDate ? formatUtcDate(item.manufacturedDate) : null,
-      quantity: item.quantity.toString(),
-      unitCost: item.unitCost !== null ? item.unitCost.toString() : null,
-      lineTotal: summary.lineTotals[idx] ?? null,
-    })),
+    ...toReceiptSummary(record, includeMoney),
+    items: record.items.map((item, idx) => {
+      const mapped: InboundReceiptItemResponse = {
+        id: item.id,
+        productId: item.productId,
+        product: item.product,
+        lotId: item.lotId,
+        lotCode: item.lotCode,
+        expiryDate: formatUtcDate(item.expiryDate),
+        manufacturedDate: item.manufacturedDate ? formatUtcDate(item.manufacturedDate) : null,
+        quantity: item.quantity.toString(),
+      };
+      if (includeMoney) {
+        mapped.unitCost = item.unitCost !== null ? item.unitCost.toString() : null;
+        mapped.lineTotal = summary.lineTotals[idx] ?? null;
+      }
+      return mapped;
+    }),
   };
 }
 
@@ -233,7 +247,11 @@ export class InboundReceiptsService {
     @Optional() private readonly analysisTrigger?: AnalysisTriggerService,
   ) {}
 
-  async findAll(query: ListInboundReceiptsQueryDto): Promise<InboundReceiptListResponse> {
+  async findAll(
+    query: ListInboundReceiptsQueryDto,
+    options?: { includeMoney?: boolean },
+  ): Promise<InboundReceiptListResponse> {
+    const includeMoney = options?.includeMoney ?? false;
     if (query.from && !isValidIsoDate(query.from)) {
       throw new BadRequestException({
         message: 'Ngày bắt đầu không hợp lệ',
@@ -289,14 +307,17 @@ export class InboundReceiptsService {
     ]);
 
     return {
-      items: records.map(toReceiptSummary),
+      items: records.map((record) => toReceiptSummary(record, includeMoney)),
       total,
       page,
       pageSize,
     };
   }
 
-  async findOne(id: string): Promise<InboundReceiptDetailResponse> {
+  async findOne(
+    id: string,
+    options?: { includeMoney?: boolean },
+  ): Promise<InboundReceiptDetailResponse> {
     const record = await this.prisma.inboundReceipt.findUnique({
       where: { id },
       select: RECEIPT_DETAIL_SELECT,
@@ -304,12 +325,13 @@ export class InboundReceiptsService {
     if (!record) {
       throw new NotFoundException('Không tìm thấy phiếu nhập');
     }
-    return toReceiptDetail(record);
+    return toReceiptDetail(record, options?.includeMoney ?? false);
   }
 
   async create(
     dto: CreateInboundReceiptDto,
     actorUserId: string,
+    options?: { includeMoney?: boolean },
   ): Promise<InboundReceiptDetailResponse> {
     const normalizedItems = await this.validateDraftPayload(dto);
     const receiptDateUtc = toUtcDate(dto.receiptDate);
@@ -370,7 +392,7 @@ export class InboundReceiptsService {
           return receipt;
         });
 
-        return toReceiptDetail(created);
+        return toReceiptDetail(created, options?.includeMoney ?? false);
       } catch (error) {
         if (isReceiptNoUniqueViolation(error) && attempt < MAX_RECEIPT_NO_RETRIES - 1) {
           continue;
@@ -386,6 +408,7 @@ export class InboundReceiptsService {
     id: string,
     dto: UpdateInboundReceiptDto,
     actorUserId: string,
+    options?: { includeMoney?: boolean },
   ): Promise<InboundReceiptDetailResponse> {
     const normalizedItems = await this.validateDraftPayload(dto);
     const receiptDateUtc = toUtcDate(dto.receiptDate);
@@ -451,10 +474,14 @@ export class InboundReceiptsService {
       return receipt;
     });
 
-    return toReceiptDetail(updated);
+    return toReceiptDetail(updated, options?.includeMoney ?? false);
   }
 
-  async cancel(id: string, actorUserId: string): Promise<InboundReceiptDetailResponse> {
+  async cancel(
+    id: string,
+    actorUserId: string,
+    options?: { includeMoney?: boolean },
+  ): Promise<InboundReceiptDetailResponse> {
     const cancelled = await this.prisma.$transaction(async (tx) => {
       const lockedRows = await tx.$queryRaw<LockedReceiptRow[]>`
         SELECT id, receipt_no, supplier_id, receipt_date::text AS receipt_date, status
@@ -488,7 +515,7 @@ export class InboundReceiptsService {
       return receipt;
     });
 
-    return toReceiptDetail(cancelled);
+    return toReceiptDetail(cancelled, options?.includeMoney ?? false);
   }
 
   /**
@@ -503,7 +530,7 @@ export class InboundReceiptsService {
   async confirm(
     id: string,
     actorUserId: string,
-    internalOptions?: { confirmedAt?: Date },
+    internalOptions?: { confirmedAt?: Date; includeMoney?: boolean },
   ): Promise<InboundReceiptDetailResponse> {
     const confirmedAt = internalOptions?.confirmedAt ?? new Date();
 
@@ -714,7 +741,7 @@ export class InboundReceiptsService {
       this.logger.error(`Lỗi gọi hook STOCK_CHANGE sau xác nhận phiếu nhập ${confirmed.receiptNo}: ${detail}`);
     }
 
-    return toReceiptDetail(confirmed);
+    return toReceiptDetail(confirmed, internalOptions?.includeMoney ?? false);
   }
 
   protected async recordStockMovement(

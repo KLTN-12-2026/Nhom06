@@ -54,6 +54,14 @@ const NO_ANALYSIS_USER: AuthUser = {
   permissions: ['inventory.read', 'orders.read'],
 };
 
+const STAFF_USER: AuthUser = {
+  id: 'u-nhanvien',
+  username: 'nhanvien',
+  fullName: 'Trương Thành Lê',
+  role: { code: 'WAREHOUSE_STAFF', name: 'Nhân viên kho' },
+  permissions: ['inventory.read', 'analysis.read', 'proposals.read', 'orders.read'],
+};
+
 const FULL_DASHBOARD: DashboardResponse = {
   asOf: '2026-11-22',
   totalOnHand: '9855',
@@ -201,6 +209,24 @@ describe('DashboardPage (T-016 AC8)', () => {
 
     expect(screen.queryByText('Giá trị có nguy cơ mất')).not.toBeInTheDocument();
     expect(screen.queryByText('Mức rủi ro tồn dư')).not.toBeInTheDocument();
+  });
+
+  it('ẩn ô Giá trị có nguy cơ mất khi thiếu quyền reports.read (nhanvien có analysis.read) nhưng vẫn hiện Mức rủi ro tồn dư (T-024 AC4)', async () => {
+    renderDashboard(STAFF_USER, {
+      ...FULL_DASHBOARD,
+      valueAtRisk: null,
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('9.855')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByText('Giá trị có nguy cơ mất')).not.toBeInTheDocument();
+    expect(screen.queryByText('triệu đ')).not.toBeInTheDocument();
+    expect(screen.queryByText('Chưa có dữ liệu phân tích')).not.toBeInTheDocument();
+    // Khối không chứa tiền vẫn hiển thị bình thường cho nhân viên có analysis.read
+    expect(screen.getByText('Mức rủi ro tồn dư')).toBeInTheDocument();
+    expect(screen.getByText('8 đề xuất chờ duyệt')).toBeInTheDocument();
   });
 
   it('hiển thị thẻ trạng thái dịch vụ thu gọn ở cuối trang cho tài khoản ADMIN', async () => {

@@ -40,12 +40,18 @@ export function InboundDetailPage() {
 
   const canCreate = hasPermission('inbound.create');
   const canConfirm = hasPermission('inbound.confirm');
+  const canReadReports = hasPermission('reports.read');
 
   const receiptQuery = useInboundReceiptQuery(id);
   const confirmMutation = useConfirmInboundReceiptMutation(id ?? '');
   const cancelMutation = useCancelInboundReceiptMutation(id ?? '');
 
   const receipt = receiptQuery.data;
+  const hasMoneyInResponse =
+    receipt !== undefined &&
+    (receipt.totalAmount !== undefined ||
+      receipt.items.some((item) => item.unitCost !== undefined || item.lineTotal !== undefined));
+  const showMoneyColumns = canReadReports && hasMoneyInResponse;
 
   const headerActions = useMemo(() => {
     if (!receipt) {
@@ -219,8 +225,12 @@ export function InboundDetailPage() {
                     <TableHead>Mã lô</TableHead>
                     <TableHead>Hạn sử dụng</TableHead>
                     <TableHead className="text-right">Số lượng</TableHead>
-                    <TableHead className="text-right">Đơn giá</TableHead>
-                    <TableHead className="text-right">Thành tiền</TableHead>
+                    {showMoneyColumns && (
+                      <>
+                        <TableHead className="text-right">Đơn giá</TableHead>
+                        <TableHead className="text-right">Thành tiền</TableHead>
+                      </>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -239,12 +249,16 @@ export function InboundDetailPage() {
                       <TableCell className="whitespace-nowrap text-right tabular-nums">
                         {formatQuantity(item.quantity)}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">
-                        {formatCurrency(item.unitCost)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right tabular-nums">
-                        {formatCurrency(item.lineTotal)}
-                      </TableCell>
+                      {showMoneyColumns && (
+                        <>
+                          <TableCell className="whitespace-nowrap text-right tabular-nums">
+                            {formatCurrency(item.unitCost)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right tabular-nums">
+                            {formatCurrency(item.lineTotal)}
+                          </TableCell>
+                        </>
+                      )}
                     </TableRow>
                   ))}
                   <TableRow className="bg-[var(--surface)] font-semibold">
@@ -254,10 +268,14 @@ export function InboundDetailPage() {
                     <TableCell className="whitespace-nowrap text-right tabular-nums text-[var(--text)]">
                       {formatQuantity(receipt.totalQuantity)}
                     </TableCell>
-                    <TableCell />
-                    <TableCell className="whitespace-nowrap text-right tabular-nums text-[var(--text)]">
-                      {formatCurrency(receipt.totalAmount, true)}
-                    </TableCell>
+                    {showMoneyColumns && (
+                      <>
+                        <TableCell />
+                        <TableCell className="whitespace-nowrap text-right tabular-nums text-[var(--text)]">
+                          {formatCurrency(receipt.totalAmount, true)}
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 </TableBody>
               </Table>

@@ -185,11 +185,21 @@ describe('Phiếu nhập, lô, xác nhận nhập kho & tra cứu lô (T-007 E2E
       expect(receipt.receiptNo).toMatch(/^PN261122\d{4,}$/);
       expect(receipt.lineCount).toBe(2);
       expect(receipt.totalQuantity).toBe('20.5');
-      expect(receipt.totalAmount).toBe('8320000');
+      // T-024: nhanvien thiếu reports.read nên không nhận trường tiền trong response
+      expect(receipt.totalAmount).toBeUndefined();
       expect(receipt.items).toHaveLength(2);
       expect(receipt.items[0].lotCode).toBe(lot1Code);
       expect(receipt.items[0].lotId).toBeNull();
+      expect(receipt.items[0].unitCost).toBeUndefined();
+      expect(receipt.items[0].lineTotal).toBeUndefined();
       expect(receipt.items[1].lotId).toBeNull();
+
+      // Quản lý (có reports.read) đọc lại thấy đúng tổng tiền đã lưu
+      const managerCheckRes = await request(app.getHttpServer())
+        .get(`/api/inbound-receipts/${receipt.id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200);
+      expect(managerCheckRes.body.totalAmount).toBe('8320000');
 
       // Bất biến 1: KHÔNG có lô mới, KHÔNG có balance, KHÔNG có stock_movements
       const lots = await prisma.lot.findMany({

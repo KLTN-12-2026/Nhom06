@@ -16,6 +16,7 @@ import { type InboundReceiptSummary } from '../types';
 export function InboundListPage() {
   const { hasPermission } = useAuth();
   const canCreate = hasPermission('inbound.create');
+  const canReadReports = hasPermission('reports.read');
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -47,8 +48,15 @@ export function InboundListPage() {
     [canCreate],
   );
 
-  const columns = useMemo<DataTableColumn<InboundReceiptSummary>[]>(
-    () => [
+  const items = receiptsQuery.data?.items;
+  const hasMoneyInResponse =
+    items && items.length > 0
+      ? items.some((row) => row.totalAmount !== undefined)
+      : canReadReports;
+  const showMoneyColumn = canReadReports && hasMoneyInResponse;
+
+  const columns = useMemo<DataTableColumn<InboundReceiptSummary>[]>(() => {
+    const baseColumns: DataTableColumn<InboundReceiptSummary>[] = [
       {
         key: 'receiptNo',
         header: 'Số phiếu',
@@ -88,13 +96,19 @@ export function InboundListPage() {
         cellClassName: 'whitespace-nowrap tabular-nums font-medium text-[var(--text)]',
         render: (row) => formatQuantity(row.totalQuantity),
       },
-      {
+    ];
+
+    if (showMoneyColumn) {
+      baseColumns.push({
         key: 'totalAmount',
         header: 'Giá trị',
         align: 'right',
         cellClassName: 'whitespace-nowrap tabular-nums',
         render: (row) => formatCurrency(row.totalAmount),
-      },
+      });
+    }
+
+    baseColumns.push(
       {
         key: 'creator',
         header: 'Người lập',
@@ -107,9 +121,10 @@ export function InboundListPage() {
         cellClassName: 'whitespace-nowrap',
         render: (row) => <InboundStatusBadge status={row.status} />,
       },
-    ],
-    [],
-  );
+    );
+
+    return baseColumns;
+  }, [showMoneyColumn]);
 
   const total = receiptsQuery.data?.total ?? 0;
 

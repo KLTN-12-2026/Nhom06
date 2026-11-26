@@ -92,6 +92,7 @@ export class DashboardService {
       throw new ForbiddenException('Bạn không có quyền truy cập bảng điều khiển');
     }
 
+    const canReadReports = permissions.has('reports.read');
     const canReadAnalysis = permissions.has('analysis.read');
     const canReadProposals = permissions.has('proposals.read');
     const canReadOrders = permissions.has('orders.read');
@@ -186,43 +187,45 @@ export class DashboardService {
 
         riskSummary = summarizeRiskLevels(assessments);
 
-        const surplusLotIds = assessments
-          .filter((a) => a.estimatedSurplusQty.gt(0))
-          .map((a) => a.lotId);
+        if (canReadReports) {
+          const surplusLotIds = assessments
+            .filter((a) => a.estimatedSurplusQty.gt(0))
+            .map((a) => a.lotId);
 
-        const inboundCostRows =
-          surplusLotIds.length > 0
-            ? await this.prisma.inboundReceiptItem.findMany({
-                where: {
-                  lotId: { in: surplusLotIds },
-                  unitCost: { not: null },
-                  receipt: { status: 'confirmed' },
-                },
-                select: {
-                  lotId: true,
-                  quantity: true,
-                  unitCost: true,
-                },
-              })
-            : [];
+          const inboundCostRows =
+            surplusLotIds.length > 0
+              ? await this.prisma.inboundReceiptItem.findMany({
+                  where: {
+                    lotId: { in: surplusLotIds },
+                    unitCost: { not: null },
+                    receipt: { status: 'confirmed' },
+                  },
+                  select: {
+                    lotId: true,
+                    quantity: true,
+                    unitCost: true,
+                  },
+                })
+              : [];
 
-        const costByLot = new Map<string, InboundCostEntry[]>();
-        for (const row of inboundCostRows) {
-          if (!row.lotId || row.unitCost === null) {
-            continue;
+          const costByLot = new Map<string, InboundCostEntry[]>();
+          for (const row of inboundCostRows) {
+            if (!row.lotId || row.unitCost === null) {
+              continue;
+            }
+            const list = costByLot.get(row.lotId) ?? [];
+            list.push({ quantity: row.quantity, unitCost: row.unitCost });
+            costByLot.set(row.lotId, list);
           }
-          const list = costByLot.get(row.lotId) ?? [];
-          list.push({ quantity: row.quantity, unitCost: row.unitCost });
-          costByLot.set(row.lotId, list);
-        }
 
-        valueAtRisk = computeValueAtRisk(
-          assessments.map((a) => ({
-            lotId: a.lotId,
-            estimatedSurplusQty: a.estimatedSurplusQty,
-            inboundCosts: costByLot.get(a.lotId) ?? [],
-          })),
-        );
+          valueAtRisk = computeValueAtRisk(
+            assessments.map((a) => ({
+              lotId: a.lotId,
+              estimatedSurplusQty: a.estimatedSurplusQty,
+              inboundCosts: costByLot.get(a.lotId) ?? [],
+            })),
+          );
+        }
 
         const { dateStr: evalDateStr, dateObj: evalDateObj } =
           this.thresholdsService.resolveEvaluationDate();
