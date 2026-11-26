@@ -7,7 +7,7 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
     "build": "nest build",
-    "lint": "eslint \"{src,prisma,test}/**/*.ts\"",
+    "lint": "eslint \"{src,prisma,test,scripts}/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "test:smoke": "jest --config ./jest.smoke.config.json --runInBand",
@@ -81,6 +81,10 @@
     ],
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
+    "globalSetup": "<rootDir>/test/jest-global-setup.ts",
+    "setupFiles": [
+      "<rootDir>/test/jest-env-setup.ts"
+    ],
     "maxWorkers": 1
   }
 }
