@@ -21,6 +21,8 @@ export type ProposalFallbackReason = 'invalid' | 'failed' | 'unavailable' | null
 export interface LlmExplanationInput {
   ma_lo: string;
   san_pham: string;
+  ten_san_pham?: string;
+  don_vi_tinh?: string;
   han_su_dung: string;
   so_ngay_con_lai: number;
   ton_luc_phan_tich: number;

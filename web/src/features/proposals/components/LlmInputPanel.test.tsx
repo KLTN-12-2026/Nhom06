@@ -14,6 +14,8 @@ function makeLlmInput(overrides: Partial<LlmExplanationInput> = {}): LlmExplanat
   return {
     ma_lo: 'L26101802',
     san_pham: 'SP002',
+    ten_san_pham: 'Sữa chua uống TH true YOGURT 180ml lốc 4',
+    don_vi_tinh: 'thùng',
     han_su_dung: '2026-11-30',
     so_ngay_con_lai: 8,
     ton_luc_phan_tich: 1392,
@@ -28,14 +30,16 @@ function makeLlmInput(overrides: Partial<LlmExplanationInput> = {}): LlmExplanat
   };
 }
 
-describe('llm-input-format (T-023 — ánh xạ nhãn và định dạng thuần)', () => {
-  it('AC1: dựng đủ 12 trường theo đúng thứ tự với nhãn tiếng Việt và định dạng chuẩn', () => {
+describe('llm-input-format (T-023 + T-030 — ánh xạ nhãn và định dạng thuần)', () => {
+  it('AC1: dựng đủ 14 trường v2 theo đúng thứ tự với nhãn tiếng Việt và định dạng chuẩn', () => {
     const rows = buildLlmInputRows(makeLlmInput());
 
     expect(rows.map((r) => r.key)).toEqual([...LLM_INPUT_FIELD_ORDER]);
     expect(rows.map((r) => r.label)).toEqual([
       'Mã lô',
       'Sản phẩm',
+      'Tên sản phẩm',
+      'Đơn vị tính',
       'Hạn sử dụng',
       'Số ngày còn lại',
       'Tồn lúc phân tích',
@@ -51,6 +55,11 @@ describe('llm-input-format (T-023 — ánh xạ nhãn và định dạng thuần
     const byKey = new Map(rows.map((r) => [r.key, r]));
     expect(byKey.get('ma_lo')).toMatchObject({ kind: 'text', text: 'L26101802' });
     expect(byKey.get('san_pham')).toMatchObject({ kind: 'text', text: 'SP002' });
+    expect(byKey.get('ten_san_pham')).toMatchObject({
+      kind: 'text',
+      text: 'Sữa chua uống TH true YOGURT 180ml lốc 4',
+    });
+    expect(byKey.get('don_vi_tinh')).toMatchObject({ kind: 'text', text: 'thùng' });
     expect(byKey.get('han_su_dung')).toMatchObject({ kind: 'text', text: '30/11/2026' });
     expect(byKey.get('so_ngay_con_lai')).toMatchObject({ kind: 'text', text: '8 ngày' });
     expect(byKey.get('ton_luc_phan_tich')).toMatchObject({ kind: 'text', text: '1.392' });
@@ -64,6 +73,20 @@ describe('llm-input-format (T-023 — ánh xạ nhãn và định dạng thuần
       kind: 'actions',
       labels: ['Liên hệ đại lý', 'Cân nhắc khuyến mãi', 'Trả nhà cung cấp'],
     });
+  });
+
+  it('T-030: snapshot v1 cũ (không có ten_san_pham và don_vi_tinh) vẫn hiển thị đủ 12 hàng bình thường', () => {
+    const v1Snapshot = makeLlmInput();
+    delete v1Snapshot.ten_san_pham;
+    delete v1Snapshot.don_vi_tinh;
+
+    const rows = buildLlmInputRows(v1Snapshot);
+    expect(rows).toHaveLength(12);
+    expect(rows.map((r) => r.key)).not.toContain('ten_san_pham');
+    expect(rows.map((r) => r.key)).not.toContain('don_vi_tinh');
+    expect(rows[0]).toMatchObject({ key: 'ma_lo', label: 'Mã lô' });
+    expect(rows[1]).toMatchObject({ key: 'san_pham', label: 'Sản phẩm' });
+    expect(rows[2]).toMatchObject({ key: 'han_su_dung', label: 'Hạn sử dụng' });
   });
 
   it('AC1: định dạng số ngày âm thành "Quá N ngày" và ánh xạ đủ 5 mã phương án', () => {
@@ -143,11 +166,17 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     expect(within(table).getByRole('columnheader', { name: 'Giá trị' })).toBeInTheDocument();
 
     const rows = within(table).getAllByRole('row');
-    // 1 hàng header + 12 hàng dữ liệu
-    expect(rows).toHaveLength(13);
+    // 1 hàng header + 14 hàng dữ liệu v2
+    expect(rows).toHaveLength(15);
 
     expect(within(table).getByText('Mã lô')).toBeInTheDocument();
     expect(within(table).getByText('L26101802')).toBeInTheDocument();
+    expect(within(table).getByText('Tên sản phẩm')).toBeInTheDocument();
+    expect(
+      within(table).getByText('Sữa chua uống TH true YOGURT 180ml lốc 4'),
+    ).toBeInTheDocument();
+    expect(within(table).getByText('Đơn vị tính')).toBeInTheDocument();
+    expect(within(table).getByText('thùng')).toBeInTheDocument();
     expect(within(table).getByText('Hạn sử dụng')).toBeInTheDocument();
     expect(within(table).getByText('30/11/2026')).toBeInTheDocument();
     expect(within(table).getByText('Số ngày còn lại')).toBeInTheDocument();

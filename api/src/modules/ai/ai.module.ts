@@ -9,6 +9,7 @@ import { AnalysisPipelineService } from './pipeline/analysis-pipeline.service';
 import { AnalysisSchedulerService } from './pipeline/analysis-scheduler.service';
 import { AnalysisTriggerService } from './pipeline/analysis-trigger.service';
 import { LLM_PROVIDER_TOKEN, LlmProvider } from './proposals/llm/llm-provider.interface';
+import { FALLBACK_RETRY_DELAYS_MS, FallbackLlmProvider } from './proposals/llm/fallback.provider';
 import { MockProvider } from './proposals/llm/mock.provider';
 import { NoneProvider } from './proposals/llm/none.provider';
 import { OpenAiCompatibleProvider } from './proposals/llm/openai-compatible.provider';
@@ -17,6 +18,37 @@ import { ProposalsLlmService } from './proposals/proposals-llm.service';
 import { ProposalsService } from './proposals/proposals.service';
 import { AnalysisController } from './risk/analysis.controller';
 import { RiskQueryService } from './risk/risk-query.service';
+
+export function createLlmProvider(configService: ConfigService): LlmProvider {
+  const provider = configService.get<string>('LLM_PROVIDER') ?? 'none';
+  if (provider === 'mock') {
+    return new MockProvider();
+  }
+  if (provider === 'openai_compatible') {
+    const primary = new OpenAiCompatibleProvider({
+      baseUrl: configService.get<string>('LLM_BASE_URL') ?? '',
+      apiKey: configService.get<string>('LLM_API_KEY') ?? '',
+      model: configService.get<string>('LLM_MODEL') ?? '',
+    });
+
+    const fallbackBaseUrl = (configService.get<string>('LLM_FALLBACK_BASE_URL') ?? '').trim();
+    const fallbackModel = (configService.get<string>('LLM_FALLBACK_MODEL') ?? '').trim();
+    const fallbackApiKey = (configService.get<string>('LLM_FALLBACK_API_KEY') ?? '').trim();
+
+    if (fallbackBaseUrl && fallbackModel && fallbackApiKey) {
+      const fallback = new OpenAiCompatibleProvider({
+        baseUrl: fallbackBaseUrl,
+        apiKey: fallbackApiKey,
+        model: fallbackModel,
+        retryDelaysMs: FALLBACK_RETRY_DELAYS_MS,
+      });
+      return new FallbackLlmProvider(primary, fallback, fallbackModel);
+    }
+
+    return primary;
+  }
+  return new NoneProvider();
+}
 
 @Module({
   imports: [ExpiryModule],
@@ -28,20 +60,7 @@ import { RiskQueryService } from './risk/risk-query.service';
     {
       provide: LLM_PROVIDER_TOKEN,
       inject: [ConfigService],
-      useFactory: (configService: ConfigService): LlmProvider => {
-        const provider = configService.get<string>('LLM_PROVIDER') ?? 'none';
-        if (provider === 'mock') {
-          return new MockProvider();
-        }
-        if (provider === 'openai_compatible') {
-          return new OpenAiCompatibleProvider({
-            baseUrl: configService.get<string>('LLM_BASE_URL') ?? '',
-            apiKey: configService.get<string>('LLM_API_KEY') ?? '',
-            model: configService.get<string>('LLM_MODEL') ?? '',
-          });
-        }
-        return new NoneProvider();
-      },
+      useFactory: createLlmProvider,
     },
     ProposalsLlmService,
     ProposalsService,

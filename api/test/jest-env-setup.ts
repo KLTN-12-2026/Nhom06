@@ -8,3 +8,7 @@ const target = assertSafeTestDatabaseUrl({
 
 process.env.DATABASE_URL = target.rawUrl;
 process.env.NODE_ENV = 'test';
+// Buộc dùng mock LLM và xóa key trong mọi lần chạy Jest (kể cả smoke) để tránh gọi mạng thật
+process.env.LLM_PROVIDER = 'mock';
+process.env.LLM_API_KEY = '';
+process.env.LLM_FALLBACK_API_KEY = '';

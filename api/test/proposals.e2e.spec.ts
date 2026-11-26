@@ -293,6 +293,7 @@ describe('Proposals & LLM Guardrail E2E trên PostgreSQL thật (T-014 AC3–AC7
     for (const p of proposalsAfterRun1) {
       expect(p.llmExplanations).toHaveLength(1);
       expect(p.llmExplanations[0].validationStatus).toBe('valid');
+      expect(p.llmExplanations[0].promptVersion).toBe('v2');
       expect(p.llmExplanations[0].modelName).toContain('[Mô phỏng]');
     }
 
@@ -489,6 +490,8 @@ describe('Proposals & LLM Guardrail E2E trên PostgreSQL thật (T-014 AC3–AC7
       [
         'ma_lo',
         'san_pham',
+        'ten_san_pham',
+        'don_vi_tinh',
         'han_su_dung',
         'so_ngay_con_lai',
         'ton_luc_phan_tich',

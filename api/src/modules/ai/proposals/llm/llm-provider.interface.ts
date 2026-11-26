@@ -1,7 +1,7 @@
 import { LlmExplanationInput } from '../domain/llm-guard';
 
 export const LLM_PROVIDER_TOKEN = Symbol('LLM_PROVIDER');
-export const PROMPT_VERSION = 'v1';
+export const PROMPT_VERSION = 'v2';
 
 export type LlmProviderErrorCode =
   | 'DISABLED'
@@ -15,16 +15,23 @@ export class LlmProviderError extends Error {
   readonly provider: string;
   readonly modelName: string;
   readonly code: LlmProviderErrorCode;
+  readonly httpStatus?: number;
 
   constructor(
     message: string,
-    meta: { provider: string; modelName: string; code: LlmProviderErrorCode },
+    meta: {
+      provider: string;
+      modelName: string;
+      code: LlmProviderErrorCode;
+      httpStatus?: number;
+    },
   ) {
     super(message);
     this.name = 'LlmProviderError';
     this.provider = meta.provider;
     this.modelName = meta.modelName;
     this.code = meta.code;
+    this.httpStatus = meta.httpStatus;
   }
 }
 
