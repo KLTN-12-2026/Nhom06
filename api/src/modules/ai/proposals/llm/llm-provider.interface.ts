@@ -1,7 +1,7 @@
 import { LlmExplanationInput } from '../domain/llm-guard';
 
 export const LLM_PROVIDER_TOKEN = Symbol('LLM_PROVIDER');
-export const PROMPT_VERSION = 'v1';
+export const PROMPT_VERSION = 'v2';
 
 export type LlmProviderErrorCode =
   | 'DISABLED'

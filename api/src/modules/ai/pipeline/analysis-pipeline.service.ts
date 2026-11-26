@@ -353,6 +353,8 @@ export class AnalysisPipelineService {
           const llmInput = buildLlmInput({
             lotCode: ctx.computed.lotCode,
             productCode: ctx.product.code,
+            productName: ctx.product.name,
+            productUnit: ctx.product.unit,
             expiryDate: ctx.computed.expiryDate,
             daysRemaining: ctx.computed.daysRemaining,
             onHandSnapshot: ctx.computed.onHandSnapshot,

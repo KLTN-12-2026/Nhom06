@@ -7,6 +7,8 @@ export const MAX_EXPLANATION_LENGTH = 1500;
 export interface LlmExplanationInput {
   ma_lo: string;
   san_pham: string;
+  ten_san_pham: string;
+  don_vi_tinh: string;
   han_su_dung: string; // YYYY-MM-DD
   so_ngay_con_lai: number;
   ton_luc_phan_tich: number;
@@ -22,6 +24,8 @@ export interface LlmExplanationInput {
 export interface BuildLlmInputParams {
   lotCode: string;
   productCode: string;
+  productName: string;
+  productUnit: string;
   expiryDate: string; // YYYY-MM-DD
   daysRemaining: number;
   onHandSnapshot: Prisma.Decimal | string | number;
@@ -137,13 +141,15 @@ function parseTextNumberCandidates(token: string): Prisma.Decimal[] {
 }
 
 /**
- * Tạo đối tượng đầu vào tối thiểu 12 trường gửi sang LLM (D-026, mockup 23).
+ * Tạo đối tượng đầu vào tối thiểu 14 trường gửi sang LLM (D-026, prompt v2, mockup 23).
  * Tuyệt đối không đưa tên người dùng, tên đại lý, nhà cung cấp hay bí mật hệ thống.
  */
 export function buildLlmInput(params: BuildLlmInputParams): LlmExplanationInput {
   return {
     ma_lo: params.lotCode,
     san_pham: params.productCode,
+    ten_san_pham: params.productName.trim(),
+    don_vi_tinh: params.productUnit.trim(),
     han_su_dung: params.expiryDate,
     so_ngay_con_lai: Math.trunc(params.daysRemaining),
     ton_luc_phan_tich: toCleanNumber(params.onHandSnapshot),
@@ -252,16 +258,20 @@ export function validateLlmOutput(
 
     let textToScan = explanation;
 
-    // Loại bỏ đúng mã lô và mã sản phẩm theo biên chữ-số để tránh nhận nhầm chữ số trong mã
-    for (const identifier of [input.ma_lo, input.san_pham]) {
-      const trimmedId = identifier.trim();
-      if (trimmedId.length > 0) {
-        const idRegex = new RegExp(
-          `(?<![A-Za-z0-9])${escapeRegExp(trimmedId)}(?![A-Za-z0-9])`,
-          'gi',
-        );
-        textToScan = textToScan.replace(idRegex, ' ');
-      }
+    // Loại bỏ đúng tên sản phẩm, mã lô và mã sản phẩm (ưu tiên chuỗi dài trước)
+    // theo biên chữ-số Unicode để tránh nhận nhầm chữ số trong tên/mã (vd "180ml lốc 4")
+    const identifiers = [input.ten_san_pham, input.ma_lo, input.san_pham]
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0)
+      .sort((a, b) => b.length - a.length);
+
+    for (const trimmedId of identifiers) {
+      const idRegex = new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeRegExp(trimmedId)}(?![\\p{L}\\p{N}])`,
+        'giu',
+      );
+      textToScan = textToScan.replace(idRegex, ' ');
     }
 
     // Đối chiếu toàn vẹn ngày dd/MM/yyyy và YYYY-MM-DD trước khi quét số đơn lẻ

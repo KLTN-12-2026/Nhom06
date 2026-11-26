@@ -10,6 +10,8 @@ export type LlmInputKnownKey = keyof LlmExplanationInput;
 export const LLM_INPUT_FIELD_ORDER: readonly LlmInputKnownKey[] = [
   'ma_lo',
   'san_pham',
+  'ten_san_pham',
+  'don_vi_tinh',
   'han_su_dung',
   'so_ngay_con_lai',
   'ton_luc_phan_tich',
@@ -25,6 +27,8 @@ export const LLM_INPUT_FIELD_ORDER: readonly LlmInputKnownKey[] = [
 export const LLM_INPUT_FIELD_LABELS: Record<LlmInputKnownKey, string> = {
   ma_lo: 'Mã lô',
   san_pham: 'Sản phẩm',
+  ten_san_pham: 'Tên sản phẩm',
+  don_vi_tinh: 'Đơn vị tính',
   han_su_dung: 'Hạn sử dụng',
   so_ngay_con_lai: 'Số ngày còn lại',
   ton_luc_phan_tich: 'Tồn lúc phân tích',
@@ -129,7 +133,7 @@ function isSharedRiskLevel(value: unknown): value is SharedRiskLevel {
 function formatKnownRow(key: LlmInputKnownKey, value: unknown): LlmInputRow {
   const label = LLM_INPUT_FIELD_LABELS[key];
 
-  if (key === 'ma_lo' || key === 'san_pham') {
+  if (key === 'ma_lo' || key === 'san_pham' || key === 'ten_san_pham' || key === 'don_vi_tinh') {
     return { key, label, kind: 'text', text: formatUnknownLlmValue(value) };
   }
 

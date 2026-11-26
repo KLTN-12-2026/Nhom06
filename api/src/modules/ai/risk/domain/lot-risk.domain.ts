@@ -7,6 +7,13 @@ export const QUANTITY_DECIMAL_PLACES = 3;
 
 export type RiskLevel = 'critical' | 'high' | 'medium' | 'low';
 
+export const RISK_LEVEL_LABELS: Record<RiskLevel, string> = {
+  critical: 'Hết hạn',
+  high: 'Nguy cấp',
+  medium: 'Trung bình',
+  low: 'Thấp',
+};
+
 export interface RiskLotInput {
   id: string;
   productId: string;

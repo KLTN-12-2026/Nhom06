@@ -496,10 +496,12 @@ export class ProposalsService {
     const ruleSummaryText =
       snapshot.ruleSummaryText ?? row.rationale ?? computedRule?.ruleSummaryText ?? '';
 
-    // Luôn dựng llmInput đúng 12 trường sạch theo D-026 (không bao giờ chứa user/đại lý/key)
+    // Luôn dựng llmInput đúng 14 trường sạch theo D-026 & prompt v2 (không bao giờ chứa user/đại lý/NCC/key)
     const llmInput = buildLlmInput({
       lotCode: row.lot.lotCode,
       productCode: row.lot.product.code,
+      productName: row.lot.product.name,
+      productUnit: row.lot.product.unit,
       expiryDate: riskExpiryDate,
       daysRemaining: snapshotDaysRemaining,
       onHandSnapshot,
