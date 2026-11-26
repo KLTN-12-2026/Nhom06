@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
+import { useAuth } from '@/features/auth/hooks';
 import { useProductsQuery } from '@/features/products/hooks';
 import { useSuppliersQuery } from '@/features/suppliers/hooks';
 import { ApiError } from '@/lib/api';
@@ -117,8 +118,10 @@ export interface InboundFormPageProps {
 export function InboundFormPage({ mode }: InboundFormPageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
   const { showToast } = useToast();
 
+  const canReadReports = hasPermission('reports.read');
   const isEdit = mode === 'edit';
   const [submitError, setSubmitError] = useState<string | null>(null);
   const manualExpiryRowIdsRef = useRef<Set<string>>(new Set());
@@ -244,7 +247,9 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
         lotCode: item.lotCode.replace(/\s+/g, '').toUpperCase(),
         expiryDate: item.expiryDate,
         quantity: item.quantity.trim(),
-        unitCost: item.unitCost.trim() === '' ? null : item.unitCost.trim(),
+        ...(canReadReports
+          ? { unitCost: item.unitCost.trim() === '' ? null : item.unitCost.trim() }
+          : {}),
       })),
     };
 
@@ -466,11 +471,25 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
             <table className="w-full min-w-[780px] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-[var(--surface-muted)] text-left font-medium text-[var(--text-muted)]">
-                  <th className="px-4 py-3 w-[34%]">Sản phẩm</th>
-                  <th className="px-3 py-3 w-[16%]">Mã lô</th>
-                  <th className="px-3 py-3 w-[17%]">Hạn sử dụng</th>
-                  <th className="px-3 py-3 w-[12%] text-right">Số lượng</th>
-                  <th className="px-3 py-3 w-[14%] text-right">Đơn giá</th>
+                  <th className={canReadReports ? 'px-4 py-3 w-[34%]' : 'px-4 py-3 w-[40%]'}>
+                    Sản phẩm
+                  </th>
+                  <th className={canReadReports ? 'px-3 py-3 w-[16%]' : 'px-3 py-3 w-[20%]'}>
+                    Mã lô
+                  </th>
+                  <th className={canReadReports ? 'px-3 py-3 w-[17%]' : 'px-3 py-3 w-[19%]'}>
+                    Hạn sử dụng
+                  </th>
+                  <th
+                    className={
+                      canReadReports
+                        ? 'px-3 py-3 w-[12%] text-right'
+                        : 'px-3 py-3 w-[14%] text-right'
+                    }
+                  >
+                    Số lượng
+                  </th>
+                  {canReadReports && <th className="px-3 py-3 w-[14%] text-right">Đơn giá</th>}
                   <th className="px-4 py-3 w-[7%] text-right">
                     <span className="sr-only">Thao tác</span>
                   </th>
@@ -589,29 +608,31 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
                         )}
                       </td>
 
-                      <td className="px-3 py-3">
-                        <Input
-                          type="text"
-                          inputMode="decimal"
-                          placeholder="0"
-                          aria-label={`Đơn giá dòng ${index + 1}`}
-                          aria-invalid={rowErrors?.unitCost ? 'true' : undefined}
-                          aria-describedby={
-                            rowErrors?.unitCost ? `item-${index}-cost-error` : undefined
-                          }
-                          className="text-right tabular-nums"
-                          {...register(`items.${index}.unitCost`)}
-                        />
-                        {rowErrors?.unitCost && (
-                          <p
-                            id={`item-${index}-cost-error`}
-                            role="alert"
-                            className="mt-1 text-xs text-[var(--risk-critical-fg)]"
-                          >
-                            {rowErrors.unitCost.message}
-                          </p>
-                        )}
-                      </td>
+                      {canReadReports && (
+                        <td className="px-3 py-3">
+                          <Input
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0"
+                            aria-label={`Đơn giá dòng ${index + 1}`}
+                            aria-invalid={rowErrors?.unitCost ? 'true' : undefined}
+                            aria-describedby={
+                              rowErrors?.unitCost ? `item-${index}-cost-error` : undefined
+                            }
+                            className="text-right tabular-nums"
+                            {...register(`items.${index}.unitCost`)}
+                          />
+                          {rowErrors?.unitCost && (
+                            <p
+                              id={`item-${index}-cost-error`}
+                              role="alert"
+                              className="mt-1 text-xs text-[var(--risk-critical-fg)]"
+                            >
+                              {rowErrors.unitCost.message}
+                            </p>
+                          )}
+                        </td>
+                      )}
 
                       <td className="px-4 py-3 text-right">
                         <Button

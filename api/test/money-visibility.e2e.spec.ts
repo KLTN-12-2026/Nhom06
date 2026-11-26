@@ -71,6 +71,7 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
   let managerUserId: string;
   let supplierId: string;
   let productId: string;
+  let product2Id: string;
 
   const createdReceiptIds: string[] = [];
   const createdLotIds: string[] = [];
@@ -109,14 +110,15 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
       loginAs('nhanvien'),
     ]);
 
-    const [manager, supplier, product] = await Promise.all([
+    const [manager, supplier, products] = await Promise.all([
       prisma.user.findUniqueOrThrow({ where: { username: 'quanly' } }),
       prisma.supplier.findFirstOrThrow({ where: { status: 'active' } }),
-      prisma.product.findFirstOrThrow({ where: { status: 'active' } }),
+      prisma.product.findMany({ where: { status: 'active' }, orderBy: { code: 'asc' }, take: 2 }),
     ]);
     managerUserId = manager.id;
     supplierId = supplier.id;
-    productId = product.id;
+    productId = products[0].id;
+    product2Id = products[1].id;
 
     // Tạo user có reports.read nhưng thiếu analysis.read để kiểm tra ranh giới dashboard
     const role = await prisma.role.create({
@@ -206,24 +208,27 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
     }
   });
 
-  describe('AC3 — Phiếu nhập (/api/inbound-receipts): ẩn tiền với nhanvien, hiển thị với quanly và admin', () => {
-    it('nhanvien vẫn lập/sửa/xác nhận/hủy phiếu kèm đơn giá được, nhưng mọi response trả cho nhanvien không chứa khóa tiền; quanly và admin thấy đủ', async () => {
-      const lotCode1 = `${PREFIX}INB_L1`;
-      const lotCode2 = `${PREFIX}INB_L2`;
+  describe('AC3 — Phiếu nhập (/api/inbound-receipts): ẩn tiền với nhanvien, bỏ qua unitCost khi POST/PUT và giữ đơn giá cũ khi sửa nháp', () => {
+    it('nhanvien gửi unitCost khi POST bị bỏ qua; admin lập phiếu có đơn giá rồi nhanvien sửa nháp vẫn giữ nguyên đơn giá cũ; mọi response cho nhanvien không chứa khóa tiền', async () => {
+      const staffLotCode = `${PREFIX}STF_L1`;
+      const adminLot1 = `${PREFIX}ADM_PRESERVE_L1`;
+      const adminLot2 = `${PREFIX}ADM_PRESERVE_L2`;
+      const addedLotByStaff = `${PREFIX}STF_ADDED_L3`;
+      const cancelLotCode = `${PREFIX}INB_CANCEL`;
       const expiryDate = addDaysIso(todayVn, 120);
 
-      // 1. POST tạo nháp bởi nhanvien (có nhập unitCost)
-      const createRes = await request(app.getHttpServer())
+      // 1. POST tạo nháp bởi nhanvien dù gửi kèm unitCost → bị bỏ qua (lưu null) và response không chứa khóa tiền
+      const staffCreateRes = await request(app.getHttpServer())
         .post('/api/inbound-receipts')
         .set('Authorization', `Bearer ${staffToken}`)
         .send({
           supplierId,
           receiptDate: todayVn,
-          notes: 'Phiếu kiểm tra ẩn tiền T-024',
+          notes: 'Nhân viên thử gửi unitCost T-024',
           items: [
             {
               productId,
-              lotCode: lotCode1,
+              lotCode: staffLotCode,
               expiryDate,
               quantity: '10',
               unitCost: '320000',
@@ -232,47 +237,122 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
         })
         .expect(201);
 
-      const receiptId = (createRes.body as { id: string }).id;
-      const receiptNo = (createRes.body as { receiptNo: string }).receiptNo;
-      createdReceiptIds.push(receiptId);
+      const staffReceiptId = (staffCreateRes.body as { id: string }).id;
+      createdReceiptIds.push(staffReceiptId);
+      expect(findMoneyKeysInJson(staffCreateRes.body)).toEqual([]);
+      expect(staffCreateRes.body.totalQuantity).toBe('10');
 
-      // Response POST cho nhanvien không chứa bất kỳ khóa tiền nào
-      expect(findMoneyKeysInJson(createRes.body)).toEqual([]);
-      expect(createRes.body.totalQuantity).toBe('10');
-
-      // Kiểm tra quanly và admin đọc lại → thấy đúng đơn giá nhanvien đã ghi
+      // Admin/Quản lý kiểm tra lại: unitCost mà nhân viên gửi đã bị bỏ qua → null / totalAmount = '0'
       for (const token of [managerToken, adminToken]) {
         const detailRes = await request(app.getHttpServer())
-          .get(`/api/inbound-receipts/${receiptId}`)
+          .get(`/api/inbound-receipts/${staffReceiptId}`)
           .set('Authorization', `Bearer ${token}`)
           .expect(200);
-        expect(detailRes.body.totalAmount).toBe('3200000');
-        expect(detailRes.body.items[0].unitCost).toBe('320000');
-        expect(detailRes.body.items[0].lineTotal).toBe('3200000');
+        expect(detailRes.body.totalAmount).toBe('0');
+        expect(detailRes.body.items[0].unitCost).toBeNull();
+        expect(detailRes.body.items[0].lineTotal).toBeNull();
       }
 
-      // 2. PUT sửa nháp bởi nhanvien (đổi đơn giá) → response vẫn không chứa khóa tiền
-      const updateRes = await request(app.getHttpServer())
+      // 2. Admin lập phiếu nháp có đơn giá ở 2 dòng
+      const adminDraftRes = await request(app.getHttpServer())
+        .post('/api/inbound-receipts')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          supplierId,
+          receiptDate: todayVn,
+          notes: 'Admin lập phiếu có đơn giá T-024',
+          items: [
+            {
+              productId,
+              lotCode: adminLot1,
+              expiryDate,
+              quantity: '10',
+              unitCost: '320000',
+            },
+            {
+              productId: product2Id,
+              lotCode: adminLot2,
+              expiryDate,
+              quantity: '5',
+              unitCost: '150000',
+            },
+          ],
+        })
+        .expect(201);
+
+      const receiptId = (adminDraftRes.body as { id: string }).id;
+      const receiptNo = (adminDraftRes.body as { receiptNo: string }).receiptNo;
+      createdReceiptIds.push(receiptId);
+      expect(adminDraftRes.body.totalAmount).toBe('3950000');
+      expect(adminDraftRes.body.items[0].unitCost).toBe('320000');
+      expect(adminDraftRes.body.items[1].unitCost).toBe('150000');
+
+      // 3. nhanvien sửa phiếu nháp đó: đổi số lượng dòng 1 (10→20) kèm thử gửi unitCost khác,
+      // giữ nguyên dòng 2 (không gửi unitCost), và thêm 1 dòng mới có gửi unitCost →
+      // dòng cũ giữ đúng unitCost cũ, dòng mới để null, response cho nhanvien không chứa khóa tiền.
+      const staffUpdateRes = await request(app.getHttpServer())
         .put(`/api/inbound-receipts/${receiptId}`)
         .set('Authorization', `Bearer ${staffToken}`)
         .send({
           supplierId,
           receiptDate: todayVn,
-          notes: 'Cập nhật đơn giá T-024',
+          notes: 'Nhân viên cập nhật số lượng T-024',
           items: [
             {
               productId,
-              lotCode: lotCode1,
+              lotCode: adminLot1,
               expiryDate,
-              quantity: '10',
-              unitCost: '350000',
+              quantity: '20',
+              unitCost: '999999',
+            },
+            {
+              productId: product2Id,
+              lotCode: adminLot2,
+              expiryDate,
+              quantity: '5',
+            },
+            {
+              productId,
+              lotCode: addedLotByStaff,
+              expiryDate,
+              quantity: '8',
+              unitCost: '888888',
             },
           ],
         })
         .expect(200);
-      expect(findMoneyKeysInJson(updateRes.body)).toEqual([]);
+      expect(findMoneyKeysInJson(staffUpdateRes.body)).toEqual([]);
+      expect(staffUpdateRes.body.totalQuantity).toBe('33');
 
-      // 3. GET danh sách phiếu nhập: 3 vai trò
+      // Admin và Quản lý đọc lại: đơn giá dòng cũ còn nguyên (20*320000 + 5*150000 = 7150000), dòng mới null
+      for (const token of [managerToken, adminToken]) {
+        const detailRes = await request(app.getHttpServer())
+          .get(`/api/inbound-receipts/${receiptId}`)
+          .set('Authorization', `Bearer ${token}`)
+          .expect(200);
+        expect(detailRes.body.totalAmount).toBe('7150000');
+        expect(detailRes.body.items).toHaveLength(3);
+        expect(detailRes.body.items[0]).toMatchObject({
+          lotCode: adminLot1,
+          quantity: '20',
+          unitCost: '320000',
+          lineTotal: '6400000',
+        });
+        expect(detailRes.body.items[1]).toMatchObject({
+          lotCode: adminLot2,
+          quantity: '5',
+          unitCost: '150000',
+          lineTotal: '750000',
+        });
+        expect(detailRes.body.items[2]).toMatchObject({
+          lotCode: addedLotByStaff,
+          quantity: '8',
+          unitCost: null,
+          lineTotal: null,
+        });
+      }
+
+      // 4. GET danh sách phiếu nhập: 3 vai trò
       const [staffList, managerList, adminList] = await Promise.all([
         request(app.getHttpServer())
           .get('/api/inbound-receipts')
@@ -293,27 +373,29 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
 
       expect(staffList.body.items).toHaveLength(1);
       expect(findMoneyKeysInJson(staffList.body)).toEqual([]);
-      expect(managerList.body.items[0].totalAmount).toBe('3500000');
-      expect(adminList.body.items[0].totalAmount).toBe('3500000');
+      expect(managerList.body.items[0].totalAmount).toBe('7150000');
+      expect(adminList.body.items[0].totalAmount).toBe('7150000');
 
-      // 4. GET chi tiết phiếu nhập bởi nhanvien → không chứa khóa tiền
+      // 5. GET chi tiết phiếu nhập bởi nhanvien → không chứa khóa tiền
       const staffDetail = await request(app.getHttpServer())
         .get(`/api/inbound-receipts/${receiptId}`)
         .set('Authorization', `Bearer ${staffToken}`)
         .expect(200);
       expect(findMoneyKeysInJson(staffDetail.body)).toEqual([]);
-      expect(staffDetail.body.items[0].quantity).toBe('10');
+      expect(staffDetail.body.items[0].quantity).toBe('20');
 
-      // 5. POST confirm bởi nhanvien → xác nhận thành công, response không chứa khóa tiền
+      // 6. POST confirm bởi nhanvien → xác nhận thành công, response không chứa khóa tiền
       const staffConfirm = await request(app.getHttpServer())
         .post(`/api/inbound-receipts/${receiptId}/confirm`)
         .set('Authorization', `Bearer ${staffToken}`)
         .expect(200);
       expect(staffConfirm.body.status).toBe('confirmed');
       expect(findMoneyKeysInJson(staffConfirm.body)).toEqual([]);
-      createdLotIds.push(staffConfirm.body.items[0].lotId);
+      for (const item of staffConfirm.body.items as Array<{ lotId: string }>) {
+        createdLotIds.push(item.lotId);
+      }
 
-      // 6. POST cancel bởi nhanvien trên phiếu nháp thứ 2 → response không chứa khóa tiền
+      // 7. POST cancel bởi nhanvien trên phiếu nháp khác → response không chứa khóa tiền
       const draft2 = await request(app.getHttpServer())
         .post('/api/inbound-receipts')
         .set('Authorization', `Bearer ${staffToken}`)
@@ -323,10 +405,9 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
           items: [
             {
               productId,
-              lotCode: lotCode2,
+              lotCode: cancelLotCode,
               expiryDate,
               quantity: '5',
-              unitCost: '200000',
             },
           ],
         })
@@ -341,9 +422,9 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
       expect(staffCancel.body.status).toBe('cancelled');
       expect(findMoneyKeysInJson(staffCancel.body)).toEqual([]);
 
-      // 7. Admin (có reports.read) tạo/sửa/hủy phiếu → response có đầy đủ trường tiền
-      const adminDraft = await request(app.getHttpServer())
-        .post('/api/inbound-receipts')
+      // 8. Admin (có reports.read) vẫn sửa/hủy đơn giá bình thường và nhận đủ trường tiền
+      const adminUpdateRes = await request(app.getHttpServer())
+        .put(`/api/inbound-receipts/${staffReceiptId}`)
         .set('Authorization', `Bearer ${adminToken}`)
         .send({
           supplierId,
@@ -351,21 +432,20 @@ describe('Ẩn số liệu tiền với người thiếu quyền reports.read (T
           items: [
             {
               productId,
-              lotCode: `${PREFIX}ADM_L1`,
+              lotCode: staffLotCode,
               expiryDate,
               quantity: '4',
               unitCost: '125000',
             },
           ],
         })
-        .expect(201);
-      createdReceiptIds.push(adminDraft.body.id);
-      expect(adminDraft.body.totalAmount).toBe('500000');
-      expect(adminDraft.body.items[0].unitCost).toBe('125000');
-      expect(adminDraft.body.items[0].lineTotal).toBe('500000');
+        .expect(200);
+      expect(adminUpdateRes.body.totalAmount).toBe('500000');
+      expect(adminUpdateRes.body.items[0].unitCost).toBe('125000');
+      expect(adminUpdateRes.body.items[0].lineTotal).toBe('500000');
 
       const adminCancel = await request(app.getHttpServer())
-        .post(`/api/inbound-receipts/${adminDraft.body.id}/cancel`)
+        .post(`/api/inbound-receipts/${staffReceiptId}/cancel`)
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
       expect(adminCancel.body.totalAmount).toBe('500000');

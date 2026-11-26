@@ -431,10 +431,10 @@ describe('Báo cáo NXT, Dashboard, Báo cáo rủi ro cận hạn & Xuất Exce
       const expiryLong = addDaysIso(todayVn, 120);
       const expiryMid = addDaysIso(todayVn, 20);
 
-      // 1) Tạo & xác nhận phiếu nhập 1: prodA lô L1 (100 @ 10000) + prodB lô LB1 (50, không đơn giá)
+      // 1) Tạo & xác nhận phiếu nhập 1 (bằng admin có reports.read để lưu đơn giá): prodA lô L1 (100 @ 10000) + prodB lô LB1 (50, không đơn giá)
       const in1 = await request(app.getHttpServer())
         .post('/api/inbound-receipts')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           supplierId,
           receiptDate: todayVn,
@@ -470,10 +470,10 @@ describe('Báo cáo NXT, Dashboard, Báo cáo rủi ro cận hạn & Xuất Exce
       lotB1Id = confirmedItems1.find((i) => i.productId === prodBId)!.lotId;
       createdLotIds.push(lotA1Id, lotB1Id);
 
-      // 2) Phiếu nhập 2: nhập bổ sung cùng lô LA1 (300 @ 14000 → bình quân gia quyền = 13000) + lô LA2 (60 @ 25000)
+      // 2) Phiếu nhập 2 (bằng admin có reports.read để lưu đơn giá): nhập bổ sung cùng lô LA1 (300 @ 14000 → bình quân gia quyền = 13000) + lô LA2 (60 @ 25000)
       const in2 = await request(app.getHttpServer())
         .post('/api/inbound-receipts')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           supplierId,
           receiptDate: todayVn,

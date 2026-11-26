@@ -331,11 +331,18 @@ export class InboundReceiptsService {
   async create(
     dto: CreateInboundReceiptDto,
     actorUserId: string,
-    options?: { includeMoney?: boolean },
+    options?: { includeMoney?: boolean; allowUnitCost?: boolean },
   ): Promise<InboundReceiptDetailResponse> {
-    const normalizedItems = await this.validateDraftPayload(dto);
-    const receiptDateUtc = toUtcDate(dto.receiptDate);
-    const prefix = buildReceiptNoPrefix(dto.receiptDate);
+    const allowUnitCost = options?.allowUnitCost ?? true;
+    const effectiveDto: CreateInboundReceiptDto = allowUnitCost
+      ? dto
+      : {
+          ...dto,
+          items: dto.items.map((item) => ({ ...item, unitCost: null })),
+        };
+    const normalizedItems = await this.validateDraftPayload(effectiveDto);
+    const receiptDateUtc = toUtcDate(effectiveDto.receiptDate);
+    const prefix = buildReceiptNoPrefix(effectiveDto.receiptDate);
 
     for (let attempt = 0; attempt < MAX_RECEIPT_NO_RETRIES; attempt += 1) {
       const latestRows = await this.prisma.$queryRaw<Array<{ receipt_no: string }>>`
@@ -408,10 +415,17 @@ export class InboundReceiptsService {
     id: string,
     dto: UpdateInboundReceiptDto,
     actorUserId: string,
-    options?: { includeMoney?: boolean },
+    options?: { includeMoney?: boolean; allowUnitCost?: boolean },
   ): Promise<InboundReceiptDetailResponse> {
-    const normalizedItems = await this.validateDraftPayload(dto);
-    const receiptDateUtc = toUtcDate(dto.receiptDate);
+    const allowUnitCost = options?.allowUnitCost ?? true;
+    const effectiveDto: UpdateInboundReceiptDto = allowUnitCost
+      ? dto
+      : {
+          ...dto,
+          items: dto.items.map((item) => ({ ...item, unitCost: null })),
+        };
+    const normalizedItems = await this.validateDraftPayload(effectiveDto);
+    const receiptDateUtc = toUtcDate(effectiveDto.receiptDate);
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const lockedRows = await tx.$queryRaw<LockedReceiptRow[]>`
@@ -428,26 +442,59 @@ export class InboundReceiptsService {
         throw new ConflictException('Chỉ được sửa phiếu nhập ở trạng thái nháp');
       }
 
+      // Khi người sửa thiếu quyền reports.read: bỏ qua unitCost gửi lên, giữ lại unitCost cũ
+      // của các dòng trùng (productId, lotCode) và để null cho dòng mới (T-024).
+      const existingCostQueues = new Map<string, Array<Prisma.Decimal | null>>();
+      const existingCostFallback = new Map<string, Prisma.Decimal | null>();
+      if (!allowUnitCost) {
+        const existingItems = await tx.inboundReceiptItem.findMany({
+          where: { receiptId: id },
+          orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+          select: { productId: true, lotCode: true, unitCost: true },
+        });
+        for (const existing of existingItems) {
+          const key = `${existing.productId}::${existing.lotCode}`;
+          const queue = existingCostQueues.get(key) ?? [];
+          queue.push(existing.unitCost);
+          existingCostQueues.set(key, queue);
+          if (!existingCostFallback.has(key) || existingCostFallback.get(key) === null) {
+            existingCostFallback.set(key, existing.unitCost);
+          }
+        }
+      }
+
       await tx.inboundReceiptItem.deleteMany({ where: { receiptId: id } });
 
       const baseItemTime = Date.now();
       const receipt = await tx.inboundReceipt.update({
         where: { id },
         data: {
-          supplierId: dto.supplierId,
+          supplierId: effectiveDto.supplierId,
           receiptDate: receiptDateUtc,
-          notes: dto.notes ?? null,
+          notes: effectiveDto.notes ?? null,
           items: {
-            create: normalizedItems.map((item, idx) => ({
-              productId: item.productId,
-              lotId: null,
-              lotCode: item.lotCode,
-              expiryDate: toUtcDate(item.expiryDate),
-              manufacturedDate: item.manufacturedDate ? toUtcDate(item.manufacturedDate) : null,
-              quantity: item.quantity,
-              unitCost: item.unitCost,
-              createdAt: new Date(baseItemTime + idx),
-            })),
+            create: normalizedItems.map((item, idx) => {
+              let resolvedUnitCost: Prisma.Decimal | null = item.unitCost;
+              if (!allowUnitCost) {
+                const key = `${item.productId}::${item.lotCode}`;
+                const queue = existingCostQueues.get(key);
+                if (queue && queue.length > 0) {
+                  resolvedUnitCost = queue.shift() ?? null;
+                } else {
+                  resolvedUnitCost = existingCostFallback.get(key) ?? null;
+                }
+              }
+              return {
+                productId: item.productId,
+                lotId: null,
+                lotCode: item.lotCode,
+                expiryDate: toUtcDate(item.expiryDate),
+                manufacturedDate: item.manufacturedDate ? toUtcDate(item.manufacturedDate) : null,
+                quantity: item.quantity,
+                unitCost: resolvedUnitCost,
+                createdAt: new Date(baseItemTime + idx),
+              };
+            }),
           },
         },
         select: RECEIPT_DETAIL_SELECT,

@@ -16,6 +16,20 @@ const STAFF_USER: AuthUser = {
   permissions: ['inbound.read', 'inbound.create', 'inbound.confirm', 'catalog.read'],
 };
 
+const ADMIN_USER: AuthUser = {
+  id: 'u-admin',
+  username: 'admin',
+  fullName: 'Phan Thanh Đức',
+  role: { code: 'ADMIN', name: 'Quản trị viên' },
+  permissions: [
+    'inbound.read',
+    'inbound.create',
+    'inbound.confirm',
+    'catalog.read',
+    'reports.read',
+  ],
+};
+
 const MOCK_SUPPLIERS = [
   {
     id: 'sup-1',
@@ -56,7 +70,7 @@ const MOCK_PRODUCTS = {
   pageSize: 100,
 };
 
-function renderForm() {
+function renderForm(initialPath = '/inbound/new') {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -65,9 +79,10 @@ function renderForm() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <AuthProvider>
-          <MemoryRouter initialEntries={['/inbound/new']}>
+          <MemoryRouter initialEntries={[initialPath]}>
             <Routes>
               <Route path="/inbound/new" element={<InboundFormPage mode="create" />} />
+              <Route path="/inbound/:id/edit" element={<InboundFormPage mode="edit" />} />
               <Route path="/inbound/:id" element={<div>Trang chi tiết phiếu</div>} />
             </Routes>
           </MemoryRouter>
@@ -77,7 +92,7 @@ function renderForm() {
   );
 }
 
-describe('InboundFormPage (AC10)', () => {
+describe('InboundFormPage (AC10 + T-024)', () => {
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem('kho_ai_access_token', 'staff-token');
@@ -88,7 +103,7 @@ describe('InboundFormPage (AC10)', () => {
     localStorage.clear();
   });
 
-  it('cho phép thêm/xóa dòng, gợi ý HSD theo shelfLifeDays của sản phẩm và validate dữ liệu tiếng Việt', async () => {
+  it('ẩn ô Đơn giá và không gửi unitCost với nhân viên thiếu reports.read; vẫn gợi ý HSD và validate tiếng Việt', async () => {
     const postSpy = vi.fn();
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
       const url = String(input);
@@ -122,6 +137,10 @@ describe('InboundFormPage (AC10)', () => {
       expect(screen.getByRole('option', { name: 'SP001 — Sữa tươi tiệt trùng 1L' })).toBeInTheDocument();
     });
 
+    // T-024: nhân viên thiếu reports.read không thấy cột/ô Đơn giá
+    expect(screen.queryByRole('columnheader', { name: 'Đơn giá' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Đơn giá dòng 1')).not.toBeInTheDocument();
+
     // Đặt ngày chứng từ cố định để kiểm gợi ý HSD chính xác
     const receiptDateInput = screen.getByLabelText('Ngày chứng từ');
     await user.clear(receiptDateInput);
@@ -147,13 +166,12 @@ describe('InboundFormPage (AC10)', () => {
     });
     expect(postSpy).not.toHaveBeenCalled();
 
-    // Điền đầy đủ và sửa tay HSD vẫn hợp lệ → gửi POST thành công
+    // Điền đầy đủ và sửa tay HSD vẫn hợp lệ → gửi POST không kèm unitCost
     await user.selectOptions(screen.getByLabelText('Nhà cung cấp'), 'sup-1');
     await user.type(screen.getByLabelText('Mã lô dòng 1'), ' l26112201 ');
     await user.clear(expiryRow1);
     await user.type(expiryRow1, '2027-06-30');
     await user.type(screen.getByLabelText('Số lượng dòng 1'), '120');
-    await user.type(screen.getByLabelText('Đơn giá dòng 1'), '320000');
 
     await user.click(screen.getByRole('button', { name: 'Lưu phiếu nháp' }));
 
@@ -170,9 +188,160 @@ describe('InboundFormPage (AC10)', () => {
           lotCode: 'L26112201',
           expiryDate: '2027-06-30',
           quantity: '120',
+        },
+      ],
+    });
+    expect('unitCost' in postSpy.mock.calls[0][0].items[0]).toBe(false);
+  });
+
+  it('hiển thị ô Đơn giá và gửi unitCost với tài khoản có quyền reports.read (T-024)', async () => {
+    const postSpy = vi.fn();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => ADMIN_USER } as Response;
+      }
+      if (url.includes('/suppliers')) {
+        return { ok: true, status: 200, json: async () => MOCK_SUPPLIERS } as Response;
+      }
+      if (url.includes('/products')) {
+        return { ok: true, status: 200, json: async () => MOCK_PRODUCTS } as Response;
+      }
+      if (url.includes('/inbound-receipts') && init?.method === 'POST') {
+        postSpy(JSON.parse(String(init.body)));
+        return {
+          ok: true,
+          status: 201,
+          json: async () => ({
+            id: 'rec-new',
+            receiptNo: 'PN2611220002',
+          }),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    const user = userEvent.setup();
+    renderForm();
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Đơn giá dòng 1')).toBeInTheDocument();
+    });
+
+    const receiptDateInput = screen.getByLabelText('Ngày chứng từ');
+    await user.clear(receiptDateInput);
+    await user.type(receiptDateInput, '2026-11-22');
+    await user.selectOptions(screen.getByLabelText('Nhà cung cấp'), 'sup-1');
+    await user.selectOptions(screen.getByLabelText('Sản phẩm dòng 1'), 'prod-1');
+    await user.type(screen.getByLabelText('Mã lô dòng 1'), 'L26112202');
+    await user.type(screen.getByLabelText('Số lượng dòng 1'), '50');
+    await user.type(screen.getByLabelText('Đơn giá dòng 1'), '320000');
+
+    await user.click(screen.getByRole('button', { name: 'Lưu phiếu nháp' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Trang chi tiết phiếu')).toBeInTheDocument();
+    });
+    expect(postSpy).toHaveBeenCalledWith({
+      supplierId: 'sup-1',
+      receiptDate: '2026-11-22',
+      notes: null,
+      items: [
+        {
+          productId: 'prod-1',
+          lotCode: 'L26112202',
+          expiryDate: '2027-05-21',
+          quantity: '50',
           unitCost: '320000',
         },
       ],
     });
+  });
+
+  it('khi nhân viên sửa phiếu nháp thì ẩn ô Đơn giá và gửi PUT không kèm unitCost (T-024)', async () => {
+    const putSpy = vi.fn();
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => STAFF_USER } as Response;
+      }
+      if (url.includes('/suppliers')) {
+        return { ok: true, status: 200, json: async () => MOCK_SUPPLIERS } as Response;
+      }
+      if (url.includes('/products')) {
+        return { ok: true, status: 200, json: async () => MOCK_PRODUCTS } as Response;
+      }
+      if (url.endsWith('/inbound-receipts/rec-1') && init?.method === 'PUT') {
+        putSpy(JSON.parse(String(init.body)));
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'rec-1',
+            receiptNo: 'PN2611220001',
+          }),
+        } as Response;
+      }
+      if (url.endsWith('/inbound-receipts/rec-1')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            id: 'rec-1',
+            receiptNo: 'PN2611220001',
+            receiptDate: '2026-11-22',
+            status: 'draft',
+            notes: null,
+            supplier: { id: 'sup-1', code: 'NCC001', name: 'Công ty CP Sữa Việt Nam — CN Đà Nẵng' },
+            creator: { id: 'u-admin', fullName: 'Phan Thanh Đức' },
+            confirmer: null,
+            confirmedAt: null,
+            createdAt: '2026-11-22T08:00:00.000Z',
+            updatedAt: '2026-11-22T08:00:00.000Z',
+            lineCount: 1,
+            totalQuantity: '10',
+            items: [
+              {
+                id: 'item-1',
+                productId: 'prod-1',
+                product: { id: 'prod-1', code: 'SP001', name: 'Sữa tươi tiệt trùng 1L', unit: 'thùng' },
+                lotId: null,
+                lotCode: 'L26112201',
+                expiryDate: '2027-06-30',
+                manufacturedDate: null,
+                quantity: '10',
+              },
+            ],
+          }),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    const user = userEvent.setup();
+    renderForm('/inbound/rec-1/edit');
+
+    await waitFor(() => {
+      expect(screen.getByText('Sửa phiếu nhập PN2611220001')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByLabelText('Đơn giá dòng 1')).not.toBeInTheDocument();
+
+    const qtyInput = screen.getByLabelText('Số lượng dòng 1');
+    await user.clear(qtyInput);
+    await user.type(qtyInput, '25');
+    await user.click(screen.getByRole('button', { name: 'Lưu phiếu nháp' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Trang chi tiết phiếu')).toBeInTheDocument();
+    });
+    expect(putSpy).toHaveBeenCalledTimes(1);
+    expect(putSpy.mock.calls[0][0].items[0]).toEqual({
+      productId: 'prod-1',
+      lotCode: 'L26112201',
+      expiryDate: '2027-06-30',
+      quantity: '25',
+    });
+    expect('unitCost' in putSpy.mock.calls[0][0].items[0]).toBe(false);
   });
 });

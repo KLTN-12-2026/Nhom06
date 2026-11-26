@@ -67,8 +67,10 @@ export class InboundReceiptsController {
     @Body() dto: CreateInboundReceiptDto,
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<InboundReceiptDetailResponse> {
+    const hasMoneyAccess = canReadMoney(actor);
     return this.inboundReceiptsService.create(dto, actor.id, {
-      includeMoney: canReadMoney(actor),
+      includeMoney: hasMoneyAccess,
+      allowUnitCost: hasMoneyAccess,
     });
   }
 
@@ -80,8 +82,10 @@ export class InboundReceiptsController {
     @Body() dto: UpdateInboundReceiptDto,
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<InboundReceiptDetailResponse> {
+    const hasMoneyAccess = canReadMoney(actor);
     return this.inboundReceiptsService.update(id, dto, actor.id, {
-      includeMoney: canReadMoney(actor),
+      includeMoney: hasMoneyAccess,
+      allowUnitCost: hasMoneyAccess,
     });
   }
 
