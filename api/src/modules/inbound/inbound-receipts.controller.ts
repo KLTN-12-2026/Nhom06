@@ -30,6 +30,10 @@ const uuidPipe = new ParseUUIDPipe({
   exceptionFactory: () => new BadRequestException('ID phiếu nhập không đúng định dạng UUID'),
 });
 
+function canReadMoney(user: AuthenticatedUser): boolean {
+  return (user.permissions ?? []).includes('reports.read');
+}
+
 @ApiTags('Inbound - Receipts')
 @ApiBearerAuth()
 @Controller('inbound-receipts')
@@ -39,15 +43,21 @@ export class InboundReceiptsController {
   @Get()
   @Permissions('inbound.read')
   @ApiOperation({ summary: 'Danh sách phiếu nhập kho có lọc theo trạng thái, NCC, khoảng ngày, tìm kiếm' })
-  findAll(@Query() query: ListInboundReceiptsQueryDto): Promise<InboundReceiptListResponse> {
-    return this.inboundReceiptsService.findAll(query);
+  findAll(
+    @Query() query: ListInboundReceiptsQueryDto,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<InboundReceiptListResponse> {
+    return this.inboundReceiptsService.findAll(query, { includeMoney: canReadMoney(actor) });
   }
 
   @Get(':id')
   @Permissions('inbound.read')
   @ApiOperation({ summary: 'Chi tiết một phiếu nhập kho kèm danh sách dòng hàng' })
-  findOne(@Param('id', uuidPipe) id: string): Promise<InboundReceiptDetailResponse> {
-    return this.inboundReceiptsService.findOne(id);
+  findOne(
+    @Param('id', uuidPipe) id: string,
+    @CurrentUser() actor: AuthenticatedUser,
+  ): Promise<InboundReceiptDetailResponse> {
+    return this.inboundReceiptsService.findOne(id, { includeMoney: canReadMoney(actor) });
   }
 
   @Post()
@@ -57,7 +67,11 @@ export class InboundReceiptsController {
     @Body() dto: CreateInboundReceiptDto,
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<InboundReceiptDetailResponse> {
-    return this.inboundReceiptsService.create(dto, actor.id);
+    const hasMoneyAccess = canReadMoney(actor);
+    return this.inboundReceiptsService.create(dto, actor.id, {
+      includeMoney: hasMoneyAccess,
+      allowUnitCost: hasMoneyAccess,
+    });
   }
 
   @Put(':id')
@@ -68,7 +82,11 @@ export class InboundReceiptsController {
     @Body() dto: UpdateInboundReceiptDto,
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<InboundReceiptDetailResponse> {
-    return this.inboundReceiptsService.update(id, dto, actor.id);
+    const hasMoneyAccess = canReadMoney(actor);
+    return this.inboundReceiptsService.update(id, dto, actor.id, {
+      includeMoney: hasMoneyAccess,
+      allowUnitCost: hasMoneyAccess,
+    });
   }
 
   @Post(':id/cancel')
@@ -79,7 +97,9 @@ export class InboundReceiptsController {
     @Param('id', uuidPipe) id: string,
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<InboundReceiptDetailResponse> {
-    return this.inboundReceiptsService.cancel(id, actor.id);
+    return this.inboundReceiptsService.cancel(id, actor.id, {
+      includeMoney: canReadMoney(actor),
+    });
   }
 
   @Post(':id/confirm')
@@ -90,6 +110,8 @@ export class InboundReceiptsController {
     @Param('id', uuidPipe) id: string,
     @CurrentUser() actor: AuthenticatedUser,
   ): Promise<InboundReceiptDetailResponse> {
-    return this.inboundReceiptsService.confirm(id, actor.id);
+    return this.inboundReceiptsService.confirm(id, actor.id, {
+      includeMoney: canReadMoney(actor),
+    });
   }
 }

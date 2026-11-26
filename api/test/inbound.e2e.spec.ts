@@ -22,6 +22,7 @@ describe('Phiếu nhập, lô, xác nhận nhập kho & tra cứu lô (T-007 E2E
   let prisma: PrismaService;
   let testStartedAt: Date;
 
+  let adminToken: string;
   let staffToken: string;
   let staffUserId: string;
   let managerToken: string;
@@ -49,6 +50,9 @@ describe('Phiếu nhập, lô, xác nhận nhập kho & tra cứu lô (T-007 E2E
     await app.init();
 
     prisma = app.get(PrismaService);
+
+    const adminLogin = await loginAs('admin');
+    adminToken = adminLogin.accessToken;
 
     const staffLogin = await loginAs('nhanvien');
     staffToken = staffLogin.accessToken;
@@ -185,11 +189,21 @@ describe('Phiếu nhập, lô, xác nhận nhập kho & tra cứu lô (T-007 E2E
       expect(receipt.receiptNo).toMatch(/^PN261122\d{4,}$/);
       expect(receipt.lineCount).toBe(2);
       expect(receipt.totalQuantity).toBe('20.5');
-      expect(receipt.totalAmount).toBe('8320000');
+      // T-024: nhanvien thiếu reports.read nên unitCost bị bỏ qua và không nhận trường tiền trong response
+      expect(receipt.totalAmount).toBeUndefined();
       expect(receipt.items).toHaveLength(2);
       expect(receipt.items[0].lotCode).toBe(lot1Code);
       expect(receipt.items[0].lotId).toBeNull();
+      expect(receipt.items[0].unitCost).toBeUndefined();
+      expect(receipt.items[0].lineTotal).toBeUndefined();
       expect(receipt.items[1].lotId).toBeNull();
+
+      // Quản lý (có reports.read) đọc lại: unitCost nhân viên gửi đã bị bỏ qua → totalAmount = '0'
+      const managerCheckRes = await request(app.getHttpServer())
+        .get(`/api/inbound-receipts/${receipt.id}`)
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200);
+      expect(managerCheckRes.body.totalAmount).toBe('0');
 
       // Bất biến 1: KHÔNG có lô mới, KHÔNG có balance, KHÔNG có stock_movements
       const lots = await prisma.lot.findMany({
@@ -260,10 +274,10 @@ describe('Phiếu nhập, lô, xác nhận nhập kho & tra cứu lô (T-007 E2E
         .expect(400);
       expect(emptyRes.body.errors.map((e: { field: string }) => e.field)).toContain('items');
 
-      // quantity = 0, âm, HSD <= ngày chứng từ, HSD <= NSX
+      // quantity = 0, âm, HSD <= ngày chứng từ, HSD <= NSX, unitCost âm (gọi bằng admin có reports.read)
       const invalidFieldsRes = await request(app.getHttpServer())
         .post('/api/inbound-receipts')
-        .set('Authorization', `Bearer ${staffToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           supplierId: activeSupplierId,
           receiptDate: '2026-11-22',

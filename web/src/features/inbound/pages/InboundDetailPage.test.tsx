@@ -48,6 +48,34 @@ const CONFIRMED_RECEIPT: InboundReceiptDetail = {
   items: [{ ...DRAFT_RECEIPT.items[0], lotId: 'lot-1' }],
 };
 
+const DRAFT_RECEIPT_NO_MONEY: InboundReceiptDetail = {
+  id: 'rec-1',
+  receiptNo: 'PN2611220001',
+  receiptDate: '2026-11-22',
+  status: 'draft',
+  notes: 'Hàng về chiều nay, chờ kiểm đếm',
+  supplier: { id: 'sup-1', code: 'NCC001', name: 'Công ty TNHH Mondelez Kinh Đô' },
+  creator: { id: 'u-staff', fullName: 'Trương Thành Lê' },
+  confirmer: null,
+  confirmedAt: null,
+  createdAt: '2026-11-22T08:00:00.000Z',
+  updatedAt: '2026-11-22T08:00:00.000Z',
+  lineCount: 1,
+  totalQuantity: '246',
+  items: [
+    {
+      id: 'item-1',
+      productId: 'prod-1',
+      product: { id: 'prod-1', code: 'SP007', name: 'Bánh quy Oreo 137g', unit: 'thùng' },
+      lotId: null,
+      lotCode: 'L26112207',
+      expiryDate: '2027-09-16',
+      manufacturedDate: null,
+      quantity: '246',
+    },
+  ],
+};
+
 function renderDetailPage() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -85,7 +113,7 @@ describe('InboundDetailPage (AC10)', () => {
       username: 'quanly',
       fullName: 'Nguyễn Văn Dương',
       role: { code: 'WAREHOUSE_MANAGER', name: 'Quản lý kho' },
-      permissions: ['inbound.read', 'inbound.confirm'],
+      permissions: ['inbound.read', 'inbound.confirm', 'reports.read'],
     };
 
     let currentReceipt = DRAFT_RECEIPT;
@@ -110,6 +138,12 @@ describe('InboundDetailPage (AC10)', () => {
     await waitFor(() => {
       expect(screen.getByText('Phiếu nhập PN2611220001')).toBeInTheDocument();
     });
+
+    // Quản lý có reports.read vẫn thấy đủ Đơn giá, Thành tiền và Tổng tiền
+    expect(screen.getByRole('columnheader', { name: 'Đơn giá' })).toBeInTheDocument();
+    expect(screen.getByRole('columnheader', { name: 'Thành tiền' })).toBeInTheDocument();
+    expect(screen.getByText('320.000')).toBeInTheDocument();
+    expect(screen.getByText('78.720.000 đ')).toBeInTheDocument();
 
     expect(screen.queryByRole('link', { name: 'Sửa phiếu' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Hủy phiếu' })).not.toBeInTheDocument();
@@ -212,5 +246,74 @@ describe('InboundDetailPage (AC10)', () => {
       expect(screen.getByText('Đã xác nhận')).toBeInTheDocument();
     });
     expect(fetchCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('ẩn cột Đơn giá, Thành tiền và ô Tổng tiền (không hiện 0 hay —) với nhân viên thiếu quyền reports.read (T-024 AC4)', async () => {
+    const staffUser: AuthUser = {
+      id: 'u-staff',
+      username: 'nhanvien',
+      fullName: 'Trương Thành Lê',
+      role: { code: 'WAREHOUSE_STAFF', name: 'Nhân viên kho' },
+      permissions: ['inbound.read', 'inbound.create', 'inbound.confirm'],
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => staffUser } as Response;
+      }
+      if (url.endsWith('/inbound-receipts/rec-1')) {
+        return { ok: true, status: 200, json: async () => DRAFT_RECEIPT_NO_MONEY } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Phiếu nhập PN2611220001')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('columnheader', { name: 'Đơn giá' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Thành tiền' })).not.toBeInTheDocument();
+    expect(screen.queryByText('320.000')).not.toBeInTheDocument();
+    expect(screen.queryByText(/78\.720\.000/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 đ/)).not.toBeInTheDocument();
+    // Dòng Tổng vẫn hiển thị số lượng và nhân viên vẫn thao tác được phiếu nháp
+    expect(screen.getByText('Tổng')).toBeInTheDocument();
+    expect(screen.getAllByText('246')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Sửa phiếu' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Xác nhận nhập kho' })).toBeInTheDocument();
+  });
+
+  it('ẩn cột tiền nếu API không trả dữ liệu tiền kể cả khi tài khoản có reports.read (T-024 AC4)', async () => {
+    const managerUser: AuthUser = {
+      id: 'u-mgr',
+      username: 'quanly',
+      fullName: 'Nguyễn Văn Dương',
+      role: { code: 'WAREHOUSE_MANAGER', name: 'Quản lý kho' },
+      permissions: ['inbound.read', 'inbound.confirm', 'reports.read'],
+    };
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => managerUser } as Response;
+      }
+      if (url.endsWith('/inbound-receipts/rec-1')) {
+        return { ok: true, status: 200, json: async () => DRAFT_RECEIPT_NO_MONEY } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    renderDetailPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Phiếu nhập PN2611220001')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByRole('columnheader', { name: 'Đơn giá' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Thành tiền' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/0 đ/)).not.toBeInTheDocument();
   });
 });

@@ -32,7 +32,7 @@ export interface InboundReceiptSummary {
   updatedAt: string;
   lineCount: number;
   totalQuantity: string;
-  totalAmount: string;
+  totalAmount?: string;
 }
 
 export interface InboundReceiptItem {
@@ -44,8 +44,8 @@ export interface InboundReceiptItem {
   expiryDate: string;
   manufacturedDate: string | null;
   quantity: string;
-  unitCost: string | null;
-  lineTotal: string | null;
+  unitCost?: string | null;
+  lineTotal?: string | null;
 }
 
 export interface InboundReceiptDetail extends InboundReceiptSummary {
