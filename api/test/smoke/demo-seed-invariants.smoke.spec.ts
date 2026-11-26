@@ -3,8 +3,10 @@ import { Test } from '@nestjs/testing';
 import { Prisma } from '@prisma/client';
 import * as request from 'supertest';
 import { runDemoSeed } from '../../prisma/seed/demo';
+import { computeMedian } from '../../prisma/seed/demo-plan';
 import { configureApp } from '../../src/app.config';
 import { AppModule } from '../../src/app.module';
+import { diffCalendarDays, formatDateOnly } from '../../src/modules/expiry/domain/vn-date';
 import { PrismaService } from '../../src/prisma/prisma.service';
 import { verifyInventoryInvariants } from './inventory-invariants.helper';
 
@@ -94,41 +96,54 @@ describe('Seed demo tự động & bất biến dữ liệu (T-017 AC1, AC2, AC3
       .expect(200);
     const managerToken = (loginRes.body as { accessToken: string }).accessToken;
 
-    const [dashboardRes, alertsRes, thresholdsRes, forecastRes, riskRes, proposalsRes, execRes, ordersRes] =
-      await Promise.all([
-        request(server)
-          .get('/api/reports/dashboard')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-        request(server)
-          .get('/api/expiry-alerts?pageSize=100')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-        request(server)
-          .get('/api/expiry-thresholds')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-        request(server)
-          .get('/api/forecasts/latest')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-        request(server)
-          .get('/api/analysis/risk/latest')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-        request(server)
-          .get('/api/proposals')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-        request(server)
-          .get('/api/executions')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-        request(server)
-          .get('/api/orders?pageSize=100')
-          .set('Authorization', `Bearer ${managerToken}`)
-          .expect(200),
-      ]);
+    const [
+      dashboardRes,
+      monthlyRes,
+      alertsRes,
+      thresholdsRes,
+      forecastRes,
+      riskRes,
+      proposalsRes,
+      execRes,
+      ordersRes,
+    ] = await Promise.all([
+      request(server)
+        .get('/api/reports/dashboard')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/reports/stock-ledger/monthly?months=12')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/expiry-alerts?pageSize=100')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/expiry-thresholds')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/forecasts/latest')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/analysis/risk/latest')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/proposals')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/executions')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+      request(server)
+        .get('/api/orders?pageSize=100')
+        .set('Authorization', `Bearer ${managerToken}`)
+        .expect(200),
+    ]);
 
     const dashboard = dashboardRes.body as {
       lotsInStock: number;
@@ -149,6 +164,81 @@ describe('Seed demo tự động & bất biến dữ liệu (T-017 AC1, AC2, AC3
       expect(new Prisma.Decimal(point.inbound).gt(0)).toBe(true);
       expect(new Prisma.Decimal(point.outbound).gt(0)).toBe(true);
     }
+
+    // T-025 AC1: Phân bố nhập/xuất 12 tháng từ /reports/stock-ledger/monthly khớp dashboard và nằm trong ±40% trung vị
+    // (ngoại lệ cận dưới cho tháng hiện tại thứ 12 khi tháng chưa kết thúc; không được vượt +40%)
+    const monthlySeries = monthlyRes.body as Array<{
+      month: string;
+      inbound: string;
+      outbound: string;
+    }>;
+    expect(monthlySeries).toEqual(dashboard.monthlyInOut);
+
+    const inboundNums = monthlySeries.map((p) => Number(p.inbound));
+    const outboundNums = monthlySeries.map((p) => Number(p.outbound));
+    const medianInbound = computeMedian(inboundNums);
+    const medianOutbound = computeMedian(outboundNums);
+    expect(medianInbound).toBeGreaterThan(0);
+    expect(medianOutbound).toBeGreaterThan(0);
+
+    for (let idx = 0; idx < 11; idx += 1) {
+      expect(inboundNums[idx]).toBeGreaterThanOrEqual(medianInbound * 0.6);
+      expect(inboundNums[idx]).toBeLessThanOrEqual(medianInbound * 1.4);
+      expect(outboundNums[idx]).toBeGreaterThanOrEqual(medianOutbound * 0.6);
+      expect(outboundNums[idx]).toBeLessThanOrEqual(medianOutbound * 1.4);
+    }
+    expect(inboundNums[11]).toBeGreaterThan(0);
+    expect(inboundNums[11]).toBeLessThanOrEqual(medianInbound * 1.4);
+    expect(outboundNums[11]).toBeGreaterThan(0);
+    expect(outboundNums[11]).toBeLessThanOrEqual(medianOutbound * 1.4);
+
+    // T-025: Mọi lô còn tồn có received_at hợp lý với HSD & shelf_life_days, và lịch sử xuất tiêu từ các lô còn tồn theo FEFO
+    const activeLotRows = await prisma.lot.findMany({
+      where: { balance: { onHandQty: { gt: 0 } } },
+      select: {
+        id: true,
+        lotCode: true,
+        receivedAt: true,
+        manufacturedDate: true,
+        expiryDate: true,
+        product: { select: { code: true, shelfLifeDays: true } },
+      },
+    });
+    expect(activeLotRows).toHaveLength(40);
+    const activeLotCodeSet = new Set(activeLotRows.map((l) => l.lotCode));
+    for (const requiredCode of [
+      'DEMO-SP002-EXP1',
+      'DEMO-SP002-EXP2',
+      'DEMO-SP002-EXP3',
+      'DEMO-SP002-EXP4',
+      'DEMO-SP002-NEAR',
+      'DEMO-SP004-NEAR',
+      'DEMO-SP007-NEAR',
+    ]) {
+      expect(activeLotCodeSet.has(requiredCode)).toBe(true);
+    }
+    for (const lot of activeLotRows) {
+      const receivedIso = formatDateOnly(lot.receivedAt);
+      const expiryIso = formatDateOnly(lot.expiryDate);
+      const mfgIso = lot.manufacturedDate ? formatDateOnly(lot.manufacturedDate) : null;
+      expect(receivedIso <= second.anchorDate).toBe(true);
+      expect(mfgIso).not.toBeNull();
+      expect(diffCalendarDays(expiryIso, mfgIso!)).toBe(lot.product.shelfLifeDays);
+      const transitLag = diffCalendarDays(receivedIso, mfgIso!);
+      expect(transitLag).toBeGreaterThanOrEqual(2);
+      expect(transitLag).toBeLessThanOrEqual(15);
+    }
+
+    const activeLotIds = activeLotRows.map((l) => l.id);
+    const outboundOnActiveLots = await prisma.stockMovement.findMany({
+      where: {
+        lotId: { in: activeLotIds },
+        movementType: 'OUTBOUND',
+      },
+      distinct: ['lotId'],
+      select: { lotId: true },
+    });
+    expect(outboundOnActiveLots.length).toBeGreaterThanOrEqual(15);
 
     const alertItems = (
       alertsRes.body as {

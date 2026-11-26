@@ -229,162 +229,135 @@ export async function runDemoSeed(options: RunDemoSeedOptions = {}): Promise<Run
       managerId,
     });
 
-    // 4. Lịch sử nhập — xuất 12 tháng qua service nghiệp vụ thật (thời điểm quá khứ)
-    for (const cycle of plan.historicalCycles) {
-      const supplierId = supplierByCode.get(cycle.supplierCode)!;
-      const agencyId = agencyByCode.get(cycle.agencyCode)!;
-
-      const draft = await inboundService.create(
-        {
-          supplierId,
-          receiptDate: cycle.inboundDate,
-          notes: `Nhập kho lịch sử tháng ${cycle.monthKey} (đợt ${cycle.batchIndex})`,
-          items: cycle.items.map((item) => ({
-            productId: productByCode.get(item.productCode)!,
-            lotCode: item.lotCode,
-            expiryDate: item.expiryDate,
-            manufacturedDate: item.manufacturedDate,
-            quantity: String(item.quantity),
-            unitCost: String(item.unitCost),
-          })),
-        },
-        staffId,
-      );
-
-      const confirmedInbound = await inboundService.confirm(draft.id, staffId, {
-        confirmedAt: new Date(cycle.inboundConfirmedAtIso),
-      });
-
-      const lotIdByCode = new Map(
-        confirmedInbound.items.map((item) => [item.lotCode, item.lotId!]),
-      );
-
-      const order = await ordersService.create(
-        {
-          agencyId,
-          orderDate: cycle.outboundDate,
-          notes: `Đơn đại lý lịch sử tháng ${cycle.monthKey} (đợt ${cycle.batchIndex})`,
-          items: cycle.items.map((item) => ({
-            productId: productByCode.get(item.productCode)!,
-            requestedQty: String(item.quantity),
-          })),
-        },
-        staffId,
-      );
-
-      const orderItemByProductId = new Map(
-        order.items.map((oi) => [oi.productId, oi.id]),
-      );
-
-      await outboundService.confirmForOrder(
-        order.id,
-        {
-          notes: `Xuất kho lịch sử tháng ${cycle.monthKey} (đợt ${cycle.batchIndex})`,
-          items: cycle.items.map((item) => {
-            const productId = productByCode.get(item.productCode)!;
-            return {
-              orderItemId: orderItemByProductId.get(productId)!,
-              lotId: lotIdByCode.get(item.lotCode)!,
-              quantity: String(item.quantity),
-            };
-          }),
-        },
-        staffId,
-        { confirmedAt: new Date(cycle.outboundConfirmedAtIso) },
-      );
-    }
-
-    // 5. Nhập 40 lô hiện tại (gom theo cặp supplier + receiptDate để phiếu nhập tự nhiên)
+    // 4. Thực thi toàn bộ dòng thời gian (nhập, xuất lịch sử theo FEFO, kiểm kê, đơn xuất một phần)
+    //    qua các service nghiệp vụ thật theo thứ tự thời gian tăng dần (tôn trọng skill stock-transaction).
     const lotIdByKey = new Map<string, string>();
-    const activeLotGroups = new Map<string, typeof plan.activeLots>();
-    for (const lot of plan.activeLots) {
-      const groupKey = `${lot.receiptDate}::${lot.supplierCode}`;
-      const list = activeLotGroups.get(groupKey) ?? [];
-      list.push(lot);
-      activeLotGroups.set(groupKey, list);
-    }
+    let historicalOutboundCount = 0;
 
-    const sortedGroupKeys = Array.from(activeLotGroups.keys()).sort();
-    for (const groupKey of sortedGroupKeys) {
-      const groupLots = activeLotGroups.get(groupKey)!;
-      const firstLot = groupLots[0];
-      const draft = await inboundService.create(
-        {
-          supplierId: supplierByCode.get(firstLot.supplierCode)!,
-          receiptDate: firstLot.receiptDate,
-          notes: `Nhập hàng đợt ${firstLot.receiptDate} từ ${firstLot.supplierCode}`,
-          items: groupLots.map((lot) => ({
-            productId: productByCode.get(lot.productCode)!,
-            lotCode: lot.lotCode,
-            expiryDate: lot.expiryDate,
-            manufacturedDate: lot.manufacturedDate,
-            quantity: String(lot.quantity),
-            unitCost: String(lot.unitCost),
-          })),
-        },
-        staffId,
-      );
+    for (const event of plan.timeline) {
+      if (event.kind === 'INBOUND') {
+        const draft = await inboundService.create(
+          {
+            supplierId: supplierByCode.get(event.supplierCode)!,
+            receiptDate: event.date,
+            notes: event.notes,
+            items: event.items.map((item) => ({
+              productId: productByCode.get(item.productCode)!,
+              lotCode: item.lotCode,
+              expiryDate: item.expiryDate,
+              manufacturedDate: item.manufacturedDate,
+              quantity: String(item.quantity),
+              unitCost: String(item.unitCost),
+            })),
+          },
+          staffId,
+        );
 
-      const confirmed = await inboundService.confirm(draft.id, staffId, {
-        confirmedAt: new Date(firstLot.confirmedAtIso),
-      });
+        const confirmedInbound = await inboundService.confirm(draft.id, staffId, {
+          confirmedAt: new Date(event.occurredAtIso),
+        });
 
-      for (const item of confirmed.items) {
-        if (item.lotId) {
-          lotIdByKey.set(`${item.product.code}::${item.lotCode}`, item.lotId);
+        for (const item of confirmedInbound.items) {
+          if (item.lotId) {
+            lotIdByKey.set(`${item.product.code}::${item.lotCode}`, item.lotId);
+          }
+        }
+      } else if (event.kind === 'OUTBOUND') {
+        const order = await ordersService.create(
+          {
+            agencyId: agencyByCode.get(event.agencyCode)!,
+            orderDate: event.date,
+            notes: `Đơn đại lý lịch sử tháng ${event.monthKey} (đợt ${event.batchIndex})`,
+            items: event.items.map((item) => ({
+              productId: productByCode.get(item.productCode)!,
+              requestedQty: String(item.quantity),
+            })),
+          },
+          staffId,
+        );
+
+        const orderItemByProductCode = new Map(
+          order.items.map((oi) => [oi.product.code, oi.id]),
+        );
+
+        const confirmedOutbound = await outboundService.confirmForOrder(
+          order.id,
+          {
+            notes: event.notes,
+            items: event.items.map((item) => ({
+              orderItemId: orderItemByProductCode.get(item.productCode)!,
+              lotId: lotIdByKey.get(`${item.productCode}::${item.lotCode}`)!,
+              quantity: String(item.quantity),
+            })),
+          },
+          staffId,
+          { confirmedAt: new Date(event.occurredAtIso) },
+        );
+
+        if (confirmedOutbound.warnings.length > 0) {
+          throw new Error(
+            `Phát hiện cảnh báo vượt FEFO ở đợt xuất lịch sử ${event.monthKey} B${event.batchIndex}: ` +
+              JSON.stringify(confirmedOutbound.warnings),
+          );
+        }
+        historicalOutboundCount += 1;
+      } else if (event.kind === 'STOCK_COUNT') {
+        const stockCountDraft = await stockCountsService.create(
+          {
+            countedAt: event.countedAtIso,
+            note: event.note,
+            items: event.items.map((item) => ({
+              lotId: lotIdByKey.get(`${item.productCode}::${item.lotCode}`)!,
+              countedQty: String(item.countedQty),
+              reason: item.reason,
+            })),
+          },
+          staffId,
+        );
+        await stockCountsService.submit(stockCountDraft.id, staffId);
+        await stockCountsService.approve(stockCountDraft.id, managerId, {
+          approvedAt: new Date(event.occurredAtIso),
+        });
+      } else if (event.kind === 'PARTIAL_ORDER') {
+        const partialOrderCreated = await ordersService.create(
+          {
+            agencyId: agencyByCode.get(event.agencyCode)!,
+            orderDate: event.orderDate,
+            notes: event.notes,
+            items: event.items.map((item) => ({
+              productId: productByCode.get(item.productCode)!,
+              requestedQty: String(item.requestedQty),
+            })),
+          },
+          staffId,
+        );
+        const partialOrderItemByProductCode = new Map(
+          partialOrderCreated.items.map((oi) => [oi.product.code, oi.id]),
+        );
+
+        const confirmedPartial = await outboundService.confirmForOrder(
+          partialOrderCreated.id,
+          {
+            notes: 'Xuất đợt 1 cho đơn giao 2 đợt',
+            items: event.shippedItems.map((ship) => ({
+              orderItemId: partialOrderItemByProductCode.get(ship.productCode)!,
+              lotId: lotIdByKey.get(`${ship.productCode}::${ship.lotCode}`)!,
+              quantity: String(ship.quantity),
+            })),
+          },
+          staffId,
+          { confirmedAt: new Date(event.occurredAtIso) },
+        );
+
+        if (confirmedPartial.warnings.length > 0) {
+          throw new Error(
+            `Phát hiện cảnh báo vượt FEFO ở đơn xuất một phần: ${JSON.stringify(confirmedPartial.warnings)}`,
+          );
         }
       }
     }
 
-    // 6. 1 phiếu kiểm kê đã duyệt có chênh lệch (D - 3)
-    const stockCountDraft = await stockCountsService.create(
-      {
-        countedAt: plan.stockCount.countedAtIso,
-        note: plan.stockCount.note,
-        items: plan.stockCount.items.map((item) => ({
-          lotId: lotIdByKey.get(`${item.productCode}::${item.lotCode}`)!,
-          countedQty: String(item.countedQty),
-          reason: item.reason,
-        })),
-      },
-      staffId,
-    );
-    await stockCountsService.submit(stockCountDraft.id, staffId);
-    await stockCountsService.approve(stockCountDraft.id, managerId, {
-      approvedAt: new Date(plan.stockCount.approvedAtIso),
-    });
-
-    // 7. 1 đơn đã xuất một phần (partial) + 3 đơn chờ xuất (confirmed)
-    const partialOrderCreated = await ordersService.create(
-      {
-        agencyId: agencyByCode.get(plan.partialOrder.agencyCode)!,
-        orderDate: plan.partialOrder.orderDate,
-        notes: plan.partialOrder.notes,
-        items: plan.partialOrder.items.map((item) => ({
-          productId: productByCode.get(item.productCode)!,
-          requestedQty: String(item.requestedQty),
-        })),
-      },
-      staffId,
-    );
-    const partialOrderItemByProductCode = new Map(
-      partialOrderCreated.items.map((oi) => [oi.product.code, oi.id]),
-    );
-
-    await outboundService.confirmForOrder(
-      partialOrderCreated.id,
-      {
-        notes: 'Xuất đợt 1 cho đơn giao 2 đợt',
-        items: plan.partialOrder.shippedItems.map((ship) => ({
-          orderItemId: partialOrderItemByProductCode.get(ship.productCode)!,
-          lotId: lotIdByKey.get(`${ship.productCode}::${ship.lotCode}`)!,
-          quantity: String(ship.quantity),
-        })),
-      },
-      staffId,
-      { confirmedAt: new Date(plan.partialOrder.shipConfirmedAtIso) },
-    );
-
+    // 5. Tạo 3 đơn đại lý chờ xuất (confirmed)
     for (const pendingOrder of plan.pendingOrders) {
       await ordersService.create(
         {
@@ -456,7 +429,7 @@ export async function runDemoSeed(options: RunDemoSeedOptions = {}): Promise<Run
 
     return {
       anchorDate,
-      historicalCycleCount: plan.historicalCycles.length,
+      historicalCycleCount: historicalOutboundCount,
       activeLotCount,
       expiredLotCount: alertEval.expiredLots,
       nearExpiryLotCount: alertEval.criticalLots + alertEval.warningLots,
