@@ -1,4 +1,4 @@
-import { plainToInstance } from 'class-transformer';
+import { Transform, plainToInstance } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -73,6 +73,21 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   LLM_FALLBACK_MODEL?: string = '';
+
+  @IsOptional()
+  @Transform(({ obj, key }) => {
+    const raw: unknown = (obj as Record<string, unknown>)[key];
+    if (raw === undefined || raw === null) {
+      return undefined;
+    }
+    if (typeof raw === 'string' && raw.trim() === '') {
+      return undefined;
+    }
+    return Number(raw);
+  })
+  @IsInt()
+  @Min(1000)
+  LLM_FALLBACK_TIMEOUT_MS?: number;
 
   @IsOptional()
   @IsInt()

@@ -11,7 +11,8 @@ export const FALLBACK_RETRY_DELAYS_MS: readonly number[] = [2_000];
 
 /**
  * Wrapper điều phối provider chính → provider dự phòng khi provider chính ném `LlmProviderError`.
- * Mỗi provider giữ ngân sách `LLM_TIMEOUT_MS` riêng (tổng chuỗi không vượt 2 * LLM_TIMEOUT_MS).
+ * Provider chính dùng `options.timeoutMs` (`LLM_TIMEOUT_MS`); nhánh dự phòng dùng `fallbackTimeoutMs`
+ * (`LLM_FALLBACK_TIMEOUT_MS`) nếu có đặt, ngược lại dùng `options.timeoutMs`.
  * Đầu ra sai rào chắn (`invalid`) được kiểm tra ở tầng service nên không bao giờ kích hoạt dự phòng.
  */
 export class FallbackLlmProvider implements LlmProvider {
@@ -22,6 +23,7 @@ export class FallbackLlmProvider implements LlmProvider {
     private readonly primary: LlmProvider,
     private readonly fallback: LlmProvider,
     fallbackModelName: string,
+    private readonly fallbackTimeoutMs?: number,
   ) {
     this.safeFallbackModel = (fallbackModelName.trim() || 'unknown').slice(0, 80);
   }
@@ -43,7 +45,10 @@ export class FallbackLlmProvider implements LlmProvider {
 
       const errorCode = error.httpStatus ? `HTTP ${error.httpStatus}` : error.code;
       this.logger.warn(`Chuyển sang dự phòng ${this.safeFallbackModel} sau lỗi ${errorCode}`);
-      return this.fallback.explain(input, options);
+      return this.fallback.explain(input, {
+        ...options,
+        timeoutMs: this.fallbackTimeoutMs ?? options.timeoutMs,
+      });
     }
   }
 }
