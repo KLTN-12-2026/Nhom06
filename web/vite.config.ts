@@ -27,13 +27,6 @@ export default defineConfig({
             return 'vendor-tanstack';
           }
           if (
-            id.includes('/node_modules/recharts/') ||
-            id.includes('/node_modules/d3-') ||
-            id.includes('/node_modules/victory-vendor/')
-          ) {
-            return 'vendor-recharts';
-          }
-          if (
             id.includes('/node_modules/zod/') ||
             id.includes('/node_modules/react-hook-form/') ||
             id.includes('/node_modules/@hookform/')
