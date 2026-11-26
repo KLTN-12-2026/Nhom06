@@ -179,6 +179,7 @@ export class OpenAiCompatibleProvider implements LlmProvider {
               provider: this.providerName,
               modelName: safeModelName,
               code: 'HTTP_ERROR',
+              httpStatus: response.status,
             }),
             retryable,
             reason: `HTTP ${response.status}`,

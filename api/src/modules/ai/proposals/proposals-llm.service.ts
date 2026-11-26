@@ -40,11 +40,14 @@ export class ProposalsLlmService {
   ) {}
 
   private sanitizeText(message: string): string {
-    const apiKey = (this.configService.get<string>('LLM_API_KEY') ?? '').trim();
-    if (apiKey.length > 0 && message.includes(apiKey)) {
-      return message.split(apiKey).join('[REDACTED]');
+    let sanitized = message;
+    for (const envKey of ['LLM_API_KEY', 'LLM_FALLBACK_API_KEY'] as const) {
+      const apiKey = (this.configService.get<string>(envKey) ?? '').trim();
+      if (apiKey.length > 0 && sanitized.includes(apiKey)) {
+        sanitized = sanitized.split(apiKey).join('[REDACTED]');
+      }
     }
-    return message;
+    return sanitized;
   }
 
   private getTimeoutMs(): number {

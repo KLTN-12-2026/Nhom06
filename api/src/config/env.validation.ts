@@ -63,6 +63,18 @@ export class EnvironmentVariables {
   LLM_MODEL?: string = '';
 
   @IsOptional()
+  @IsString()
+  LLM_FALLBACK_BASE_URL?: string = '';
+
+  @IsOptional()
+  @IsString()
+  LLM_FALLBACK_API_KEY?: string = '';
+
+  @IsOptional()
+  @IsString()
+  LLM_FALLBACK_MODEL?: string = '';
+
+  @IsOptional()
   @IsInt()
   @Min(1000)
   LLM_TIMEOUT_MS?: number = 20000;

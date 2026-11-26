@@ -15,16 +15,23 @@ export class LlmProviderError extends Error {
   readonly provider: string;
   readonly modelName: string;
   readonly code: LlmProviderErrorCode;
+  readonly httpStatus?: number;
 
   constructor(
     message: string,
-    meta: { provider: string; modelName: string; code: LlmProviderErrorCode },
+    meta: {
+      provider: string;
+      modelName: string;
+      code: LlmProviderErrorCode;
+      httpStatus?: number;
+    },
   ) {
     super(message);
     this.name = 'LlmProviderError';
     this.provider = meta.provider;
     this.modelName = meta.modelName;
     this.code = meta.code;
+    this.httpStatus = meta.httpStatus;
   }
 }
 
