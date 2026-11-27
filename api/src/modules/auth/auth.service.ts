@@ -32,6 +32,7 @@ export interface LoginResponse {
 
 const INVALID_CREDENTIALS_MESSAGE = 'Tên đăng nhập hoặc mật khẩu không đúng';
 const LOCKED_ACCOUNT_MESSAGE = 'Tài khoản đã bị khóa';
+const MAX_LOGGED_USERNAME_LENGTH = 50;
 
 @Injectable()
 export class AuthService {
@@ -62,11 +63,30 @@ export class AuthService {
     });
 
     if (!user) {
+      // Tên đăng nhập không tồn tại: ghi nhật ký không gắn người thực hiện, vẫn trả lỗi chung
+      await writeAuditLog(this.prisma, {
+        eventType: 'AUTH_LOGIN_FAILED',
+        entityType: 'user',
+        newData: {
+          username: username.slice(0, MAX_LOGGED_USERNAME_LENGTH),
+          reason: 'unknown_username',
+        },
+      });
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
     const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatches) {
+      await writeAuditLog(this.prisma, {
+        actorUserId: user.id,
+        eventType: 'AUTH_LOGIN_FAILED',
+        entityType: 'user',
+        entityId: user.id,
+        newData: {
+          username: user.username,
+          reason: 'wrong_password',
+        },
+      });
       throw new UnauthorizedException(INVALID_CREDENTIALS_MESSAGE);
     }
 
@@ -84,14 +104,26 @@ export class AuthService {
       throw new ForbiddenException(LOCKED_ACCOUNT_MESSAGE);
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      });
+
+      await writeAuditLog(tx, {
+        actorUserId: user.id,
+        eventType: 'AUTH_LOGIN_SUCCESS',
+        entityType: 'user',
+        entityId: user.id,
+        newData: { username: user.username },
+      });
     });
 
-    const primaryRole = user.userRoles[0]?.role ?? null;
+    // Chỉ tính vai trò đang hoạt động, giống JwtStrategy.validate, để quyền trả về khớp quyền thực tế
+    const activeUserRoles = user.userRoles.filter((ur) => ur.role.status === 'active');
+    const primaryRole = activeUserRoles[0]?.role ?? null;
     const permissionSet = new Set<string>();
-    for (const ur of user.userRoles) {
+    for (const ur of activeUserRoles) {
       for (const rp of ur.role.rolePermissions) {
         permissionSet.add(rp.permission.code);
       }

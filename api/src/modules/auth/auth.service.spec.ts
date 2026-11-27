@@ -60,6 +60,7 @@ describe('AuthService', () => {
           role: {
             code: 'WAREHOUSE_MANAGER',
             name: 'Quản lý kho',
+            status: 'active',
             rolePermissions: [
               { permission: { code: 'proposals.approve' } },
               { permission: { code: 'reports.read' } },
@@ -68,7 +69,8 @@ describe('AuthService', () => {
         },
       ],
     });
-    prismaMock.user.update.mockResolvedValue({});
+    txMock.user.update.mockResolvedValue({});
+    txMock.auditLog.create.mockResolvedValue({});
 
     const result = await service.login({ username: ' quanly ', password: '123456' });
 
@@ -77,12 +79,22 @@ describe('AuthService', () => {
       username: 'quanly',
       tv: 2,
     });
-    expect(prismaMock.user.update).toHaveBeenCalledWith(
+    expect(txMock.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'u-1' },
         data: { lastLoginAt: expect.any(Date) },
       }),
     );
+    // Cập nhật last_login_at và ghi nhật ký đăng nhập trong cùng transaction
+    expect(txMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        actorUserId: 'u-1',
+        eventType: 'AUTH_LOGIN_SUCCESS',
+        entityType: 'user',
+        entityId: 'u-1',
+      }),
+    });
+    expect(JSON.stringify(txMock.auditLog.create.mock.calls[0][0])).not.toContain('123456');
     expect(result).toEqual({
       accessToken: 'signed-jwt-token',
       user: {
@@ -96,12 +108,22 @@ describe('AuthService', () => {
     expect(result.user).not.toHaveProperty('passwordHash');
   });
 
-  it('từ chối 401 chung khi tài khoản không tồn tại hoặc mật khẩu sai', async () => {
+  it('từ chối 401 chung khi tài khoản không tồn tại hoặc mật khẩu sai, ghi nhật ký AUTH_LOGIN_FAILED không lộ mật khẩu', async () => {
+    prismaMock.auditLog.create.mockResolvedValue({});
     prismaMock.user.findUnique.mockResolvedValue(null);
 
     await expect(service.login({ username: 'unknown', password: '123456' })).rejects.toThrow(
       new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không đúng'),
     );
+    expect(prismaMock.auditLog.create).toHaveBeenLastCalledWith({
+      data: expect.objectContaining({
+        actorUserId: null,
+        eventType: 'AUTH_LOGIN_FAILED',
+        entityType: 'user',
+        entityId: null,
+        newData: { username: 'unknown', reason: 'unknown_username' },
+      }),
+    });
 
     const passwordHash = await bcrypt.hash('123456', 4);
     prismaMock.user.findUnique.mockResolvedValue({
@@ -113,9 +135,58 @@ describe('AuthService', () => {
       userRoles: [],
     });
 
-    await expect(service.login({ username: 'quanly', password: 'wrong' })).rejects.toThrow(
+    await expect(service.login({ username: 'quanly', password: 'sai-mk-9x' })).rejects.toThrow(
       new UnauthorizedException('Tên đăng nhập hoặc mật khẩu không đúng'),
     );
+    expect(prismaMock.auditLog.create).toHaveBeenLastCalledWith({
+      data: expect.objectContaining({
+        actorUserId: 'u-1',
+        eventType: 'AUTH_LOGIN_FAILED',
+        entityId: 'u-1',
+        newData: { username: 'quanly', reason: 'wrong_password' },
+      }),
+    });
+
+    const auditPayload = JSON.stringify(prismaMock.auditLog.create.mock.calls);
+    expect(auditPayload).not.toContain('sai-mk-9x');
+    expect(auditPayload).not.toContain('123456');
+    expect(auditPayload).not.toContain(passwordHash);
+    expect(jwtServiceMock.signAsync).not.toHaveBeenCalled();
+  });
+
+  it('đăng nhập chỉ trả quyền của vai trò đang hoạt động, giống khi kiểm token', async () => {
+    const passwordHash = await bcrypt.hash('123456', 4);
+    prismaMock.user.findUnique.mockResolvedValue({
+      id: 'u-2',
+      username: 'nhanvien',
+      fullName: 'Nhân viên',
+      passwordHash,
+      status: 'active',
+      tokenVersion: 0,
+      userRoles: [
+        {
+          role: {
+            code: 'OLD_ROLE',
+            name: 'Vai trò cũ',
+            status: 'inactive',
+            rolePermissions: [{ permission: { code: 'reports.read' } }],
+          },
+        },
+        {
+          role: {
+            code: 'WAREHOUSE_STAFF',
+            name: 'Nhân viên kho',
+            status: 'active',
+            rolePermissions: [{ permission: { code: 'inventory.read' } }],
+          },
+        },
+      ],
+    });
+
+    const result = await service.login({ username: 'nhanvien', password: '123456' });
+
+    expect(result.user.role).toEqual({ code: 'WAREHOUSE_STAFF', name: 'Nhân viên kho' });
+    expect(result.user.permissions).toEqual(['inventory.read']);
   });
 
   it('từ chối 403 và ghi audit_logs (không lộ mật khẩu) khi tài khoản bị khóa đăng nhập đúng mật khẩu', async () => {

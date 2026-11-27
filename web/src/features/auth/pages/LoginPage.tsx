@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Warehouse } from 'lucide-react';
-import { useState } from 'react';
+import { Eye, EyeOff, Warehouse } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { clearSessionExpiredFlag, isSessionExpiredFlagged } from '@/lib/auth';
 import { useAuth } from '../hooks';
 
 const loginSchema = z.object({
@@ -22,6 +23,13 @@ export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [apiError, setApiError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  // Đọc cờ một lần khi vào trang, xóa cờ ở effect để tải lại trang không hiện lại thông báo
+  const [sessionExpired, setSessionExpired] = useState(isSessionExpiredFlagged);
+
+  useEffect(() => {
+    clearSessionExpiredFlag();
+  }, []);
 
   const {
     register,
@@ -41,6 +49,7 @@ export function LoginPage() {
 
   const onSubmit = async (values: LoginFormValues) => {
     setApiError(null);
+    setSessionExpired(false);
     try {
       await login(values);
       const fromPath = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
@@ -79,6 +88,15 @@ export function LoginPage() {
               Dùng tài khoản do quản trị viên cấp.
             </p>
 
+            {sessionExpired && (
+              <div
+                role="status"
+                className="mt-4 rounded-md border border-[var(--note-border)] bg-[var(--note-bg)] px-3.5 py-2.5 text-sm text-[var(--text)]"
+              >
+                Phiên đăng nhập đã hết hạn hoặc đã bị thu hồi. Vui lòng đăng nhập lại.
+              </div>
+            )}
+
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="mt-6 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="username">Tên đăng nhập</Label>
@@ -98,14 +116,30 @@ export function LoginPage() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="password">Mật khẩu</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="Nhập mật khẩu"
-                  aria-invalid={Boolean(errors.password)}
-                  {...register('password')}
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="Nhập mật khẩu"
+                    aria-invalid={Boolean(errors.password)}
+                    className="pr-10"
+                    {...register('password')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                    aria-pressed={showPassword}
+                    className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-[var(--text-muted)] hover:text-[var(--text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
                 {errors.password && (
                   <p role="alert" className="text-xs text-[var(--risk-critical-fg)]">
                     {errors.password.message}
