@@ -71,13 +71,11 @@ export function ReportsPage() {
   };
 
   const headerTitle =
-    activeTab === 'stock-ledger' ? 'Báo cáo nhập — xuất — tồn' : 'Báo cáo rủi ro cận hạn';
+    activeTab === 'stock-ledger' ? 'Báo cáo nhập, xuất, tồn' : 'Báo cáo rủi ro cận hạn';
 
   const headerDescription =
     activeTab === 'stock-ledger'
-      ? `Kỳ ${formatDateVi(ledgerFilters.from)} đến ${formatDateVi(
-          ledgerFilters.to,
-        )} · chỉ tính chứng từ kho đã xác nhận`
+      ? `Kỳ ${formatDateVi(ledgerFilters.from)} - ${formatDateVi(ledgerFilters.to)}`
       : 'Tổng hợp lô cận hạn, đánh giá rủi ro mới nhất và tiến độ xử lý';
 
   return (
@@ -117,7 +115,7 @@ export function ReportsPage() {
                 : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]'
             }`}
           >
-            Nhập — xuất — tồn
+            Nhập xuất tồn
           </button>
 
           <button

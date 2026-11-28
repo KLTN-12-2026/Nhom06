@@ -185,9 +185,7 @@ export function AgencyFormDialog({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{isEditing ? `Sửa đại lý ${agency?.code}` : 'Thêm đại lý'}</DialogTitle>
-            <DialogDescription>
-              Đơn hàng do nhân viên kho nhập hộ, đại lý không tự đăng nhập vào hệ thống.
-            </DialogDescription>
+            <DialogDescription>Nhập thông tin đại lý nhận hàng.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-3.5">

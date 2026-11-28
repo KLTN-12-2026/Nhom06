@@ -56,7 +56,7 @@ export function LlmInputPanel({ llmInput }: LlmInputPanelProps) {
           className="h-4 w-4 shrink-0 transition-transform group-open:rotate-90"
           aria-hidden="true"
         />
-        <span>Dữ liệu AI đã dùng để giải thích</span>
+        <span>Số liệu dùng để diễn giải</span>
       </summary>
 
       <div className="mt-3 space-y-3">
@@ -70,7 +70,7 @@ export function LlmInputPanel({ llmInput }: LlmInputPanelProps) {
               className="overflow-x-auto rounded-lg border border-border"
               tabIndex={0}
               role="region"
-              aria-label="Bảng dữ liệu AI đã dùng để giải thích"
+              aria-label="Bảng số liệu dùng để diễn giải"
             >
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-[var(--surface-muted)]">

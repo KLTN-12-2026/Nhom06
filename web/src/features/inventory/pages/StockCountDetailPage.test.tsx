@@ -112,9 +112,7 @@ describe('StockCountDetailPage (AC8)', () => {
     });
 
     expect(
-      screen.getByText(
-        'Phiếu kiểm kê chưa duyệt không làm thay đổi tồn kho. Khi duyệt, tồn từng lô được đặt bằng số đếm và ghi lịch sử điều chỉnh trong cùng một giao dịch.',
-      ),
+      screen.getByText('Tồn kho được cập nhật theo số đếm sau khi duyệt.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Duyệt điều chỉnh' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Hủy phiếu' })).not.toBeInTheDocument();

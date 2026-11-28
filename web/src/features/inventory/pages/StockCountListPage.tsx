@@ -123,7 +123,7 @@ export function StockCountListPage() {
     <div className="space-y-5">
       <PageHeader
         title="Phiếu kiểm kê kho"
-        description="Đối chiếu tồn thực tế theo lô; tồn kho chỉ thay đổi khi phiếu được duyệt"
+        description="Lập và duyệt phiếu kiểm kê"
         actions={headerActions}
       />
 

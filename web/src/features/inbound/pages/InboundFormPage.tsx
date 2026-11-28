@@ -14,7 +14,7 @@ import { useAuth } from '@/features/auth/hooks';
 import { useProductsQuery } from '@/features/products/hooks';
 import { useSuppliersQuery } from '@/features/suppliers/hooks';
 import { ApiError } from '@/lib/api';
-import { addDaysToIsoDate, getTodayIsoVn } from '@/lib/format';
+import { addDaysToIsoDate, formatProductLabel, getTodayIsoVn } from '@/lib/format';
 import {
   useCreateInboundReceiptMutation,
   useInboundReceiptQuery,
@@ -289,7 +289,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
   if (isEdit && receiptQuery.isLoading) {
     return (
       <div className="space-y-5">
-        <PageHeader title={pageTitle} description="Lưu phiếu nháp không làm thay đổi tồn kho" />
+        <PageHeader title={pageTitle} description="Nhập thông tin lô hàng" />
         <Card>
           <CardContent className="p-6 text-sm text-[var(--text-muted)]">
             Đang tải thông tin phiếu nhập...
@@ -302,7 +302,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
   if (isEdit && receiptQuery.isError) {
     return (
       <div className="space-y-5">
-        <PageHeader title={pageTitle} description="Lưu phiếu nháp không làm thay đổi tồn kho" />
+        <PageHeader title={pageTitle} description="Nhập thông tin lô hàng" />
         <div
           role="alert"
           className="rounded-md border border-[var(--risk-critical-fg)] bg-[var(--risk-critical-bg)] p-4 text-sm text-[var(--risk-critical-fg)]"
@@ -323,7 +323,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
   if (isEdit && receiptQuery.data && receiptQuery.data.status !== 'draft') {
     return (
       <div className="space-y-5">
-        <PageHeader title={pageTitle} description="Lưu phiếu nháp không làm thay đổi tồn kho" />
+        <PageHeader title={pageTitle} description="Nhập thông tin lô hàng" />
         <Card>
           <CardContent className="space-y-4 p-6">
             <p className="text-sm text-[var(--text)]">
@@ -354,7 +354,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} noValidate className="space-y-6">
-      <PageHeader title={pageTitle} description="Lưu phiếu nháp không làm thay đổi tồn kho" />
+      <PageHeader title={pageTitle} description="Nhập thông tin lô hàng" />
 
       {submitError && (
         <div
@@ -518,7 +518,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
                           <option value="">Chọn sản phẩm</option>
                           {products.map((product) => (
                             <option key={product.id} value={product.id}>
-                              {product.code} — {product.name}
+                              {formatProductLabel(product.code, product.name)}
                             </option>
                           ))}
                         </Select>
@@ -655,9 +655,8 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
 
           {/* Ghi chú gợi ý HSD + nút Huỷ / Lưu phiếu nháp (Mockup 07) */}
           <div className="flex flex-col gap-3 border-t border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
-              Hạn sử dụng gợi ý theo hạn dùng danh nghĩa của sản phẩm, nhân viên vẫn phải đối chiếu
-              với bao bì thực tế trước khi lưu.
+            <div className="flex-1 text-xs leading-relaxed text-[var(--text-muted)]">
+              Đối chiếu hạn sử dụng với bao bì trước khi lưu.
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2">

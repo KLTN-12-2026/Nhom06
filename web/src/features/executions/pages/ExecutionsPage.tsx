@@ -18,7 +18,12 @@ import { useAuth } from '@/features/auth/hooks';
 import { PROPOSAL_ACTION_LABELS } from '@/features/proposals/constants';
 import { type ProposalActionType } from '@/features/proposals/types';
 import { ApiError } from '@/lib/api';
-import { formatDateTime, formatQuantity, formatTimestampDateVi } from '@/lib/format';
+import {
+  formatDateTime,
+  formatEstimatedQuantity,
+  formatQuantity,
+  formatTimestampDateVi,
+} from '@/lib/format';
 import { ExecutionResultDialog } from '../components/ExecutionResultDialog';
 import { EXECUTION_STATUS_META, isTerminalExecutionStatus } from '../constants';
 import { useExecutionsQuery } from '../hooks';
@@ -50,7 +55,7 @@ export function ExecutionsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Theo dõi thực hiện phương án"
-        description="Đã duyệt và đã thực hiện là hai trạng thái khác nhau"
+        description="Cập nhật kết quả thực hiện phương án"
       />
 
       {/* 3 KPI cards khớp mockup 27 */}
@@ -59,7 +64,7 @@ export function ExecutionsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Phương án đã duyệt</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
-              {kpi ? formatQuantity(kpi.approvedCount) : '—'}
+              {kpi ? formatQuantity(kpi.approvedCount) : '…'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
               {kpi ? `${formatQuantity(kpi.inProgressCount)} đang thực hiện` : 'Đang tải...'}
@@ -71,7 +76,7 @@ export function ExecutionsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Lượng cần xử lý</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
-              {kpi ? formatQuantity(kpi.plannedQtyTotal) : '—'}
+              {kpi ? formatEstimatedQuantity(kpi.plannedQtyTotal) : '…'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
               theo các phương án đã duyệt
@@ -83,7 +88,7 @@ export function ExecutionsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Đã xử lý thực tế</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
-              {kpi ? formatQuantity(kpi.actualQtyTotal) : '—'}
+              {kpi ? formatQuantity(kpi.actualQtyTotal) : '…'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
               ghi nhận bởi nhân viên kho
@@ -95,10 +100,9 @@ export function ExecutionsPage() {
       {/* Hộp ghi chú bất biến nghiệp vụ theo mockup 27 */}
       <div
         role="note"
-        className="rounded-lg border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm leading-relaxed text-[var(--text)]"
+        className="text-xs leading-relaxed text-[var(--text-muted)]"
       >
-        Ghi kết quả ở màn hình này không làm thay đổi tồn kho. Khi phương án được thực hiện bằng
-        việc xuất hàng, tồn chỉ giảm qua phiếu xuất và kết quả sẽ trỏ về phiếu xuất đó.
+        Ghi kết quả không làm đổi tồn kho; lượng xuất được ghi nhận qua phiếu xuất.
       </div>
 
       {/* Bộ lọc */}
@@ -173,11 +177,13 @@ export function ExecutionsPage() {
               aria-label="Danh sách theo dõi thực hiện phương án"
               className="relative overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
             >
-              <Table>
+              <Table className="min-w-[960px] [&_td]:px-3 [&_th]:px-3">
                 <TableHeader>
                   <TableRow className="bg-[var(--surface-muted)] hover:bg-[var(--surface-muted)]">
                     <TableHead scope="col">Lô</TableHead>
-                    <TableHead scope="col">Sản phẩm</TableHead>
+                    <TableHead scope="col" className="min-w-[180px]">
+                      Sản phẩm
+                    </TableHead>
                     <TableHead scope="col">Phương án</TableHead>
                     <TableHead scope="col" className="text-right">
                       Lượng đề xuất
@@ -214,18 +220,20 @@ export function ExecutionsPage() {
                             </Link>
                           </TableCell>
                           <TableCell>
-                            <div className="max-w-[240px] text-sm">
-                              <span className="font-medium text-[var(--text)]">
+                            <div className="min-w-[180px] max-w-[240px] text-sm">
+                              <div className="font-medium text-[var(--text)]">
                                 {item.product.code}
-                              </span>{' '}
-                              <span className="text-[var(--text-muted)]">{item.product.name}</span>
+                              </div>
+                              <div className="line-clamp-2 text-[var(--text-muted)]">
+                                {item.product.name}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="max-w-[200px] text-sm text-[var(--text)]">
                             {item.proposal.actionLabel}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-medium tabular-nums text-[var(--text)]">
-                            {formatQuantity(item.plannedQty)}
+                            {formatEstimatedQuantity(item.plannedQty)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-right font-medium tabular-nums text-[var(--text)]">
                             {item.actualQty !== null ? (
@@ -277,7 +285,7 @@ export function ExecutionsPage() {
                                     <span className="tabular-nums">
                                       {formatDateTime(upd.updatedAt)}
                                     </span>
-                                    <span>·</span>
+                                    <span>-</span>
                                     <span className="font-medium text-[var(--text)]">
                                       {upd.updater.fullName}:
                                     </span>

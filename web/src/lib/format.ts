@@ -6,6 +6,10 @@ const viCurrencyFormatter = new Intl.NumberFormat('vi-VN', {
   maximumFractionDigits: 2,
 });
 
+const viEstimatedQuantityFormatter = new Intl.NumberFormat('vi-VN', {
+  maximumFractionDigits: 2,
+});
+
 const vnDateTimeFormatter = new Intl.DateTimeFormat('vi-VN', {
   timeZone: 'Asia/Ho_Chi_Minh',
   day: '2-digit',
@@ -50,6 +54,27 @@ export function formatQuantity(value: string | number | null | undefined): strin
     return String(value);
   }
   return viNumberFormatter.format(parsed);
+}
+
+export function formatEstimatedQuantity(
+  value: string | number | null | undefined,
+): string {
+  if (value === null || value === undefined || value === '') {
+    return '0';
+  }
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (Number.isNaN(parsed)) {
+    return String(value);
+  }
+  return viEstimatedQuantityFormatter.format(parsed);
+}
+
+export function formatProductLabel(code: string, name: string): string {
+  return `${code} - ${name}`;
+}
+
+export function formatUiSeparators(value: string): string {
+  return value.replace(/\s*\u00b7\s*/g, ', ');
 }
 
 export function formatCurrency(
@@ -198,6 +223,12 @@ export function formatDateTime(isoTimestamp: string | null | undefined): string 
     return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
   }
   return vnDateTimeFormatter.format(date);
+}
+
+export function formatTimeOnDateVi(isoTimestamp: string | null | undefined): string {
+  const formatted = formatDateTime(isoTimestamp);
+  const match = /^(\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})$/.exec(formatted);
+  return match ? `${match[2]} ngày ${match[1]}` : formatted;
 }
 
 /**

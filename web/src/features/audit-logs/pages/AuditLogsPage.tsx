@@ -92,7 +92,7 @@ export function AuditLogsPage() {
     <div className="space-y-5">
       <PageHeader
         title="Nhật ký hệ thống"
-        description="Lưu vết các thay đổi quan trọng; chỉ xem, không sửa được"
+        description="Tra cứu lịch sử thao tác"
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

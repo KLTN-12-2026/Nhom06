@@ -13,8 +13,7 @@ export function RoleNotesCard() {
         <div className="space-y-1 border-b border-border pb-3.5">
           <div className="font-semibold text-[var(--text)]">Phê duyệt đề xuất</div>
           <p className="text-xs leading-relaxed text-[var(--text-muted)]">
-            Chỉ Quản lý kho được phê duyệt hoặc từ chối đề xuất xử lý hàng cận hạn. Nhân viên kho
-            chỉ xem được, Quản trị viên không phê duyệt nghiệp vụ, và AI thì không bao giờ.
+            Chỉ Quản lý kho được phê duyệt hoặc từ chối đề xuất xử lý hàng cận hạn.
           </p>
         </div>
 
@@ -31,11 +30,6 @@ export function RoleNotesCard() {
             Nhân viên kho lập được phiếu kiểm kê nhưng không xác nhận được, vì đây là thao tác duy
             nhất đổi tồn mà không có chứng từ nhập xuất đi kèm.
           </p>
-        </div>
-
-        <div className="rounded-md border border-[var(--note-border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-3.5 py-3 text-xs leading-relaxed text-[var(--text)]">
-          Ma trận này đọc thẳng từ bảng <strong className="font-semibold">role_permissions</strong>{' '}
-          trong cơ sở dữ liệu, không nhập tay trên giao diện.
         </div>
       </CardContent>
     </Card>

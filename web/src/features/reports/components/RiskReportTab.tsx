@@ -15,7 +15,13 @@ import {
 } from '@/components/ui/table';
 import { type RiskLevel } from '@/features/dashboard/types';
 import { useProductsQuery } from '@/features/products/hooks';
-import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
+import {
+  formatDateTime,
+  formatDateVi,
+  formatEstimatedQuantity,
+  formatProductLabel,
+  formatQuantity,
+} from '@/lib/format';
 import { useRiskReportQuery } from '../hooks';
 import { type RiskReportParams } from '../types';
 
@@ -136,7 +142,7 @@ export function RiskReportTab() {
               <option value="">Tất cả sản phẩm</option>
               {(productsQuery.data?.items ?? []).map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.code} — {p.name}
+                  {formatProductLabel(p.code, p.name)}
                 </option>
               ))}
             </Select>
@@ -288,15 +294,13 @@ export function RiskReportTab() {
           {/* Ghi chú trạng thái dữ liệu phân tích / thực tế */}
           {!data.latestRun && (
             <div className="rounded-lg border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm text-[var(--text)]">
-              Chưa có dữ liệu phân tích rủi ro cận hạn. Cần chạy phân tích tồn dư để thống kê tồn dư
-              ước tính và đề xuất xử lý.
+              Chưa có dữ liệu. Chạy phân tích tồn dư để xem báo cáo.
             </div>
           )}
 
           {data.latestRun && !data.hasSufficientActualData && (
             <div className="rounded-lg border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm text-[var(--text)]">
-              Chưa đủ dữ liệu thực tế để đánh giá hiệu quả xử lý. Các con số dự báo và tồn dư ước
-              tính chỉ mang tính tham khảo từ lượt phân tích.
+              Chưa đủ dữ liệu thực tế để đánh giá hiệu quả xử lý.
             </div>
           )}
 
@@ -413,10 +417,10 @@ export function RiskReportTab() {
                             <RiskLevelBadge level={row.riskLevel} />
                           </TableCell>
                             <TableCell className="text-right tabular-nums whitespace-nowrap text-[var(--text)]">
-                              {formatQuantity(row.forecastDemand)} {row.product.unit}
+                              {formatEstimatedQuantity(row.forecastDemand)} {row.product.unit}
                             </TableCell>
                             <TableCell className="text-right font-medium tabular-nums whitespace-nowrap text-[var(--text)]">
-                              {formatQuantity(row.estimatedSurplus)} {row.product.unit}
+                              {formatEstimatedQuantity(row.estimatedSurplus)} {row.product.unit}
                             </TableCell>
                             <TableCell className="text-right tabular-nums whitespace-nowrap">
                               {row.actualHandledQty !== null ? (

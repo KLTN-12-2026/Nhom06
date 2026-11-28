@@ -30,6 +30,8 @@ export interface DataTableProps<T> {
   emptyText?: string;
   errorText?: string;
   onRowClick?: (row: T) => void;
+  /** Lớp bổ sung cho thẻ table, ví dụ giảm khoảng đệm ô ở bảng nhiều cột. */
+  tableClassName?: string;
 }
 
 export function DataTable<T>({
@@ -43,6 +45,7 @@ export function DataTable<T>({
   emptyText = 'Không có kết quả phù hợp',
   errorText = 'Không thể tải dữ liệu. Vui lòng thử lại.',
   onRowClick,
+  tableClassName,
 }: DataTableProps<T>) {
   return (
     <Card>
@@ -68,7 +71,7 @@ export function DataTable<T>({
 
         {!isLoading && !isError && data && data.length > 0 && (
           <div className="overflow-x-auto">
-            <Table>
+            <Table className={tableClassName}>
               <TableHeader>
                 <TableRow>
                   {columns.map((col) => (

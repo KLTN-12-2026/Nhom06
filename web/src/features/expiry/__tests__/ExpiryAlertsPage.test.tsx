@@ -22,7 +22,7 @@ const SUMMARY_FIXTURE = {
   nearExpiry: { lots: 3, qty: '1029' },
   totalAlertLots: 7,
   global: { warningDays: 30, criticalDays: 7, minDeliveryDays: 7 },
-  overridesSummary: 'Nhóm Sữa 45 ngày · riêng SP002 10 ngày',
+  overridesSummary: 'Nhóm Sữa 45 ngày \u00b7 riêng SP002 10 ngày',
 };
 
 const ALERTS_FIXTURE = {
@@ -107,7 +107,7 @@ describe('ExpiryAlertsPage (AC8)', () => {
     localStorage.clear();
   });
 
-  it('hiển thị đúng KPI cards, hộp ghi chú, bảng cảnh báo với badge, "quá N ngày" và link Xem đề xuất', async () => {
+  it('hiển thị đúng KPI cards, ngày cập nhật, bảng cảnh báo với badge, "quá N ngày" và link Xem đề xuất', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
       const url = String(input);
       if (url.endsWith('/auth/me')) {
@@ -135,19 +135,12 @@ describe('ExpiryAlertsPage (AC8)', () => {
       expect(screen.getByText('L26081802')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText('Đánh giá ngày 22/11/2026 theo múi giờ Asia/Ho_Chi_Minh'),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Danh sách này chỉ để theo dõi. Hệ thống không tự xuất hàng và không tự trừ tồn từ màn hình cảnh báo.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Cập nhật ngày 22/11/2026')).toBeInTheDocument();
 
     // KPI cards
     expect(screen.getByText('837 đơn vị')).toBeInTheDocument();
     expect(screen.getByText('1.029 đơn vị')).toBeInTheDocument();
-    expect(screen.getByText('Nhóm Sữa 45 ngày · riêng SP002 10 ngày')).toBeInTheDocument();
+    expect(screen.getByText('Nhóm Sữa 45 ngày, riêng SP002 10 ngày')).toBeInTheDocument();
 
     // ExpiryBar & badges
     expect(screen.getByText('quá 53 ngày')).toBeInTheDocument();

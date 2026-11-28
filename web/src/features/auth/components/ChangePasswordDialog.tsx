@@ -182,7 +182,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
             )}
           </div>
 
-          <div className="rounded-md border-l-4 border-[var(--info)] bg-[var(--surface-muted)] px-3 py-2 text-xs text-[var(--text-muted)]">
+          <div className="text-xs leading-relaxed text-[var(--text-muted)]">
             Sau khi đổi mật khẩu, bạn sẽ được đăng xuất khỏi mọi phiên đang mở và cần đăng nhập lại.
           </div>
 

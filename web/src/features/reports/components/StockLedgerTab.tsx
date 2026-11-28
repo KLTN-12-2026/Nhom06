@@ -156,13 +156,13 @@ export function StockLedgerTab({ appliedFilters, onApplyFilters }: StockLedgerTa
         <CardContent className="p-0">
           {ledgerQuery.isLoading && (
             <div className="px-6 py-8 text-sm text-[var(--text-muted)]">
-              Đang tổng hợp số liệu nhập — xuất — tồn...
+              Đang tổng hợp số liệu nhập, xuất, tồn...
             </div>
           )}
 
           {ledgerQuery.isError && (
             <div className="m-6 rounded-md border border-[var(--risk-critical-fg)] bg-[var(--risk-critical-bg)] p-4 text-sm text-[var(--risk-critical-fg)]">
-              Không thể tải báo cáo nhập — xuất — tồn.{' '}
+              Không thể tải báo cáo nhập, xuất, tồn.{' '}
               <button
                 type="button"
                 onClick={() => void ledgerQuery.refetch()}
@@ -175,7 +175,7 @@ export function StockLedgerTab({ appliedFilters, onApplyFilters }: StockLedgerTa
 
           {!ledgerQuery.isLoading && !ledgerQuery.isError && data && data.items.length === 0 && (
             <div className="px-6 py-8 text-sm text-[var(--text-muted)]">
-              Chưa có dữ liệu nhập — xuất — tồn trong kỳ đã chọn.
+              Chưa có dữ liệu nhập, xuất, tồn trong kỳ đã chọn.
             </div>
           )}
 
@@ -262,8 +262,7 @@ export function StockLedgerTab({ appliedFilters, onApplyFilters }: StockLedgerTa
               </div>
 
               <div className="border-t border-border px-6 py-3 text-xs text-[var(--text-muted)]">
-                Lưu ý: Dòng Tổng chỉ mang tính tham khảo, không dùng để so sánh giữa các mặt hàng có
-                đơn vị tính khác nhau. Bấm vào từng sản phẩm để xem lịch sử biến động trong kỳ.
+                Dòng Tổng gộp nhiều đơn vị tính. Chọn sản phẩm để xem lịch sử biến động.
               </div>
             </>
           )}

@@ -18,13 +18,13 @@ function makeLlmInput(overrides: Partial<LlmExplanationInput> = {}): LlmExplanat
     don_vi_tinh: 'thùng',
     han_su_dung: '2026-11-30',
     so_ngay_con_lai: 8,
-    ton_luc_phan_tich: 1392,
-    nhu_cau_phan_bo_duoc: 141,
-    tieu_thu_uoc_tinh: 141,
-    ton_du_uoc_tinh: 1251,
+    ton_luc_phan_tich: 1392.123,
+    nhu_cau_phan_bo_duoc: 2117.194,
+    tieu_thu_uoc_tinh: 4737.044,
+    ton_du_uoc_tinh: 1251.236,
     muc_rui_ro: 'high',
     phuong_an: 'CONTACT_AGENCY',
-    luong_de_xuat: 1251,
+    luong_de_xuat: 1251.236,
     allowed_actions: ['CONTACT_AGENCY', 'CONSIDER_PROMOTION', 'RETURN_TO_SUPPLIER'],
     ...overrides,
   };
@@ -62,13 +62,13 @@ describe('llm-input-format (T-023 + T-030 — ánh xạ nhãn và định dạng
     expect(byKey.get('don_vi_tinh')).toMatchObject({ kind: 'text', text: 'thùng' });
     expect(byKey.get('han_su_dung')).toMatchObject({ kind: 'text', text: '30/11/2026' });
     expect(byKey.get('so_ngay_con_lai')).toMatchObject({ kind: 'text', text: '8 ngày' });
-    expect(byKey.get('ton_luc_phan_tich')).toMatchObject({ kind: 'text', text: '1.392' });
-    expect(byKey.get('nhu_cau_phan_bo_duoc')).toMatchObject({ kind: 'text', text: '141' });
-    expect(byKey.get('tieu_thu_uoc_tinh')).toMatchObject({ kind: 'text', text: '141' });
-    expect(byKey.get('ton_du_uoc_tinh')).toMatchObject({ kind: 'text', text: '1.251' });
+    expect(byKey.get('ton_luc_phan_tich')).toMatchObject({ kind: 'text', text: '1.392,123' });
+    expect(byKey.get('nhu_cau_phan_bo_duoc')).toMatchObject({ kind: 'text', text: '2.117,19' });
+    expect(byKey.get('tieu_thu_uoc_tinh')).toMatchObject({ kind: 'text', text: '4.737,04' });
+    expect(byKey.get('ton_du_uoc_tinh')).toMatchObject({ kind: 'text', text: '1.251,24' });
     expect(byKey.get('muc_rui_ro')).toMatchObject({ kind: 'risk', level: 'high' });
     expect(byKey.get('phuong_an')).toMatchObject({ kind: 'text', text: 'Liên hệ đại lý' });
-    expect(byKey.get('luong_de_xuat')).toMatchObject({ kind: 'text', text: '1.251' });
+    expect(byKey.get('luong_de_xuat')).toMatchObject({ kind: 'text', text: '1.251,24' });
     expect(byKey.get('allowed_actions')).toMatchObject({
       kind: 'actions',
       labels: ['Liên hệ đại lý', 'Cân nhắc khuyến mãi', 'Trả nhà cung cấp'],
@@ -158,7 +158,7 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     expect(details).not.toBeNull();
     expect(details?.hasAttribute('open')).toBe(false);
 
-    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    await user.click(screen.getByText('Số liệu dùng để diễn giải'));
     expect(details?.hasAttribute('open')).toBe(true);
 
     const table = screen.getByRole('table');
@@ -182,7 +182,7 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     expect(within(table).getByText('Số ngày còn lại')).toBeInTheDocument();
     expect(within(table).getByText('Quá 3 ngày')).toBeInTheDocument();
     expect(within(table).getByText('Tồn lúc phân tích')).toBeInTheDocument();
-    expect(within(table).getByText('1.392')).toBeInTheDocument();
+    expect(within(table).getByText('1.392,123')).toBeInTheDocument();
     expect(within(table).getByText('Mức rủi ro')).toBeInTheDocument();
     expect(within(table).getByText('Hết hạn')).toBeInTheDocument();
     expect(within(table).getByText('Phương án đề xuất')).toBeInTheDocument();
@@ -195,7 +195,7 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     const user = userEvent.setup();
     const { rerender } = render(<LlmInputPanel llmInput={null} />);
 
-    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    await user.click(screen.getByText('Số liệu dùng để diễn giải'));
     expect(screen.getByText('Chưa có dữ liệu')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
 
@@ -226,7 +226,7 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     const user = userEvent.setup();
     render(<LlmInputPanel llmInput={makeLlmInput()} />);
 
-    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    await user.click(screen.getByText('Số liệu dùng để diễn giải'));
 
     const toggleBtn = screen.getByRole('button', { name: 'Xem dạng JSON' });
     expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');

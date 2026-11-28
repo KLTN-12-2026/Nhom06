@@ -56,7 +56,7 @@ export function OutboundDetailPage() {
         title={`Phiếu xuất ${receipt.outboundNo}`}
         description={
           receipt.order
-            ? `${getOutboundTypeLabel(receipt.outboundType)} · ${receipt.order.agency.name}`
+            ? `${getOutboundTypeLabel(receipt.outboundType)}, ${receipt.order.agency.name}`
             : getOutboundTypeLabel(receipt.outboundType)
         }
         actions={
@@ -77,7 +77,7 @@ export function OutboundDetailPage() {
             <CardHeader className="flex flex-row items-center justify-between space-y-0 border-b border-border py-4">
               <CardTitle>Chi tiết dòng xuất theo lô</CardTitle>
               <span className="text-sm text-[var(--text-muted)]">
-                {receipt.lotCount} lô · Tổng xuất{' '}
+                {receipt.lotCount} lô, tổng xuất{' '}
                 <strong className="tabular-nums text-[var(--text)]">
                   {formatQuantity(receipt.totalQuantity)}
                 </strong>
@@ -148,13 +148,13 @@ export function OutboundDetailPage() {
                       {receipt.order.orderNo}
                     </Link>
                   ) : (
-                    <span className="text-[var(--text-muted)]">—</span>
+                    <span className="text-[var(--text-muted)]">Không áp dụng</span>
                   )}
                 </dd>
 
                 <dt className="text-[var(--text-muted)]">Đại lý</dt>
                 <dd className="text-[var(--text)]">
-                  {receipt.order ? receipt.order.agency.name : '—'}
+                  {receipt.order ? receipt.order.agency.name : 'Không áp dụng'}
                 </dd>
 
                 <dt className="text-[var(--text-muted)]">Người xác nhận</dt>

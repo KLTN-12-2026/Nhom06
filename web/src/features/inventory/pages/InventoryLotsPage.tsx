@@ -119,12 +119,13 @@ export function InventoryLotsPage() {
       {
         key: 'product',
         header: 'Sản phẩm',
+        headerClassName: 'min-w-[180px]',
         render: (row) => (
-          <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="font-medium text-[var(--text)] whitespace-nowrap">
+          <div className="min-w-[180px] max-w-[240px]">
+            <div className="font-medium whitespace-nowrap text-[var(--text)]">
               {row.product.code}
-            </span>
-            <span className="text-[var(--text-muted)]">{row.product.name}</span>
+            </div>
+            <div className="line-clamp-2 text-[var(--text-muted)]">{row.product.name}</div>
           </div>
         ),
       },
@@ -137,6 +138,7 @@ export function InventoryLotsPage() {
       {
         key: 'expiryDate',
         header: 'Hạn sử dụng',
+        headerClassName: 'whitespace-nowrap',
         cellClassName: 'tabular-nums whitespace-nowrap',
         render: (row) => (
           <span
@@ -159,6 +161,7 @@ export function InventoryLotsPage() {
             daysRemaining={row.daysRemaining}
             severity={row.expiryStatus}
             maxDays={Math.max(row.warningDays, 60)}
+            barClassName="w-14"
           />
         ),
       },
@@ -225,7 +228,7 @@ export function InventoryLotsPage() {
     <div className="space-y-5">
       <PageHeader
         title="Tồn kho theo lô"
-        description="Số tồn chỉ thay đổi qua phiếu nhập, phiếu xuất hoặc phiếu kiểm kê đã xác nhận"
+        description="Theo dõi số lượng tồn theo từng lô"
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -271,7 +274,7 @@ export function InventoryLotsPage() {
                 setPage(1);
               }}
               aria-label="Lọc theo tình trạng hạn dùng"
-              className="h-10 w-full sm:w-52"
+              className="h-10 w-full sm:w-60"
             >
               <option value="">Tất cả tình trạng hạn dùng</option>
               <option value="expired">Hết hạn</option>
@@ -335,12 +338,13 @@ export function InventoryLotsPage() {
           className="shrink-0 text-sm font-medium tabular-nums text-[var(--text-muted)]"
         >
           {summary
-            ? `${formatQuantity(summary.lotCount)} lô · ${formatQuantity(summary.totalQty)} đơn vị`
+            ? `${formatQuantity(summary.lotCount)} lô, ${formatQuantity(summary.totalQty)} đơn vị`
             : 'Đang tính tồn kho...'}
         </p>
       </div>
 
       <DataTable
+        tableClassName="[&_td]:px-3 [&_th]:px-3"
         columns={columns}
         data={lotsQuery.data?.items}
         rowKey={(row) => row.lotId}

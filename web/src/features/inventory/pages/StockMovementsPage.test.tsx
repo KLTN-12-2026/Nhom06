@@ -102,17 +102,17 @@ describe('StockMovementsPage (AC8)', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('Phiếu kiểm kê · KK2611230001')).toBeInTheDocument();
+      expect(screen.getByText('KK2611230001')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Lịch sử biến động tồn kho')).toBeInTheDocument();
     expect(screen.getByText('-2')).toBeInTheDocument();
     expect(screen.getByText('+20')).toBeInTheDocument();
 
-    const scLink = screen.getByRole('link', { name: 'Phiếu kiểm kê · KK2611230001' });
+    const scLink = screen.getByRole('link', { name: 'Phiếu kiểm kê: KK2611230001' });
     expect(scLink).toHaveAttribute('href', '/stock-counts/sc-1');
 
-    const inbLink = screen.getByRole('link', { name: 'Phiếu nhập · PN2611230001' });
+    const inbLink = screen.getByRole('link', { name: 'Phiếu nhập: PN2611230001' });
     expect(inbLink).toHaveAttribute('href', '/inbound/inb-1');
 
     // Lọc theo nghiệp vụ ADJUSTMENT gửi đúng query

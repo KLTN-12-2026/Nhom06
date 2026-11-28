@@ -284,8 +284,8 @@ describe('RiskAnalysisPage (T-013 AC8)', () => {
     });
 
     expect(screen.getByText('Phân tích nguy cơ tồn dư')).toBeInTheDocument();
-    expect(screen.getByText(/Lượt chạy gần nhất: thủ công, 23\/11\/2026 · 4 lô/)).toBeInTheDocument();
-    expect(screen.getByText(/Nhu cầu dự báo của một sản phẩm được phân bổ cho các lô theo FEFO/)).toBeInTheDocument();
+    expect(screen.getByText(/Lượt chạy gần nhất: thủ công, 23\/11\/2026, 4 lô/)).toBeInTheDocument();
+    expect(screen.getByText(/FEFO phân bổ nhu cầu cho lô hết hạn sớm trước/)).toBeInTheDocument();
 
     // 4 mức rủi ro
     expect(screen.getAllByText('Hết hạn').length).toBeGreaterThanOrEqual(1);
@@ -322,11 +322,11 @@ describe('RiskAnalysisPage (T-013 AC8)', () => {
     await user.click(screen.getByText('L26101802'));
 
     await waitFor(() => {
-      expect(screen.getByText('Căn cứ tính — Lô L26101802')).toBeInTheDocument();
+      expect(screen.getByText('Căn cứ tính - Lô L26101802')).toBeInTheDocument();
     });
     expect(screen.getByText('Hạng #1')).toBeInTheDocument();
     expect(screen.getByText('7 ngày')).toBeInTheDocument();
-    expect(screen.getByText('23/11/2026 – 24/11/2026 (2 ngày)')).toBeInTheDocument();
+    expect(screen.getByText('23/11/2026 - 24/11/2026 (2 ngày)')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Đóng' }));
 

@@ -63,8 +63,7 @@ export function ProposalExplanationBlock({
 
         <div className="space-y-1.5">
           <p className="text-xs text-[var(--text-muted)]">
-            Viết lại từ số liệu bên dưới bởi mô hình ngôn ngữ. Mọi con số đều lấy nguyên từ kết quả
-            phân tích.
+            Diễn giải do mô hình ngôn ngữ viết từ số liệu bên dưới.
             {explanation.modelName.includes('[Mô phỏng]') && (
               <span className="ml-1 font-medium">({explanation.modelName})</span>
             )}
@@ -89,8 +88,8 @@ export function ProposalExplanationBlock({
 
   const warningMessage =
     fallbackReason === 'invalid'
-      ? 'Phần diễn giải không vượt qua kiểm tra số liệu, nên phần dưới là câu tóm tắt do bộ quy tắc sinh ra. Số liệu phân tích và phương án xử lý không phụ thuộc vào dịch vụ này.'
-      : 'Dịch vụ diễn giải không phản hồi, nên phần dưới là câu tóm tắt do bộ quy tắc sinh ra. Số liệu phân tích và phương án xử lý không phụ thuộc vào dịch vụ này.';
+      ? 'Diễn giải không khớp số liệu. Đang hiển thị tóm tắt nghiệp vụ dự phòng.'
+      : 'Không thể tải phần diễn giải. Đang hiển thị tóm tắt nghiệp vụ dự phòng.';
 
   return (
     <div className="space-y-3">
@@ -104,7 +103,7 @@ export function ProposalExplanationBlock({
       <p className="text-[15px] leading-relaxed text-[var(--text)]">{ruleSummaryText}</p>
 
       <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--text-muted)]">
-        <span>Nguồn: bộ quy tắc nghiệp vụ</span>
+        <span>Tóm tắt nghiệp vụ dự phòng</span>
         {canToggleDemo && (
           <button
             type="button"
@@ -112,7 +111,7 @@ export function ProposalExplanationBlock({
             onClick={onRestoreExplanation}
             className="text-sm text-[var(--info)] underline underline-offset-4 hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
           >
-            {isUpdating ? 'Đang khôi phục…' : 'Khôi phục dịch vụ diễn giải'}
+            {isUpdating ? 'Đang khôi phục…' : 'Khôi phục'}
           </button>
         )}
       </div>

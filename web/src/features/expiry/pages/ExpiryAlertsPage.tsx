@@ -10,7 +10,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/features/auth/hooks';
-import { formatDateVi, formatQuantity, getVnTodayIso } from '@/lib/format';
+import {
+  formatDateVi,
+  formatProductLabel,
+  formatQuantity,
+  formatUiSeparators,
+  getVnTodayIso,
+} from '@/lib/format';
 import {
   useActiveProductsForExpiryQuery,
   useExpiryAlertsQuery,
@@ -84,12 +90,13 @@ export function ExpiryAlertsPage() {
       {
         key: 'product',
         header: 'Sản phẩm',
+        headerClassName: 'min-w-[220px]',
         render: (row) => (
-          <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="font-medium text-[var(--text)] whitespace-nowrap">
+          <div className="min-w-[220px] max-w-[280px]">
+            <div className="font-medium whitespace-nowrap text-[var(--text)]">
               {row.product.code}
-            </span>
-            <span className="text-[var(--text-muted)]">{row.product.name}</span>
+            </div>
+            <div className="line-clamp-2 text-[var(--text-muted)]">{row.product.name}</div>
           </div>
         ),
       },
@@ -102,6 +109,7 @@ export function ExpiryAlertsPage() {
       {
         key: 'expiryDate',
         header: 'Hạn sử dụng',
+        headerClassName: 'whitespace-nowrap',
         cellClassName: 'tabular-nums whitespace-nowrap',
         render: (row) => (
           <span
@@ -181,7 +189,7 @@ export function ExpiryAlertsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Cảnh báo hàng cận hạn"
-        description={`Đánh giá ngày ${evaluationDateLabel} theo múi giờ Asia/Ho_Chi_Minh`}
+        description={`Cập nhật ngày ${evaluationDateLabel}`}
         actions={headerActions}
       />
 
@@ -191,7 +199,7 @@ export function ExpiryAlertsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Đã hết hạn</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--risk-critical-fg)]">
-              {summary ? formatQuantity(summary.expired.lots) : '—'}
+              {summary ? formatQuantity(summary.expired.lots) : '…'}
             </div>
             <div className="mt-1.5 text-sm text-[var(--text-muted)] tabular-nums">
               {summary ? `${formatQuantity(summary.expired.qty)} đơn vị` : 'Đang tính...'}
@@ -203,7 +211,7 @@ export function ExpiryAlertsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Cận hạn</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--risk-medium-kpi)]">
-              {summary ? formatQuantity(summary.nearExpiry.lots) : '—'}
+              {summary ? formatQuantity(summary.nearExpiry.lots) : '…'}
             </div>
             <div className="mt-1.5 text-sm text-[var(--text-muted)] tabular-nums">
               {summary ? `${formatQuantity(summary.nearExpiry.qty)} đơn vị` : 'Đang tính...'}
@@ -216,24 +224,15 @@ export function ExpiryAlertsPage() {
             <div className="text-sm text-[var(--text-muted)]">Ngưỡng chung</div>
             <div className="mt-2 flex items-baseline gap-1.5">
               <span className="text-4xl font-semibold tabular-nums text-[var(--text)]">
-                {summary ? formatQuantity(summary.global.warningDays) : '—'}
+                {summary ? formatQuantity(summary.global.warningDays) : '…'}
               </span>
               <span className="text-sm text-[var(--text-muted)]">ngày</span>
             </div>
             <div className="mt-1.5 truncate text-sm text-[var(--text-muted)]">
-              {summary ? summary.overridesSummary : 'Đang tải cấu hình...'}
+              {summary ? formatUiSeparators(summary.overridesSummary) : 'Đang tải cấu hình...'}
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      {/* Hộp thông tin bất biến nghiệp vụ (mockup 17) */}
-      <div
-        role="note"
-        className="rounded-lg border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]"
-      >
-        Danh sách này chỉ để theo dõi. Hệ thống không tự xuất hàng và không tự trừ tồn từ màn hình
-        cảnh báo.
       </div>
 
       {/* Bộ lọc cảnh báo theo đặc tả PB19 */}
@@ -268,7 +267,7 @@ export function ExpiryAlertsPage() {
             <option value="">Tất cả sản phẩm</option>
             {(productsQuery.data?.items ?? []).map((product) => (
               <option key={product.id} value={product.id}>
-                {product.code} — {product.name}
+                {formatProductLabel(product.code, product.name)}
               </option>
             ))}
           </Select>

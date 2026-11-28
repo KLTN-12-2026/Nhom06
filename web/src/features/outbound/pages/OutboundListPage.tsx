@@ -102,7 +102,7 @@ export function OutboundListPage() {
     <div className="space-y-5">
       <PageHeader
         title="Phiếu xuất kho"
-        description="Chỉ hiển thị phiếu đã xác nhận; tồn kho đã giảm theo từng lô"
+        description="Theo dõi hàng đã xuất theo từng lô"
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

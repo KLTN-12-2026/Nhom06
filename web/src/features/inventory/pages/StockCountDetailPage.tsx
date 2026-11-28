@@ -241,8 +241,7 @@ export function StockCountDetailPage() {
           role="note"
           className="rounded-md border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm text-[var(--text)]"
         >
-          Phiếu kiểm kê chưa duyệt không làm thay đổi tồn kho. Khi duyệt, tồn từng lô được đặt
-          bằng số đếm và ghi lịch sử điều chỉnh trong cùng một giao dịch.
+          Tồn kho được cập nhật theo số đếm sau khi duyệt.
         </div>
       )}
 
@@ -251,17 +250,15 @@ export function StockCountDetailPage() {
           role="alert"
           className="rounded-md border border-[var(--risk-medium-bar)]/40 bg-[var(--risk-medium-bg)] px-4 py-3 text-sm text-[var(--risk-medium-fg)]"
         >
-          <strong>Cảnh báo biến động tồn:</strong> Một hoặc nhiều lô trong phiếu đã thay đổi tồn
-          kho sau thời điểm lập kiểm kê. Hệ thống sẽ từ chối duyệt (409) để yêu cầu đối chiếu lại.
+          <strong>Tồn kho đã thay đổi.</strong> Vui lòng đối chiếu lại các lô trước khi duyệt.
         </div>
       )}
 
       {stockCount.status === 'approved' && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs leading-relaxed text-[var(--text-muted)]">
           <span>
-            Phiếu đã được <strong>{stockCount.approver?.fullName ?? '—'}</strong> duyệt lúc{' '}
-            {formatDateTime(stockCount.approvedAt)}. Các lô có chênh lệch đã được điều chỉnh tồn và
-            ghi sổ biến động.
+            Duyệt bởi <strong>{stockCount.approver?.fullName ?? 'Chưa rõ'}</strong> lúc{' '}
+            {formatDateTime(stockCount.approvedAt)}. Chênh lệch đã được cập nhật vào tồn kho.
           </span>
           <Link
             to={`/stock-movements?sourceType=STOCK_COUNT&sourceId=${stockCount.id}`}
@@ -414,7 +411,7 @@ export function StockCountDetailPage() {
         open={submitOpen}
         onOpenChange={setSubmitOpen}
         title={`Gửi duyệt phiếu kiểm kê ${stockCount.countNo}?`}
-        description="Sau khi gửi duyệt, phiếu sẽ chuyển sang trạng thái Chờ duyệt để quản lý kiểm tra. Tồn kho vẫn chưa thay đổi cho tới khi được duyệt."
+        description="Phiếu chuyển sang Chờ duyệt; tồn kho chưa thay đổi."
         confirmLabel="Gửi duyệt"
         isPending={submitMutation.isPending}
         onConfirm={() => void handleSubmitForApproval()}
@@ -424,7 +421,7 @@ export function StockCountDetailPage() {
         open={approveOpen}
         onOpenChange={setApproveOpen}
         title={`Duyệt điều chỉnh phiếu ${stockCount.countNo}?`}
-        description="Hệ thống sẽ kiểm tra lại tồn hiện tại từng lô, đặt tồn bằng số đếm cho các lô có chênh lệch và ghi lịch sử biến động trong cùng một giao dịch."
+        description="Tồn từng lô được đối chiếu với số đếm và cập nhật phần chênh lệch."
         confirmLabel="Duyệt điều chỉnh"
         isPending={approveMutation.isPending}
         onConfirm={() => void handleApprove()}

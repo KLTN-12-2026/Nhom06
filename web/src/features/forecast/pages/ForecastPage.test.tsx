@@ -146,21 +146,24 @@ describe('ForecastPage (T-012 AC8)', () => {
     localStorage.clear();
   });
 
-  it('hiển thị đầy đủ hộp cảnh báo mô phỏng, biểu đồ, thông tin lượt chạy và bảng 20 sản phẩm cho quản lý', async () => {
+  it('hiển thị nhãn dữ liệu mô phỏng, biểu đồ, thông tin lượt chạy và bảng 20 sản phẩm cho quản lý', async () => {
     renderForecastPage(MANAGER_USER);
 
     await waitFor(() => {
       expect(screen.getByText('SP001')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText(/Kết quả dự báo là ước lượng, không phải lượng tiêu thụ chắc chắn/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('01/12/2024 - 23/09/2026')).toBeInTheDocument();
+    expect(screen.getByText('(mô phỏng)')).toBeInTheDocument();
     expect(screen.getByText('Nhu cầu thực tế 90 ngày gần nhất')).toBeInTheDocument();
     expect(screen.getByTestId('demand-history-chart')).toBeInTheDocument();
     expect(screen.getByText('Thông tin lượt chạy')).toBeInTheDocument();
-    expect(screen.getByText('rf-v1')).toBeInTheDocument();
-    expect(screen.getByText('5,38 (baseline 6,65)')).toBeInTheDocument();
+    expect(screen.getByText(/Lượt chạy lúc \d{2}:\d{2} ngày 23\/11\/2026/)).toBeInTheDocument();
+    expect(screen.getByText('Random Forest (rf-v1)')).toBeInTheDocument();
+    expect(screen.getByText('5,38')).toBeInTheDocument();
+    expect(screen.getByText('Trung bình 7 ngày: 6,65')).toBeInTheDocument();
+    expect(screen.getByText('8,06')).toBeInTheDocument();
+    expect(screen.getByText('Đánh giá trên 60 ngày cuối của dữ liệu.')).toBeInTheDocument();
 
     expect(screen.getByText('SP020')).toBeInTheDocument();
     expect(screen.getByText('1.322')).toBeInTheDocument();
@@ -179,6 +182,30 @@ describe('ForecastPage (T-012 AC8)', () => {
     });
 
     expect(screen.queryByRole('button', { name: 'Chạy dự báo' })).not.toBeInTheDocument();
+  });
+
+  it('ghi đúng tên phương pháp khi lượt chạy dùng trung bình 7 ngày', async () => {
+    renderForecastPage(MANAGER_USER, {
+      latest: {
+        ...MOCK_LATEST,
+        run: {
+          ...MOCK_LATEST.run!,
+          modelVersion: null,
+          metrics: {
+            ...MOCK_LATEST.run!.metrics!,
+            model: null,
+          },
+        },
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('SP001')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Trung bình 7 ngày')).toBeInTheDocument();
+    expect(screen.getByText('6,65')).toBeInTheDocument();
+    expect(screen.getByText('9,17')).toBeInTheDocument();
   });
 
   it('hiển thị trạng thái rỗng khi chưa có lượt chạy nào kèm nút Chạy dự báo cho quản lý', async () => {

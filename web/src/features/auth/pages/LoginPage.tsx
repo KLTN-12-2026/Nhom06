@@ -177,7 +177,7 @@ export function LoginPage() {
       </main>
 
       <footer className="px-4 py-5 text-center text-xs text-[var(--text-muted)]">
-        Khóa luận tốt nghiệp · Nhóm 06 · Trường Đại học Duy Tân
+        Khóa luận tốt nghiệp - Nhóm 06, Trường Đại học Duy Tân
       </footer>
     </div>
   );

@@ -44,7 +44,7 @@ export function AppLayout() {
   const pageDescription =
     headerOverride?.description ??
     currentNav?.pageDescription ??
-    'Hệ thống quản lý kho trung tâm — KHO-AI';
+    'Quản lý kho trung tâm KHO-AI';
   const pageActions = headerOverride?.actions;
 
   const headerContextValue = useMemo(

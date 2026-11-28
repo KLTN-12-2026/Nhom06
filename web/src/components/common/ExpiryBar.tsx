@@ -8,6 +8,8 @@ export interface ExpiryBarProps {
   /** Mốc quy đổi chiều dài thanh (mặc định 60 ngày hoặc theo ngưỡng cảnh báo). */
   maxDays?: number;
   className?: string;
+  /** Độ rộng thanh, ví dụ 'w-14' cho bảng hẹp (mặc định 110px). */
+  barClassName?: string;
 }
 
 const BAR_STYLES: Record<ExpiryBarSeverity, { fillClass: string; textClass: string }> = {
@@ -41,6 +43,7 @@ export function ExpiryBar({
   severity,
   maxDays = 60,
   className,
+  barClassName = 'w-[110px]',
 }: ExpiryBarProps) {
   const style = BAR_STYLES[severity];
   const label = formatDaysRemainingLabel(daysRemaining);
@@ -54,7 +57,10 @@ export function ExpiryBar({
   return (
     <div className={cn('inline-flex items-center gap-3', className)}>
       <div
-        className="h-1.5 w-[110px] shrink-0 overflow-hidden rounded-full bg-[var(--track)]"
+        className={cn(
+          'h-1.5 shrink-0 overflow-hidden rounded-full bg-[var(--track)]',
+          barClassName,
+        )}
         aria-hidden="true"
       >
         {fillPercent > 0 && (

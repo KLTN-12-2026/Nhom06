@@ -109,7 +109,7 @@ export function SuppliersPage() {
     <div className="space-y-5">
       <PageHeader
         title="Nhà cung cấp"
-        description="Nhà cung cấp không có tài khoản đăng nhập"
+        description="Quản lý thông tin nhà cung cấp"
         actions={headerActions}
       />
 

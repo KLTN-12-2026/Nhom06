@@ -13,7 +13,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/hooks';
-import { formatDateVi, formatQuantity, formatVndCompact } from '@/lib/format';
+import {
+  formatDateVi,
+  formatEstimatedQuantity,
+  formatQuantity,
+  formatVndCompact,
+} from '@/lib/format';
 import { MonthlyInOutChartCard } from '../components/MonthlyInOutChartCard';
 import { SystemHealthCompactCard } from '../components/SystemHealthCompactCard';
 import { useDashboardQuery } from '../hooks';
@@ -129,11 +134,14 @@ export function DashboardPage() {
                       </span>
                     </div>
                     <div className="mt-1.5 text-xs text-[var(--text-muted)]">
-                      {formatQuantity(data.valueAtRisk.surplusQty)} đơn vị tồn dư ước tính
-                      {data.valueAtRisk.lotsWithoutCost > 0
-                        ? ` · ${data.valueAtRisk.lotsWithoutCost} lô chưa có đơn giá`
-                        : ''}
+                      Từ {formatEstimatedQuantity(data.valueAtRisk.surplusQty)} đơn vị tồn dư ước
+                      tính
                     </div>
+                    {data.valueAtRisk.lotsWithoutCost > 0 ? (
+                      <div className="mt-0.5 text-xs text-[var(--text-muted)]">
+                        {data.valueAtRisk.lotsWithoutCost} lô chưa có đơn giá
+                      </div>
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -169,20 +177,25 @@ export function DashboardPage() {
                   <CardContent className="pt-4">
                     {data.riskSummary ? (
                       <div className="divide-y divide-border">
+                        <div className="grid grid-cols-[1fr_auto_auto] gap-3 pb-2 text-xs font-medium text-[var(--text-muted)]">
+                          <span>Mức rủi ro</span>
+                          <span className="text-right">Số lô</span>
+                          <span className="min-w-[68px] text-right">Tồn dư ước tính</span>
+                        </div>
                         {data.riskSummary.map((row) => (
                           <div
                             key={row.level}
-                            className="flex items-center justify-between gap-2 py-3 text-sm"
+                            className="grid grid-cols-[1fr_auto_auto] items-center gap-3 py-3 text-sm"
                           >
-                            <RiskLevelBadge level={row.level} />
-                            <div className="flex items-center gap-3 tabular-nums sm:gap-5">
-                              <span className="whitespace-nowrap font-medium text-[var(--text)]">
-                                {formatQuantity(row.lots)} lô
-                              </span>
-                              <span className="min-w-[68px] whitespace-nowrap text-right text-[var(--text-muted)]">
-                                {formatQuantity(row.surplusQty)} dư
-                              </span>
-                            </div>
+                            <span className="justify-self-start">
+                              <RiskLevelBadge level={row.level} />
+                            </span>
+                            <span className="whitespace-nowrap text-right font-medium tabular-nums text-[var(--text)]">
+                              {formatQuantity(row.lots)}
+                            </span>
+                            <span className="min-w-[68px] whitespace-nowrap text-right tabular-nums text-[var(--text-muted)]">
+                              {formatEstimatedQuantity(row.surplusQty)} đơn vị
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -227,10 +240,10 @@ export function DashboardPage() {
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <Table>
+                      <Table className="min-w-[580px] [&_td]:px-3 [&_th]:px-3">
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Sản phẩm</TableHead>
+                            <TableHead className="min-w-[170px]">Sản phẩm</TableHead>
                             <TableHead>Lô</TableHead>
                             <TableHead className="text-right">Tồn</TableHead>
                             <TableHead>Hạn dùng</TableHead>
@@ -241,13 +254,13 @@ export function DashboardPage() {
                           {data.topLots.map((lot) => (
                             <TableRow key={lot.lotId}>
                               <TableCell>
-                                <div className="min-w-[160px]">
-                                  <span className="font-medium text-[var(--text)]">
+                                <div className="min-w-[170px] max-w-[220px]">
+                                  <div className="font-medium text-[var(--text)]">
                                     {lot.product.code}
-                                  </span>{' '}
-                                  <span className="text-[var(--text-muted)]">
+                                  </div>
+                                  <div className="line-clamp-2 text-[var(--text-muted)]">
                                     {lot.product.name}
-                                  </span>
+                                  </div>
                                 </div>
                               </TableCell>
                               <TableCell className="font-medium whitespace-nowrap text-[var(--text)]">
@@ -261,6 +274,8 @@ export function DashboardPage() {
                                   daysRemaining={lot.daysRemaining}
                                   severity={lot.expirySeverity}
                                   maxDays={Math.max(lot.warningDays, 30)}
+                                  className="gap-2"
+                            barClassName="w-14"
                                 />
                               </TableCell>
                               <TableCell className="whitespace-nowrap">

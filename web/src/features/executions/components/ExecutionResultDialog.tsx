@@ -19,7 +19,13 @@ import { Select } from '@/components/ui/select';
 import { useAuth } from '@/features/auth/hooks';
 import { useOutboundReceiptsQuery } from '@/features/outbound/hooks';
 import { ApiError } from '@/lib/api';
-import { formatDateTime, formatQuantity, getVnTodayIso } from '@/lib/format';
+import {
+  formatDateTime,
+  formatEstimatedQuantity,
+  formatProductLabel,
+  formatQuantity,
+  getVnTodayIso,
+} from '@/lib/format';
 import {
   EXECUTION_STATUS_META,
   getAllowedNextStatuses,
@@ -295,7 +301,8 @@ export function ExecutionResultDialog({
           <DialogHeader>
             <DialogTitle>Ghi kết quả thực hiện</DialogTitle>
             <DialogDescription>
-              Lô {execution.lot.lotCode} · {execution.product.code} — {execution.product.name}
+              Lô {execution.lot.lotCode},{' '}
+              {formatProductLabel(execution.product.code, execution.product.name)}
             </DialogDescription>
           </DialogHeader>
 
@@ -310,7 +317,7 @@ export function ExecutionResultDialog({
               <div className="text-[var(--text-muted)]">Đã xử lý / Đề xuất</div>
               <div className="mt-0.5 font-medium tabular-nums text-[var(--text)]">
                 {execution.actualQty !== null ? formatQuantity(execution.actualQty) : '0'} /{' '}
-                {formatQuantity(execution.plannedQty)} {execution.product.unit}
+                {formatEstimatedQuantity(execution.plannedQty)} {execution.product.unit}
               </div>
             </div>
             <div>
@@ -537,11 +544,13 @@ export function ExecutionResultDialog({
                   {availableOrderOutbounds.map((receipt) => (
                     <option key={receipt.id} value={receipt.id}>
                       {receipt.outboundNo}
-                      {receipt.order ? ` · ${receipt.order.orderNo} (${receipt.order.agency.name})` : ''}
-                      {receipt.matchedLotQty
-                        ? ` · ${formatQuantity(receipt.matchedLotQty)} ${execution.product.unit}`
+                      {receipt.order
+                        ? `, ${receipt.order.orderNo} (${receipt.order.agency.name})`
                         : ''}
-                      {receipt.confirmedAt ? ` · ${formatDateTime(receipt.confirmedAt)}` : ''}
+                      {receipt.matchedLotQty
+                        ? `, ${formatQuantity(receipt.matchedLotQty)} ${execution.product.unit}`
+                        : ''}
+                      {receipt.confirmedAt ? `, ${formatDateTime(receipt.confirmedAt)}` : ''}
                     </option>
                   ))}
                 </Select>

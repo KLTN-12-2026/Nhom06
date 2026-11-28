@@ -152,7 +152,7 @@ describe('InventoryLotsPage (AC8)', () => {
     });
 
     expect(screen.getByText('Tồn kho theo lô')).toBeInTheDocument();
-    expect(screen.getByText('3 lô · 542 đơn vị')).toBeInTheDocument();
+    expect(screen.getByText('3 lô, 542 đơn vị')).toBeInTheDocument();
 
     // Badge tình trạng HSD & badge Đã khóa
     expect(screen.getAllByText('Bình thường').length).toBeGreaterThanOrEqual(1);

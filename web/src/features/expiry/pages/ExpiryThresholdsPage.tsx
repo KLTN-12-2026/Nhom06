@@ -90,7 +90,7 @@ export function ExpiryThresholdsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Ngưỡng cảnh báo hạn sử dụng"
-        description="Ngưỡng theo sản phẩm được ưu tiên hơn ngưỡng theo nhóm hàng, nhóm hàng ưu tiên hơn ngưỡng chung"
+        description="Thiết lập ngưỡng cảnh báo hạn dùng"
         actions={headerActions}
       />
 
@@ -163,7 +163,7 @@ export function ExpiryThresholdsPage() {
             ? `Kết thúc ngưỡng riêng cho ${formatOverrideTargetLabel(endingOverride)}?`
             : 'Kết thúc ngưỡng riêng?'
         }
-        description="Ngưỡng riêng này sẽ ngừng hiệu lực từ hôm nay và đối tượng sẽ quay về áp dụng ngưỡng cấp thấp hơn. Bản ghi lịch sử vẫn được giữ nguyên."
+        description="Ngưỡng riêng ngừng hiệu lực từ hôm nay; lịch sử vẫn được giữ."
         confirmLabel="Xác nhận kết thúc"
         variant="destructive"
         isPending={endMutation.isPending}
