@@ -194,7 +194,7 @@ export function InboundDetailPage() {
       )}
 
       {receipt.status === 'confirmed' && (
-        <div className="rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
+        <div className="text-xs leading-relaxed text-[var(--text-muted)]">
           Xác nhận bởi <strong>{receipt.confirmer?.fullName ?? 'Chưa rõ'}</strong>{' '}
           {formatRelativeTime(receipt.confirmedAt)}. Đã nhập {formatQuantity(receipt.totalQuantity)}{' '}
           đơn vị; phiếu không thể sửa.

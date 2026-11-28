@@ -349,16 +349,16 @@ test.describe.serial('Kịch bản demo KHO-AI 12 bước + ảnh báo cáo', ()
     });
 
     // -------------------------------------------------------------------------
-    // Bước 5: Dự báo nhu cầu (MAE mô hình vs baseline)
+    // Bước 5: Dự báo nhu cầu (so sánh với trung bình 7 ngày)
     // -------------------------------------------------------------------------
-    await test.step('05. Dự báo nhu cầu (so sánh MAE mô hình vs baseline)', async () => {
+    await test.step('05. Dự báo nhu cầu (so sánh với trung bình 7 ngày)', async () => {
       await page.goto('/forecast');
       await expect(page.getByRole('heading', { name: 'Dự báo nhu cầu tiêu thụ' })).toBeVisible();
-      await expect(page.getByText(/dữ liệu mô phỏng/i).first()).toBeVisible();
+      await expect(page.getByText('(mô phỏng)')).toBeVisible();
       await expect(page.getByText('Thông tin lượt chạy')).toBeVisible();
-      await expect(page.getByText('Random Forest')).toBeVisible();
-      await expect(page.getByText('MAE mô hình vs baseline')).toBeVisible();
-      await expect(page.getByText(/\(baseline\s+[\d.,]+\)/)).toBeVisible();
+      await expect(page.getByText(/Random Forest \(rf-/)).toBeVisible();
+      await expect(page.getByText('Sai số MAE')).toBeVisible();
+      await expect(page.getByText(/Trung bình 7 ngày:\s+[\d.,]+/)).toBeVisible();
       await expect(page.locator('tbody tr').first()).toBeVisible();
 
       await captureScreenshot(page, '05-du-bao-nhu-cau.png');
@@ -388,7 +388,7 @@ test.describe.serial('Kịch bản demo KHO-AI 12 bước + ảnh báo cáo', ()
       await expect(targetRow).toBeVisible();
       await targetRow.click();
 
-      const basisDialog = page.getByRole('dialog', { name: /Căn cứ tính · Lô/i });
+      const basisDialog = page.getByRole('dialog', { name: /Căn cứ tính - Lô/i });
       await expect(basisDialog).toBeVisible();
       await expect(basisDialog.getByText('Tồn lúc phân tích').first()).toBeVisible();
       await expect(basisDialog.getByText('Tồn dư ước tính').first()).toBeVisible();

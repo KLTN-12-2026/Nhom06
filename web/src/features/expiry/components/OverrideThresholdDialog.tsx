@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { type ProductGroupItem, type ProductItem } from '@/features/products/types';
 import { ApiError } from '@/lib/api';
+import { formatProductLabel } from '@/lib/format';
 import { useCreateOverrideThresholdMutation, useUpdateOverrideThresholdMutation } from '../hooks';
 import { type OverrideThreshold } from '../types';
 import { formatOverrideTargetLabel } from '../utils';
@@ -192,7 +193,7 @@ export function OverrideThresholdDialog({
                   {selectedScope === 'PRODUCT'
                     ? activeProducts.map((product) => (
                         <option key={product.id} value={product.id}>
-                          {product.code} · {product.name}
+                          {formatProductLabel(product.code, product.name)}
                         </option>
                       ))
                     : activeGroups.map((group) => (

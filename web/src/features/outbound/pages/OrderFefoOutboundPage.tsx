@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/features/auth/hooks';
 import { ApiError } from '@/lib/api';
-import { formatDate, formatQuantity } from '@/lib/format';
+import { formatDate, formatProductLabel, formatQuantity } from '@/lib/format';
 import { FefoStepBar } from '../components/FefoStepBar';
 import { useConfirmOrderOutboundMutation, useOrderFefoPlanQuery } from '../hooks';
 
@@ -352,7 +352,7 @@ export function OrderFefoOutboundPage() {
             <Card key={item.orderItemId}>
               <CardHeader className="flex flex-col gap-1 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="text-base font-semibold text-[var(--text)]">
-                  {item.product.code} · {item.product.name}
+                  {formatProductLabel(item.product.code, item.product.name)}
                 </CardTitle>
                 <div className="text-sm text-[var(--text-muted)]">
                   {Number(item.fulfilledQty) > 0 ? (
@@ -374,7 +374,7 @@ export function OrderFefoOutboundPage() {
                       {item.product.unit}
                     </>
                   )}{' '}
-                  · phân bổ được{' '}
+                  , phân bổ được{' '}
                   <strong
                     className={`tabular-nums ${
                       isShort ? 'text-[var(--risk-critical-fg)]' : 'text-[var(--risk-low-fg)]'
@@ -548,7 +548,7 @@ export function OrderFefoOutboundPage() {
               </p>
             </div>
 
-            <div className="flex-1 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)] lg:max-w-lg">
+            <div className="flex-1 text-xs leading-relaxed text-[var(--text-muted)] lg:max-w-lg">
               Tồn kho được kiểm tra lại trước khi xác nhận xuất.
             </div>
 

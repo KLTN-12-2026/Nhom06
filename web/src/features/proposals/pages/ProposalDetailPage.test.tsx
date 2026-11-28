@@ -184,7 +184,7 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
       expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('SP002 · Sữa chua uống TH true YOGURT 180ml')).toBeInTheDocument();
+    expect(screen.getByText('SP002 - Sữa chua uống TH true YOGURT 180ml')).toBeInTheDocument();
     expect(
       screen.getByText(
         /Diễn giải do mô hình ngôn ngữ viết từ số liệu bên dưới\./,

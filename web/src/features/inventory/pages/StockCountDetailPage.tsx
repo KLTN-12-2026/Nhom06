@@ -255,7 +255,7 @@ export function StockCountDetailPage() {
       )}
 
       {stockCount.status === 'approved' && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs leading-relaxed text-[var(--text-muted)]">
           <span>
             Duyệt bởi <strong>{stockCount.approver?.fullName ?? 'Chưa rõ'}</strong> lúc{' '}
             {formatDateTime(stockCount.approvedAt)}. Chênh lệch đã được cập nhật vào tồn kho.

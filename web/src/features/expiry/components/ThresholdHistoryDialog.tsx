@@ -16,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { formatDateVi } from '@/lib/format';
+import { formatDateVi, formatProductLabel } from '@/lib/format';
 import { useThresholdHistoryQuery } from '../hooks';
 import { type ThresholdScope } from '../types';
 
@@ -86,7 +86,7 @@ export function ThresholdHistoryDialog({ open, onOpenChange }: ThresholdHistoryD
                         ? 'Toàn kho'
                         : item.target
                           ? item.target.code && item.scope === 'PRODUCT'
-                            ? `${item.target.code} · ${item.target.name}`
+                            ? formatProductLabel(item.target.code, item.target.name)
                             : item.target.name
                           : '—'}
                     </TableCell>

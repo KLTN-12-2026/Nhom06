@@ -156,7 +156,7 @@ export function OrderDetailPage() {
       )}
 
       {/* Hộp giải thích bất biến 1 (Mockup 14) */}
-      <div className="rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
+      <div className="text-xs leading-relaxed text-[var(--text-muted)]">
         Tồn kho chỉ trừ khi xác nhận phiếu xuất. Số lượng đã xuất được theo dõi riêng với số lượng
         đặt.
       </div>

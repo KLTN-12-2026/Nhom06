@@ -14,7 +14,7 @@ import { useAuth } from '@/features/auth/hooks';
 import { useProductsQuery } from '@/features/products/hooks';
 import { useSuppliersQuery } from '@/features/suppliers/hooks';
 import { ApiError } from '@/lib/api';
-import { addDaysToIsoDate, getTodayIsoVn } from '@/lib/format';
+import { addDaysToIsoDate, formatProductLabel, getTodayIsoVn } from '@/lib/format';
 import {
   useCreateInboundReceiptMutation,
   useInboundReceiptQuery,
@@ -518,7 +518,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
                           <option value="">Chọn sản phẩm</option>
                           {products.map((product) => (
                             <option key={product.id} value={product.id}>
-                              {product.code} · {product.name}
+                              {formatProductLabel(product.code, product.name)}
                             </option>
                           ))}
                         </Select>
@@ -655,7 +655,7 @@ export function InboundFormPage({ mode }: InboundFormPageProps) {
 
           {/* Ghi chú gợi ý HSD + nút Huỷ / Lưu phiếu nháp (Mockup 07) */}
           <div className="flex flex-col gap-3 border-t border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
+            <div className="flex-1 text-xs leading-relaxed text-[var(--text-muted)]">
               Đối chiếu hạn sử dụng với bao bì trước khi lưu.
             </div>
 

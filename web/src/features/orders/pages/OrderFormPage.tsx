@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/select';
 import { useAgenciesQuery } from '@/features/agencies/hooks';
 import { useProductsQuery } from '@/features/products/hooks';
 import { ApiError } from '@/lib/api';
-import { getTodayIsoVn } from '@/lib/format';
+import { formatProductLabel, getTodayIsoVn } from '@/lib/format';
 import { useCreateOrderMutation, useOrderDetailQuery, useUpdateOrderMutation } from '../hooks';
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -382,7 +382,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
                           <option value="">Chọn sản phẩm</option>
                           {products.map((product) => (
                             <option key={product.id} value={product.id}>
-                              {product.code} · {product.name}
+                              {formatProductLabel(product.code, product.name)}
                             </option>
                           ))}
                         </Select>
@@ -445,7 +445,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
           </div>
 
           <div className="flex flex-col gap-3 border-t border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
+            <div className="flex-1 text-xs leading-relaxed text-[var(--text-muted)]">
               Tồn kho chỉ giảm khi xác nhận phiếu xuất.
             </div>
 

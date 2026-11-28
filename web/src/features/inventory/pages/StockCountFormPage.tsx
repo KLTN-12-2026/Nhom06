@@ -511,8 +511,7 @@ export function StockCountFormPage({ mode }: StockCountFormPageProps) {
                                 value={lot.lotId}
                                 disabled={usedInOtherRow}
                               >
-                                {lot.product.code} · {lot.lotCode} (HSD {formatDate(lot.expiryDate)}
-                                {' · '}Tồn {formatQuantity(lot.onHandQty)} {lot.product.unit})
+                                {`${lot.product.code} - ${lot.lotCode} (HSD ${formatDate(lot.expiryDate)}, tồn ${formatQuantity(lot.onHandQty)} ${lot.product.unit})`}
                               </option>
                             );
                           })}

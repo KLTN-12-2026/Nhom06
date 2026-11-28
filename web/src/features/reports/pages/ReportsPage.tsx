@@ -75,7 +75,7 @@ export function ReportsPage() {
 
   const headerDescription =
     activeTab === 'stock-ledger'
-      ? `Kỳ ${formatDateVi(ledgerFilters.from)}–${formatDateVi(ledgerFilters.to)}`
+      ? `Kỳ ${formatDateVi(ledgerFilters.from)} - ${formatDateVi(ledgerFilters.to)}`
       : 'Tổng hợp lô cận hạn, đánh giá rủi ro mới nhất và tiến độ xử lý';
 
   return (
@@ -115,7 +115,7 @@ export function ReportsPage() {
                 : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text)]'
             }`}
           >
-            Nhập · xuất · tồn
+            Nhập xuất tồn
           </button>
 
           <button

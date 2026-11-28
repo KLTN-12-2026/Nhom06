@@ -15,7 +15,13 @@ import {
 } from '@/components/ui/table';
 import { type RiskLevel } from '@/features/dashboard/types';
 import { useProductsQuery } from '@/features/products/hooks';
-import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
+import {
+  formatDateTime,
+  formatDateVi,
+  formatEstimatedQuantity,
+  formatProductLabel,
+  formatQuantity,
+} from '@/lib/format';
 import { useRiskReportQuery } from '../hooks';
 import { type RiskReportParams } from '../types';
 
@@ -136,7 +142,7 @@ export function RiskReportTab() {
               <option value="">Tất cả sản phẩm</option>
               {(productsQuery.data?.items ?? []).map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.code} · {p.name}
+                  {formatProductLabel(p.code, p.name)}
                 </option>
               ))}
             </Select>
@@ -411,10 +417,10 @@ export function RiskReportTab() {
                             <RiskLevelBadge level={row.riskLevel} />
                           </TableCell>
                             <TableCell className="text-right tabular-nums whitespace-nowrap text-[var(--text)]">
-                              {formatQuantity(row.forecastDemand)} {row.product.unit}
+                              {formatEstimatedQuantity(row.forecastDemand)} {row.product.unit}
                             </TableCell>
                             <TableCell className="text-right font-medium tabular-nums whitespace-nowrap text-[var(--text)]">
-                              {formatQuantity(row.estimatedSurplus)} {row.product.unit}
+                              {formatEstimatedQuantity(row.estimatedSurplus)} {row.product.unit}
                             </TableCell>
                             <TableCell className="text-right tabular-nums whitespace-nowrap">
                               {row.actualHandledQty !== null ? (

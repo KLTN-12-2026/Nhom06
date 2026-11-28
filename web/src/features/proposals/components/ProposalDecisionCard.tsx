@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/hooks';
 import { ApiError } from '@/lib/api';
-import { formatDateTime, formatQuantity } from '@/lib/format';
+import { formatDateTime, formatEstimatedQuantity } from '@/lib/format';
 import { useApproveProposalMutation, useRejectProposalMutation } from '../hooks';
 import { type ProposalDetailResponse } from '../types';
 
@@ -105,7 +105,7 @@ export function ProposalDecisionCard({
           <div className="mt-1 text-sm text-[var(--text-muted)]">
             Lượng đề xuất xử lý{' '}
             <strong className="font-semibold tabular-nums text-[var(--text)]">
-              {formatQuantity(proposal.proposedQty)} {proposal.product.unit}
+              {formatEstimatedQuantity(proposal.proposedQty)} {proposal.product.unit}
             </strong>
           </div>
         </div>
@@ -208,7 +208,7 @@ export function ProposalDecisionCard({
 
             <div
               role="note"
-              className="rounded-md border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-3.5 py-3 text-xs leading-relaxed text-[var(--text)]"
+              className="text-xs leading-relaxed text-[var(--text-muted)]"
             >
               Phê duyệt không tạo phiếu xuất hoặc thay đổi tồn kho.
             </div>
@@ -222,7 +222,7 @@ export function ProposalDecisionCard({
             </p>
             <div
               role="note"
-              className="rounded-md border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-3.5 py-3 text-xs leading-relaxed text-[var(--text)]"
+              className="text-xs leading-relaxed text-[var(--text-muted)]"
             >
               Phê duyệt không tạo phiếu xuất hoặc thay đổi tồn kho.
             </div>

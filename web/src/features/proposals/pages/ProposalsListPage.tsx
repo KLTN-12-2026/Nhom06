@@ -19,7 +19,7 @@ import {
 import { mapRiskToExpiryBarSeverity } from '@/features/risk/constants';
 import { type RiskLevel } from '@/features/risk/types';
 import { ApiError } from '@/lib/api';
-import { formatQuantity } from '@/lib/format';
+import { formatEstimatedQuantity, formatQuantity } from '@/lib/format';
 import { PROPOSAL_STATUS_META } from '../constants';
 import { useProposalsQuery } from '../hooks';
 import { type ProposalStatus } from '../types';
@@ -146,19 +146,23 @@ export function ProposalsListPage() {
               aria-label="Danh sách đề xuất xử lý hàng cận hạn"
               className="relative overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
             >
-              <Table>
+              <Table className="min-w-[900px] [&_td]:px-3 [&_th]:px-3">
                 <TableHeader>
                   <TableRow>
-                    <TableHead scope="col">Sản phẩm</TableHead>
+                    <TableHead scope="col" className="min-w-[170px]">
+                      Sản phẩm
+                    </TableHead>
                     <TableHead scope="col">Mã lô</TableHead>
                     <TableHead scope="col">Hạn dùng còn lại</TableHead>
                     <TableHead scope="col" className="text-right">
                       Tồn dư
                     </TableHead>
                     <TableHead scope="col">Rủi ro</TableHead>
-                    <TableHead scope="col">Phương án</TableHead>
+                    <TableHead scope="col" className="min-w-[140px]">
+                      Phương án
+                    </TableHead>
                     <TableHead scope="col">Trạng thái</TableHead>
-                    <TableHead scope="col" className="w-32 text-right">
+                    <TableHead scope="col" className="text-right">
                       <span className="sr-only">Thao tác</span>
                     </TableHead>
                   </TableRow>
@@ -173,11 +177,13 @@ export function ProposalsListPage() {
                     return (
                       <TableRow key={item.id} className="hover:bg-[var(--surface-muted)]/40">
                         <TableCell>
-                          <div className="max-w-[260px] text-sm">
-                            <span className="font-medium text-[var(--text)]">
+                          <div className="min-w-[170px] max-w-[220px] text-sm">
+                            <div className="font-medium text-[var(--text)]">
                               {item.product.code}
-                            </span>{' '}
-                            <span className="text-[var(--text-muted)]">{item.product.name}</span>
+                            </div>
+                            <div className="line-clamp-2 text-[var(--text-muted)]">
+                              {item.product.name}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="font-medium whitespace-nowrap text-[var(--text)]">
@@ -188,15 +194,17 @@ export function ProposalsListPage() {
                             daysRemaining={item.lot.daysRemaining}
                             severity={mapRiskToExpiryBarSeverity(item.riskLevel, item.isExpired)}
                             maxDays={60}
+                            className="gap-2"
+                            barClassName="w-12"
                           />
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums whitespace-nowrap text-[var(--text)]">
-                          {formatQuantity(item.proposedQty)}
+                          {formatEstimatedQuantity(item.proposedQty)}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
                           <RiskLevelBadge level={item.riskLevel} isExpired={item.isExpired} />
                         </TableCell>
-                        <TableCell className="max-w-[200px] text-sm text-[var(--text)]">
+                        <TableCell className="min-w-[140px] max-w-[180px] text-sm text-[var(--text)]">
                           {item.actionLabel}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
@@ -204,7 +212,9 @@ export function ProposalsListPage() {
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
                           <Button asChild type="button" variant="secondary" size="sm">
-                            <Link to={`/proposals/${item.id}`}>Xem chi tiết</Link>
+                            <Link to={`/proposals/${item.id}`} aria-label="Xem chi tiết">
+                              Chi tiết
+                            </Link>
                           </Button>
                         </TableCell>
                       </TableRow>

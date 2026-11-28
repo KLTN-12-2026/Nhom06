@@ -22,7 +22,7 @@ const SUMMARY_FIXTURE = {
   nearExpiry: { lots: 3, qty: '1029' },
   totalAlertLots: 7,
   global: { warningDays: 30, criticalDays: 7, minDeliveryDays: 7 },
-  overridesSummary: 'Nhóm Sữa 45 ngày · riêng SP002 10 ngày',
+  overridesSummary: 'Nhóm Sữa 45 ngày \u00b7 riêng SP002 10 ngày',
 };
 
 const ALERTS_FIXTURE = {
@@ -140,7 +140,7 @@ describe('ExpiryAlertsPage (AC8)', () => {
     // KPI cards
     expect(screen.getByText('837 đơn vị')).toBeInTheDocument();
     expect(screen.getByText('1.029 đơn vị')).toBeInTheDocument();
-    expect(screen.getByText('Nhóm Sữa 45 ngày · riêng SP002 10 ngày')).toBeInTheDocument();
+    expect(screen.getByText('Nhóm Sữa 45 ngày, riêng SP002 10 ngày')).toBeInTheDocument();
 
     // ExpiryBar & badges
     expect(screen.getByText('quá 53 ngày')).toBeInTheDocument();

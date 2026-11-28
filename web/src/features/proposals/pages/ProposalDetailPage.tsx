@@ -7,7 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/hooks';
 import { ApiError } from '@/lib/api';
-import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
+import {
+  formatDateTime,
+  formatDateVi,
+  formatEstimatedQuantity,
+  formatProductLabel,
+  formatQuantity,
+} from '@/lib/format';
 import { LlmInputPanel } from '../components/LlmInputPanel';
 import { ProposalDecisionCard } from '../components/ProposalDecisionCard';
 import { ProposalExplanationBlock } from '../components/ProposalExplanationBlock';
@@ -104,7 +110,7 @@ export function ProposalDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={`Lô ${proposal.lot.lotCode}`}
-        description={`${proposal.product.code} · ${proposal.product.name}`}
+        description={formatProductLabel(proposal.product.code, proposal.product.name)}
         actions={headerBadge}
       />
 
@@ -146,14 +152,14 @@ export function ProposalDetailPage() {
                 <div className="border-b border-border p-4 sm:border-r">
                   <div className="text-xs text-[var(--text-muted)]">Nhu cầu phân bổ được</div>
                   <div className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--text)]">
-                    {formatQuantity(proposal.risk.allocatedDemand)}
+                    {formatEstimatedQuantity(proposal.risk.allocatedDemand)}
                   </div>
                 </div>
 
                 <div className="border-b border-border p-4">
                   <div className="text-xs text-[var(--text-muted)]">Tồn dư ước tính</div>
                   <div className="mt-1.5 text-xl font-semibold tabular-nums text-[var(--risk-medium-kpi)]">
-                    {formatQuantity(proposal.risk.estimatedSurplus)}
+                    {formatEstimatedQuantity(proposal.risk.estimatedSurplus)}
                   </div>
                 </div>
 

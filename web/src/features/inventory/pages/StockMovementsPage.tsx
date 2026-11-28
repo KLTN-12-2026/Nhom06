@@ -105,12 +105,11 @@ export function StockMovementsPage() {
       {
         key: 'product',
         header: 'Sản phẩm',
+        headerClassName: 'min-w-[180px]',
         render: (row) => (
-          <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="font-medium text-[var(--text)] whitespace-nowrap">
-              {row.product.code}
-            </span>
-            <span className="text-[var(--text-muted)]">{row.product.name}</span>
+          <div className="min-w-[180px] max-w-[240px]">
+            <div className="font-medium text-[var(--text)]">{row.product.code}</div>
+            <div className="line-clamp-2 text-[var(--text-muted)]">{row.product.name}</div>
           </div>
         ),
       },
@@ -151,9 +150,18 @@ export function StockMovementsPage() {
         cellClassName: 'whitespace-nowrap',
         render: (row) => {
           const typeLabel = SOURCE_TYPE_LABEL[row.source.type] ?? row.source.type;
-          const label = row.source.documentNo ? `${typeLabel} · ${row.source.documentNo}` : typeLabel;
+          // Cột Nghiệp vụ đã ghi loại phiếu nên ở đây chỉ hiện số phiếu; tên đầy đủ để đọc màn hình và rê chuột
+          const fullLabel = row.source.documentNo
+            ? `${typeLabel}: ${row.source.documentNo}`
+            : typeLabel;
+          const label = row.source.documentNo ?? typeLabel;
           return row.source.url ? (
-            <Link to={row.source.url} className="font-medium text-[var(--info)] hover:underline">
+            <Link
+              to={row.source.url}
+              aria-label={fullLabel}
+              title={fullLabel}
+              className="font-medium text-[var(--info)] hover:underline"
+            >
               {label}
             </Link>
           ) : (
@@ -253,6 +261,7 @@ export function StockMovementsPage() {
       </div>
 
       <DataTable
+        tableClassName="[&_td]:px-3 [&_th]:px-3"
         columns={columns}
         data={movementsQuery.data?.items}
         rowKey={(row) => row.id}

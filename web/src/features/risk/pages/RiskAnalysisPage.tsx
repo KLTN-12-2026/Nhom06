@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { useAuth } from '@/features/auth/hooks';
 import { ApiError } from '@/lib/api';
-import { formatDateVi, formatQuantity } from '@/lib/format';
+import { formatDateVi, formatEstimatedQuantity, formatQuantity } from '@/lib/format';
 import { AnalysisRunHistoryCard } from '../components/AnalysisRunHistoryCard';
 import { LotRiskBasisDialog } from '../components/LotRiskBasisDialog';
 import { RiskLevelBadge } from '../components/RiskLevelBadge';
@@ -55,7 +55,7 @@ export function RiskAnalysisPage() {
   };
 
   const subtitle = latestRun
-    ? `Lượt chạy gần nhất: ${TRIGGER_SUBTITLE_LABELS[latestRun.trigger]}, ${formatDateVi(latestRun.evaluationDate)} · ${formatQuantity(latestRun.lotCount)} lô`
+    ? `Lượt chạy gần nhất: ${TRIGGER_SUBTITLE_LABELS[latestRun.trigger]}, ${formatDateVi(latestRun.evaluationDate)}, ${formatQuantity(latestRun.lotCount)} lô`
     : 'Chưa có lượt phân tích nào';
 
   const handleRowOpen = (item: RiskAssessmentItem) => {
@@ -81,13 +81,9 @@ export function RiskAnalysisPage() {
         }
       />
 
-      {/* Hộp ghi chú xanh giải thích cách tính FEFO (mockup 20) */}
-      <div
-        role="note"
-        className="rounded-lg border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text)]"
-      >
+      <p role="note" className="text-xs leading-relaxed text-[var(--text-muted)]">
         FEFO phân bổ nhu cầu cho lô hết hạn sớm trước; phần còn lại là tồn dư ước tính.
-      </div>
+      </p>
 
       {/* Cảnh báo sản phẩm thiếu dự báo (PB22 AC8) */}
       {latestRun && latestRun.warnings.length > 0 && (
@@ -97,7 +93,7 @@ export function RiskAnalysisPage() {
         >
           <span className="font-semibold">Lưu ý dữ liệu đầu vào: </span>
           Bỏ qua {latestRun.warnings.length} sản phẩm chưa có dự báo (
-          {latestRun.warnings.map((w) => `${w.productCode} · ${w.lotCount} lô`).join(', ')}) để
+          {latestRun.warnings.map((w) => `${w.productCode} (${w.lotCount} lô)`).join(', ')}) để
           không sinh kết quả rủi ro giả.
         </div>
       )}
@@ -184,23 +180,25 @@ export function RiskAnalysisPage() {
                 aria-labelledby="lot-risk-table-heading"
                 className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--info)]"
               >
-                <Table>
+                <Table className="min-w-[960px] [&_td]:px-3 [&_th]:px-3">
                   <TableHeader>
                     <TableRow>
-                      <TableHead scope="col">Sản phẩm</TableHead>
+                      <TableHead scope="col" className="min-w-[170px]">
+                        Sản phẩm
+                      </TableHead>
                       <TableHead scope="col">Mã lô</TableHead>
                       <TableHead scope="col">Hạn dùng còn lại</TableHead>
-                      <TableHead scope="col" className="text-right">
-                        Tồn lúc phân tích
+                      <TableHead scope="col" className="text-right" title="Tồn lúc phân tích">
+                        Tồn
                       </TableHead>
-                      <TableHead scope="col" className="text-right">
-                        Nhu cầu phân bổ
+                      <TableHead scope="col" className="text-right" title="Nhu cầu phân bổ">
+                        Nhu cầu
                       </TableHead>
-                      <TableHead scope="col" className="text-right">
-                        Tiêu thụ ước tính
+                      <TableHead scope="col" className="text-right" title="Tiêu thụ ước tính">
+                        Bán được
                       </TableHead>
-                      <TableHead scope="col" className="text-right">
-                        Tồn dư ước tính
+                      <TableHead scope="col" className="text-right" title="Tồn dư ước tính">
+                        Tồn dư
                       </TableHead>
                       <TableHead scope="col">Rủi ro</TableHead>
                       <TableHead scope="col" className="w-24 text-right">
@@ -224,12 +222,14 @@ export function RiskAnalysisPage() {
                           }}
                           className="cursor-pointer hover:bg-[var(--surface-muted)]/60 focus-visible:bg-[var(--surface-muted)] focus-visible:outline-none"
                         >
-                          <TableCell className="whitespace-nowrap">
-                            <div className="font-medium text-[var(--text)]">
-                              {item.product.code}
-                            </div>
-                            <div className="max-w-[200px] truncate text-xs text-[var(--text-muted)]">
-                              {item.product.name}
+                          <TableCell>
+                            <div className="min-w-[170px] max-w-[220px]">
+                              <div className="font-medium text-[var(--text)]">
+                                {item.product.code}
+                              </div>
+                              <div className="line-clamp-2 text-xs text-[var(--text-muted)]">
+                                {item.product.name}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell className="font-medium whitespace-nowrap text-[var(--text)]">
@@ -240,16 +240,17 @@ export function RiskAnalysisPage() {
                               daysRemaining={item.lot.daysRemaining}
                               severity={mapRiskToExpiryBarSeverity(item.riskLevel, item.isExpired)}
                               maxDays={60}
+                              barClassName="w-14"
                             />
                           </TableCell>
                           <TableCell className="text-right font-medium tabular-nums whitespace-nowrap text-[var(--text)]">
                             {formatQuantity(item.onHandSnapshot)}
                           </TableCell>
                           <TableCell className="text-right tabular-nums whitespace-nowrap text-[var(--text)]">
-                            {formatQuantity(item.allocatedDemand)}
+                            {formatEstimatedQuantity(item.allocatedDemand)}
                           </TableCell>
                           <TableCell className="text-right tabular-nums whitespace-nowrap text-[var(--text)]">
-                            {formatQuantity(item.estimatedConsumption)}
+                            {formatEstimatedQuantity(item.estimatedConsumption)}
                           </TableCell>
                           <TableCell
                             className={
@@ -258,7 +259,7 @@ export function RiskAnalysisPage() {
                                 : 'text-right tabular-nums whitespace-nowrap text-[var(--text)]'
                             }
                           >
-                            {formatQuantity(item.estimatedSurplus)}
+                            {formatEstimatedQuantity(item.estimatedSurplus)}
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
                             <RiskLevelBadge

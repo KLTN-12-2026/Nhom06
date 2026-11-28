@@ -10,7 +10,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useAuth } from '@/features/auth/hooks';
-import { formatDateVi, formatQuantity, getVnTodayIso } from '@/lib/format';
+import {
+  formatDateVi,
+  formatProductLabel,
+  formatQuantity,
+  formatUiSeparators,
+  getVnTodayIso,
+} from '@/lib/format';
 import {
   useActiveProductsForExpiryQuery,
   useExpiryAlertsQuery,
@@ -84,12 +90,13 @@ export function ExpiryAlertsPage() {
       {
         key: 'product',
         header: 'Sản phẩm',
+        headerClassName: 'min-w-[220px]',
         render: (row) => (
-          <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="font-medium text-[var(--text)] whitespace-nowrap">
+          <div className="min-w-[220px] max-w-[280px]">
+            <div className="font-medium whitespace-nowrap text-[var(--text)]">
               {row.product.code}
-            </span>
-            <span className="text-[var(--text-muted)]">{row.product.name}</span>
+            </div>
+            <div className="line-clamp-2 text-[var(--text-muted)]">{row.product.name}</div>
           </div>
         ),
       },
@@ -102,6 +109,7 @@ export function ExpiryAlertsPage() {
       {
         key: 'expiryDate',
         header: 'Hạn sử dụng',
+        headerClassName: 'whitespace-nowrap',
         cellClassName: 'tabular-nums whitespace-nowrap',
         render: (row) => (
           <span
@@ -221,7 +229,7 @@ export function ExpiryAlertsPage() {
               <span className="text-sm text-[var(--text-muted)]">ngày</span>
             </div>
             <div className="mt-1.5 truncate text-sm text-[var(--text-muted)]">
-              {summary ? summary.overridesSummary : 'Đang tải cấu hình...'}
+              {summary ? formatUiSeparators(summary.overridesSummary) : 'Đang tải cấu hình...'}
             </div>
           </CardContent>
         </Card>
@@ -259,7 +267,7 @@ export function ExpiryAlertsPage() {
             <option value="">Tất cả sản phẩm</option>
             {(productsQuery.data?.items ?? []).map((product) => (
               <option key={product.id} value={product.id}>
-                {product.code} · {product.name}
+                {formatProductLabel(product.code, product.name)}
               </option>
             ))}
           </Select>

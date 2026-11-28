@@ -153,7 +153,7 @@ export function ResetPasswordDialog({
               )}
             </div>
 
-            <div className="rounded-md border-l-4 border-[var(--info)] bg-[var(--surface-muted)] px-3 py-2 text-xs text-[var(--text-muted)]">
+            <div className="text-xs leading-relaxed text-[var(--text-muted)]">
               Tài khoản này sẽ bị đăng xuất khỏi mọi phiên đang mở.
             </div>
 

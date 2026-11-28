@@ -8,7 +8,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { ApiError } from '@/lib/api';
-import { formatDateTime, formatDateVi, formatQuantity } from '@/lib/format';
+import {
+  formatDateTime,
+  formatDateVi,
+  formatEstimatedQuantity,
+  formatProductLabel,
+  formatQuantity,
+} from '@/lib/format';
 import { useLotRiskDetailQuery } from '../hooks';
 import { RiskLevelBadge } from './RiskLevelBadge';
 
@@ -35,11 +41,11 @@ export function LotRiskBasisDialog({
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle>
-            Căn cứ tính · Lô {assessment?.lot.lotCode ?? lotCodeHint ?? '…'}
+            Căn cứ tính - Lô {assessment?.lot.lotCode ?? lotCodeHint ?? '…'}
           </DialogTitle>
           <DialogDescription>
             {assessment
-              ? `${assessment.product.code} · ${assessment.product.name}`
+              ? formatProductLabel(assessment.product.code, assessment.product.name)
               : 'Chi tiết phương pháp phân bổ FEFO và số liệu nguồn của lô'}
           </DialogDescription>
         </DialogHeader>
@@ -96,25 +102,25 @@ export function LotRiskBasisDialog({
               <div className="rounded-md border border-border bg-[var(--surface)] p-3">
                 <div className="text-xs text-[var(--text-muted)]">Nhu cầu trong cửa sổ</div>
                 <div className="mt-1 text-base font-semibold tabular-nums text-[var(--text)]">
-                  {formatQuantity(basis.demandWindow)}
+                  {formatEstimatedQuantity(basis.demandWindow)}
                 </div>
               </div>
               <div className="rounded-md border border-border bg-[var(--surface)] p-3">
                 <div className="text-xs text-[var(--text-muted)]">Lô FEFO trước đã tiêu thụ</div>
                 <div className="mt-1 text-base font-semibold tabular-nums text-[var(--text)]">
-                  {formatQuantity(basis.consumedByEarlierLots)}
+                  {formatEstimatedQuantity(basis.consumedByEarlierLots)}
                 </div>
               </div>
               <div className="rounded-md border border-border bg-[var(--surface)] p-3">
                 <div className="text-xs text-[var(--text-muted)]">Nhu cầu phân bổ</div>
                 <div className="mt-1 text-base font-semibold tabular-nums text-[var(--text)]">
-                  {formatQuantity(assessment.allocatedDemand)}
+                  {formatEstimatedQuantity(assessment.allocatedDemand)}
                 </div>
               </div>
               <div className="rounded-md border border-border bg-[var(--surface)] p-3">
                 <div className="text-xs text-[var(--text-muted)]">Tiêu thụ ước tính</div>
                 <div className="mt-1 text-base font-semibold tabular-nums text-[var(--text)]">
-                  {formatQuantity(assessment.estimatedConsumption)}
+                  {formatEstimatedQuantity(assessment.estimatedConsumption)}
                 </div>
               </div>
               <div className="rounded-md border border-border bg-[var(--surface)] p-3">
@@ -126,7 +132,7 @@ export function LotRiskBasisDialog({
                       : 'mt-1 text-base font-semibold tabular-nums text-[var(--text)]'
                   }
                 >
-                  {formatQuantity(assessment.estimatedSurplus)}
+                  {formatEstimatedQuantity(assessment.estimatedSurplus)}
                 </div>
               </div>
             </div>
@@ -159,7 +165,7 @@ export function LotRiskBasisDialog({
                 <dt className="text-[var(--text-muted)]">Cửa sổ bán hợp lệ</dt>
                 <dd className="font-medium tabular-nums text-[var(--text)]">
                   {basis.windowStart && basis.windowEnd
-                    ? `${formatDateVi(basis.windowStart)} – ${formatDateVi(basis.windowEnd)} (${basis.windowDays} ngày)`
+                    ? `${formatDateVi(basis.windowStart)} - ${formatDateVi(basis.windowEnd)} (${basis.windowDays} ngày)`
                     : '0 ngày (không hấp thụ nhu cầu)'}
                 </dd>
               </div>
@@ -174,7 +180,7 @@ export function LotRiskBasisDialog({
               <div className="flex flex-wrap justify-between gap-2 px-4 py-2.5">
                 <dt className="text-[var(--text-muted)]">Kỳ dự báo nguồn</dt>
                 <dd className="font-medium tabular-nums text-[var(--text)]">
-                  {formatDateVi(basis.forecastHorizonStart)} –{' '}
+                  {formatDateVi(basis.forecastHorizonStart)} -{' '}
                   {formatDateVi(basis.forecastHorizonEnd)} ({basis.inHorizonDays} ngày trong cửa sổ)
                 </dd>
               </div>
@@ -182,7 +188,8 @@ export function LotRiskBasisDialog({
                 <div className="flex flex-wrap justify-between gap-2 bg-[var(--note-bg)] px-4 py-2.5">
                   <dt className="text-[var(--text)]">Ngoại suy vượt kỳ dự báo</dt>
                   <dd className="font-medium tabular-nums text-[var(--text)]">
-                    {basis.extrapolatedDays} ngày × {formatQuantity(basis.extrapolatedDailyRate)}
+                    {basis.extrapolatedDays} ngày ×{' '}
+                    {formatEstimatedQuantity(basis.extrapolatedDailyRate)}
                     /ngày (TB 7 ngày cuối)
                   </dd>
                 </div>

@@ -2,7 +2,7 @@ import {
   RISK_LEVEL_BADGE_META,
   type SharedRiskLevel,
 } from '@/components/common/risk-status-meta';
-import { formatDateVi, formatQuantity } from '@/lib/format';
+import { formatDateVi, formatEstimatedQuantity, formatQuantity } from '@/lib/format';
 import { type LlmExplanationInput, type ProposalActionType } from '../types';
 
 export type LlmInputKnownKey = keyof LlmExplanationInput;
@@ -54,6 +54,13 @@ export const LLM_ACTION_LABELS: Record<ProposalActionType, string> = {
 
 const QUANTITY_KEYS = new Set<LlmInputKnownKey>([
   'ton_luc_phan_tich',
+  'nhu_cau_phan_bo_duoc',
+  'tieu_thu_uoc_tinh',
+  'ton_du_uoc_tinh',
+  'luong_de_xuat',
+]);
+
+const ESTIMATED_QUANTITY_KEYS = new Set<LlmInputKnownKey>([
   'nhu_cau_phan_bo_duoc',
   'tieu_thu_uoc_tinh',
   'ton_du_uoc_tinh',
@@ -167,7 +174,9 @@ function formatKnownRow(key: LlmInputKnownKey, value: unknown): LlmInputRow {
       key,
       label,
       kind: 'text',
-      text: formatQuantity(input),
+      text: ESTIMATED_QUANTITY_KEYS.has(key)
+        ? formatEstimatedQuantity(input)
+        : formatQuantity(input),
       isNumeric: true,
     };
   }

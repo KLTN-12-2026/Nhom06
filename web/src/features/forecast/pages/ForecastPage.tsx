@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/features/auth/hooks';
 import { ApiError } from '@/lib/api';
+import { formatTimeOnDateVi } from '@/lib/format';
 import { DemandHistoryChartCard } from '../components/DemandHistoryChartCard';
 import { ProductForecastTableCard } from '../components/ProductForecastTableCard';
 import { RunInfoCard } from '../components/RunInfoCard';
-import { formatDateTimeVi } from '../formatters';
 import {
   useDailyHistoryQuery,
   useLatestForecastQuery,
@@ -42,7 +42,7 @@ export function ForecastPage() {
   const items = latestQuery.data?.items ?? [];
 
   const headerDescription = latestRun
-    ? `Lượt chạy ${latestRun.modelVersion ?? 'chưa xác định'} · ${formatDateTimeVi(latestRun.finishedAt)}`
+    ? `Lượt chạy lúc ${formatTimeOnDateVi(latestRun.finishedAt)}`
     : 'Chưa có lượt chạy dự báo nào';
 
   const headerActions = useMemo(
@@ -124,14 +124,14 @@ export function ForecastPage() {
       ) : (
         <>
           <div className="grid gap-6 lg:grid-cols-12">
-            <div className="lg:col-span-8">
+            <div className="lg:col-span-7">
               <DemandHistoryChartCard
                 items={historyQuery.data?.items ?? []}
                 isLoading={historyQuery.isLoading}
                 isError={historyQuery.isError}
               />
             </div>
-            <div className="lg:col-span-4">
+            <div className="lg:col-span-5">
               <RunInfoCard run={latestRun} />
             </div>
           </div>

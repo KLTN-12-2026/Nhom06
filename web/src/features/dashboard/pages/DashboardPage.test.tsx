@@ -165,9 +165,8 @@ describe('DashboardPage (T-016 AC8)', () => {
     expect(screen.getByText('837 đơn vị cần xử lý')).toBeInTheDocument();
     expect(screen.getByText('103')).toBeInTheDocument();
     expect(screen.getByText('triệu đ')).toBeInTheDocument();
-    expect(
-      screen.getByText(/1\.675 đơn vị tồn dư ước tính · 1 lô chưa có đơn giá/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Từ 1.675 đơn vị tồn dư ước tính')).toBeInTheDocument();
+    expect(screen.getByText('1 lô chưa có đơn giá')).toBeInTheDocument();
 
     expect(screen.getByTestId('monthly-inout-chart')).toBeInTheDocument();
     expect(screen.getByText('Mức rủi ro tồn dư')).toBeInTheDocument();
