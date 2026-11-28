@@ -148,13 +148,13 @@ export function OutboundDetailPage() {
                       {receipt.order.orderNo}
                     </Link>
                   ) : (
-                    <span className="text-[var(--text-muted)]">—</span>
+                    <span className="text-[var(--text-muted)]">Không áp dụng</span>
                   )}
                 </dd>
 
                 <dt className="text-[var(--text-muted)]">Đại lý</dt>
                 <dd className="text-[var(--text)]">
-                  {receipt.order ? receipt.order.agency.name : '—'}
+                  {receipt.order ? receipt.order.agency.name : 'Không áp dụng'}
                 </dd>
 
                 <dt className="text-[var(--text-muted)]">Người xác nhận</dt>

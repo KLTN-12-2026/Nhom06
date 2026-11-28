@@ -86,7 +86,7 @@ export function ThresholdHistoryDialog({ open, onOpenChange }: ThresholdHistoryD
                         ? 'Toàn kho'
                         : item.target
                           ? item.target.code && item.scope === 'PRODUCT'
-                            ? `${item.target.code} — ${item.target.name}`
+                            ? `${item.target.code} · ${item.target.name}`
                             : item.target.name
                           : '—'}
                     </TableCell>

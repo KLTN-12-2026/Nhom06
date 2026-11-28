@@ -50,7 +50,7 @@ export function ExecutionsPage() {
     <div className="space-y-6">
       <PageHeader
         title="Theo dõi thực hiện phương án"
-        description="Đã duyệt và đã thực hiện là hai trạng thái khác nhau"
+        description="Cập nhật kết quả thực hiện phương án"
       />
 
       {/* 3 KPI cards khớp mockup 27 */}
@@ -59,7 +59,7 @@ export function ExecutionsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Phương án đã duyệt</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
-              {kpi ? formatQuantity(kpi.approvedCount) : '—'}
+              {kpi ? formatQuantity(kpi.approvedCount) : '…'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
               {kpi ? `${formatQuantity(kpi.inProgressCount)} đang thực hiện` : 'Đang tải...'}
@@ -71,7 +71,7 @@ export function ExecutionsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Lượng cần xử lý</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
-              {kpi ? formatQuantity(kpi.plannedQtyTotal) : '—'}
+              {kpi ? formatQuantity(kpi.plannedQtyTotal) : '…'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
               theo các phương án đã duyệt
@@ -83,7 +83,7 @@ export function ExecutionsPage() {
           <CardContent className="p-5">
             <div className="text-sm text-[var(--text-muted)]">Đã xử lý thực tế</div>
             <div className="mt-2 text-4xl font-semibold tabular-nums text-[var(--text)]">
-              {kpi ? formatQuantity(kpi.actualQtyTotal) : '—'}
+              {kpi ? formatQuantity(kpi.actualQtyTotal) : '…'}
             </div>
             <div className="mt-1.5 text-xs text-[var(--text-muted)]">
               ghi nhận bởi nhân viên kho
@@ -97,8 +97,7 @@ export function ExecutionsPage() {
         role="note"
         className="rounded-lg border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm leading-relaxed text-[var(--text)]"
       >
-        Ghi kết quả ở màn hình này không làm thay đổi tồn kho. Khi phương án được thực hiện bằng
-        việc xuất hàng, tồn chỉ giảm qua phiếu xuất và kết quả sẽ trỏ về phiếu xuất đó.
+        Ghi kết quả không làm đổi tồn kho; lượng xuất được ghi nhận qua phiếu xuất.
       </div>
 
       {/* Bộ lọc */}

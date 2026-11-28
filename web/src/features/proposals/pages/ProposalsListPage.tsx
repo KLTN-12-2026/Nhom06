@@ -63,16 +63,6 @@ export function ProposalsListPage() {
         description={`${formatQuantity(pendingCount)} đề xuất chờ quyết định`}
       />
 
-      {/* Hộp ghi chú xanh bất biến nghiệp vụ theo mockup 21 */}
-      <div
-        role="note"
-        className="rounded-lg border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text)]"
-      >
-        Phương án do bộ quy tắc nghiệp vụ sinh ra từ kết quả phân tích. Mô hình ngôn ngữ chỉ viết
-        phần diễn giải. Quyết định thuộc về người quản lý, và việc phê duyệt không tự tạo chứng từ
-        xuất hay trừ tồn.
-      </div>
-
       {/* Bộ lọc trạng thái & mức rủi ro */}
       <FilterBar>
         <Select

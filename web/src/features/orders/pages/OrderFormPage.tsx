@@ -175,7 +175,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
   if (isEdit && orderQuery.isLoading) {
     return (
       <div className="space-y-5">
-        <PageHeader title={pageTitle} description="Tạo đơn không làm giảm tồn kho" />
+        <PageHeader title={pageTitle} description="Nhập nhu cầu của đại lý" />
         <Card>
           <CardContent className="p-6 text-sm text-[var(--text-muted)]">
             Đang tải thông tin đơn hàng...
@@ -188,7 +188,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
   if (isEdit && orderQuery.isError) {
     return (
       <div className="space-y-5">
-        <PageHeader title={pageTitle} description="Tạo đơn không làm giảm tồn kho" />
+        <PageHeader title={pageTitle} description="Nhập nhu cầu của đại lý" />
         <div
           role="alert"
           className="rounded-md border border-[var(--risk-critical-fg)] bg-[var(--risk-critical-bg)] p-4 text-sm text-[var(--risk-critical-fg)]"
@@ -210,7 +210,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
   if (isEdit && orderQuery.data && !canEditLoadedOrder) {
     return (
       <div className="space-y-5">
-        <PageHeader title={pageTitle} description="Tạo đơn không làm giảm tồn kho" />
+        <PageHeader title={pageTitle} description="Nhập nhu cầu của đại lý" />
         <Card>
           <CardContent className="space-y-4 p-6">
             <p className="text-sm text-[var(--text)]">
@@ -242,7 +242,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} noValidate className="space-y-6">
-      <PageHeader title={pageTitle} description="Tạo đơn không làm giảm tồn kho" />
+      <PageHeader title={pageTitle} description="Nhập nhu cầu của đại lý" />
 
       {submitError && (
         <div
@@ -382,7 +382,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
                           <option value="">Chọn sản phẩm</option>
                           {products.map((product) => (
                             <option key={product.id} value={product.id}>
-                              {product.code} — {product.name}
+                              {product.code} · {product.name}
                             </option>
                           ))}
                         </Select>
@@ -446,8 +446,7 @@ export function OrderFormPage({ mode }: OrderFormPageProps) {
 
           <div className="flex flex-col gap-3 border-t border-border px-6 py-4 md:flex-row md:items-center md:justify-between">
             <div className="flex-1 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
-              Đơn chỉ ghi nhận nhu cầu của đại lý. Tồn kho chưa bị trừ cho đến khi lập và xác nhận
-              phiếu xuất kho theo lô.
+              Tồn kho chỉ giảm khi xác nhận phiếu xuất.
             </div>
 
             <div className="flex shrink-0 items-center justify-end gap-2">

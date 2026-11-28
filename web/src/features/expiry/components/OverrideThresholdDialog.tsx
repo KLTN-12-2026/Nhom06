@@ -152,8 +152,8 @@ export function OverrideThresholdDialog({
           <DialogTitle>{isEditing ? 'Sửa ngưỡng riêng' : 'Thêm ngưỡng riêng'}</DialogTitle>
           <DialogDescription>
             {isEditing
-              ? 'Cập nhật sẽ đóng bản hiệu lực cũ và tạo bản mới từ hôm nay; dữ liệu lịch sử được giữ nguyên.'
-              : 'Ngưỡng theo sản phẩm được ưu tiên hơn ngưỡng theo nhóm hàng và cấu hình chung. Mức nguy cấp và hạn dùng tối thiểu khi giao vẫn lấy theo cấu hình chung.'}
+              ? 'Cập nhật ngưỡng áp dụng từ hôm nay.'
+              : 'Thiết lập số ngày cảnh báo theo sản phẩm hoặc nhóm hàng.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -192,7 +192,7 @@ export function OverrideThresholdDialog({
                   {selectedScope === 'PRODUCT'
                     ? activeProducts.map((product) => (
                         <option key={product.id} value={product.id}>
-                          {product.code} — {product.name}
+                          {product.code} · {product.name}
                         </option>
                       ))
                     : activeGroups.map((group) => (

@@ -128,7 +128,7 @@ describe('OrderDetailPage (AC10)', () => {
 
     expect(
       screen.getByText(
-        /Đơn mới ghi nhận nhu cầu của đại lý\. Tồn kho chưa bị trừ, và số lượng đặt được lưu độc lập với số lượng thực xuất\./,
+        /Tồn kho chỉ trừ khi xác nhận phiếu xuất\. Số lượng đã xuất được theo dõi riêng với số lượng đặt\./,
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('SP001')).toBeInTheDocument();

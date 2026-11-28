@@ -180,7 +180,7 @@ describe('ExecutionsPage — Theo dõi thực hiện & Dialog Ghi kết quả (T
     expect(screen.getByText('Phương án đã duyệt')).toBeInTheDocument();
     expect(screen.getByText('437')).toBeInTheDocument();
     expect(
-      screen.getByText(/Ghi kết quả ở màn hình này không làm thay đổi tồn kho/i),
+      screen.getByText(/Ghi kết quả không làm đổi tồn kho/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Đã liên hệ 3 đại lý, hai đại lý nhận thêm hàng trong tuần này\./),

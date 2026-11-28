@@ -59,7 +59,7 @@ export function MonthlyInOutChartCard({
       <CardContent className="pt-5">
         {isLoading && (
           <div className="flex h-[240px] items-center justify-center text-sm text-[var(--text-muted)]">
-            Đang tải biểu đồ nhập — xuất 12 tháng...
+            Đang tải biểu đồ nhập, xuất 12 tháng...
           </div>
         )}
 

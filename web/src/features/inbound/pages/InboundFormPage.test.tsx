@@ -134,7 +134,7 @@ describe('InboundFormPage (AC10 + T-024)', () => {
     renderForm();
 
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: 'SP001 — Sữa tươi tiệt trùng 1L' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'SP001 · Sữa tươi tiệt trùng 1L' })).toBeInTheDocument();
     });
 
     // T-024: nhân viên thiếu reports.read không thấy cột/ô Đơn giá

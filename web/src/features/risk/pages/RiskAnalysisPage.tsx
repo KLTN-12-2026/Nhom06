@@ -86,10 +86,7 @@ export function RiskAnalysisPage() {
         role="note"
         className="rounded-lg border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm leading-relaxed text-[var(--text)]"
       >
-        <strong className="font-semibold">Cách tính.</strong> Nhu cầu dự báo của một sản phẩm được
-        phân bổ cho các lô theo FEFO: lô hết hạn sớm nhất hấp thụ nhu cầu trước. Lượng tiêu thụ ước
-        tính của một lô là phần nhỏ hơn giữa tồn của nó và nhu cầu còn lại sau khi các lô đứng trước
-        đã lấy phần của mình. Phần tồn không được nhu cầu nào hấp thụ chính là tồn dư ước tính.
+        FEFO phân bổ nhu cầu cho lô hết hạn sớm trước; phần còn lại là tồn dư ước tính.
       </div>
 
       {/* Cảnh báo sản phẩm thiếu dự báo (PB22 AC8) */}
@@ -100,7 +97,7 @@ export function RiskAnalysisPage() {
         >
           <span className="font-semibold">Lưu ý dữ liệu đầu vào: </span>
           Bỏ qua {latestRun.warnings.length} sản phẩm chưa có dự báo (
-          {latestRun.warnings.map((w) => `${w.productCode} — ${w.lotCount} lô`).join(', ')}) để
+          {latestRun.warnings.map((w) => `${w.productCode} · ${w.lotCount} lô`).join(', ')}) để
           không sinh kết quả rủi ro giả.
         </div>
       )}

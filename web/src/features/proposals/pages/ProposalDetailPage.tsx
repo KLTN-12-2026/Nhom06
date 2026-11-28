@@ -31,7 +31,7 @@ export function ProposalDetailPage() {
       await explainMutation.mutateAsync({ simulateFailure });
       showToast(
         simulateFailure
-          ? 'Đã chuyển sang chế độ dự phòng do bộ quy tắc sinh.'
+          ? 'Đang hiển thị tóm tắt nghiệp vụ dự phòng.'
           : 'Đã cập nhật phần diễn giải cho đề xuất.',
       );
     } catch (error) {
@@ -104,7 +104,7 @@ export function ProposalDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={`Lô ${proposal.lot.lotCode}`}
-        description={`${proposal.product.code} — ${proposal.product.name}`}
+        description={`${proposal.product.code} · ${proposal.product.name}`}
         actions={headerBadge}
       />
 

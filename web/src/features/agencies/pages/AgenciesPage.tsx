@@ -109,7 +109,7 @@ export function AgenciesPage() {
     <div className="space-y-5">
       <PageHeader
         title="Đại lý"
-        description="Đơn hàng do nhân viên kho nhập hộ, đại lý không tự đăng nhập"
+        description="Quản lý thông tin đại lý"
         actions={headerActions}
       />
 

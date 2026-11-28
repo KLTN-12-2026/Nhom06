@@ -87,7 +87,7 @@ export function UsersPage() {
     <div className="space-y-6">
       <PageHeader
         title="Tài khoản và phân quyền"
-        description="Ba vai trò nội bộ; đại lý và nhà cung cấp không có tài khoản đăng nhập"
+        description="Quản lý tài khoản và phân quyền"
         actions={headerActions}
       />
 
@@ -283,7 +283,7 @@ export function UsersPage() {
         }
         description={
           statusTarget?.status === 'active'
-            ? 'Tài khoản này sẽ không thể đăng nhập và mọi phiên làm việc hiện tại sẽ bị chấm dứt ngay lập tức. Toàn bộ chứng từ lịch sử đã lập vẫn được bảo toàn.'
+            ? 'Tài khoản bị đăng xuất ngay và không thể đăng nhập. Chứng từ cũ vẫn được giữ.'
             : 'Tài khoản sẽ hoạt động trở lại và có thể đăng nhập bằng mật khẩu hiện có.'
         }
         confirmLabel={statusTarget?.status === 'active' ? 'Xác nhận khoá' : 'Xác nhận mở khoá'}

@@ -35,11 +35,11 @@ export function LotRiskBasisDialog({
       <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto overscroll-contain">
         <DialogHeader>
           <DialogTitle>
-            Căn cứ tính — Lô {assessment?.lot.lotCode ?? lotCodeHint ?? '…'}
+            Căn cứ tính · Lô {assessment?.lot.lotCode ?? lotCodeHint ?? '…'}
           </DialogTitle>
           <DialogDescription>
             {assessment
-              ? `${assessment.product.code} — ${assessment.product.name}`
+              ? `${assessment.product.code} · ${assessment.product.name}`
               : 'Chi tiết phương pháp phân bổ FEFO và số liệu nguồn của lô'}
           </DialogDescription>
         </DialogHeader>

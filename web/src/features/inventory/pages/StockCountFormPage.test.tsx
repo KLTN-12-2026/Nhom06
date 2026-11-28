@@ -118,7 +118,7 @@ describe('StockCountFormPage (AC8)', () => {
     renderForm();
 
     await waitFor(() => {
-      expect(screen.getByRole('option', { name: /SP001 — L261123A/ })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: /SP001 · L261123A/ })).toBeInTheDocument();
     });
 
     // Chọn lô A (tồn hệ thống = 10) và nhập số đếm âm -> báo lỗi

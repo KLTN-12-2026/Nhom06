@@ -15,7 +15,7 @@ export function RunInfoCard({ run }: RunInfoCardProps) {
 
   const modelInfo = run.metrics?.modelInfo;
   const trainingDataLabel = modelInfo
-    ? `Dữ liệu ${modelInfo.dataSource} (${formatIsoDateVi(modelInfo.trainStart)} – ${formatIsoDateVi(modelInfo.trainEnd)})`
+    ? `Dữ liệu ${modelInfo.dataSource} · ${formatIsoDateVi(modelInfo.trainStart)}–${formatIsoDateVi(modelInfo.trainEnd)}`
     : run.dataSource === 'SIMULATED'
       ? 'Dữ liệu mô phỏng'
       : run.dataSource === 'ACTUAL'
@@ -23,7 +23,7 @@ export function RunInfoCard({ run }: RunInfoCardProps) {
         : 'Dữ liệu kết hợp (thực tế & mô phỏng)';
 
   const forecastPeriodLabel = run.forecastStart
-    ? `${formatIsoDateVi(run.forecastStart)} – ${run.horizonDays} ngày`
+    ? `${formatIsoDateVi(run.forecastStart)} · ${run.horizonDays} ngày`
     : `${run.horizonDays} ngày`;
 
   const modelMae = run.metrics?.model?.mean_mae;
@@ -55,7 +55,7 @@ export function RunInfoCard({ run }: RunInfoCardProps) {
           <div className="flex items-start justify-between gap-4">
             <dt className="text-[var(--text-muted)]">Phiên bản</dt>
             <dd className="text-right font-medium text-[var(--text)]">
-              {run.modelVersion ?? '—'}
+              {run.modelVersion ?? 'Chưa có'}
             </dd>
           </div>
           <div className="flex items-start justify-between gap-4">
@@ -80,8 +80,8 @@ export function RunInfoCard({ run }: RunInfoCardProps) {
 
         <div className="rounded-md border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-3.5 py-2.5 text-xs leading-relaxed text-[var(--text-muted)]">
           {typeof modelRmse === 'number'
-            ? `RMSE mô hình: ${formatNumberVi(modelRmse)}. Đánh giá trên tập kiểm thử mô phỏng 60 ngày cuối.`
-            : 'Chỉ số đánh giá sẽ hiển thị sau khi mô hình được kiểm thử với baseline.'}
+            ? `RMSE: ${formatNumberVi(modelRmse)} · Tập kiểm thử mô phỏng: 60 ngày cuối.`
+            : 'RMSE hiển thị sau khi đối chiếu baseline.'}
           {skippedCount > 0
             ? ` Có ${skippedCount} sản phẩm dùng phương án dự phòng hoặc bị bỏ qua do thiếu lịch sử.`
             : ''}

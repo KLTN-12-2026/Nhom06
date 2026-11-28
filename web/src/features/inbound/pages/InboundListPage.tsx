@@ -132,7 +132,7 @@ export function InboundListPage() {
     <div className="space-y-5">
       <PageHeader
         title="Phiếu nhập kho"
-        description="Tồn kho chỉ tăng khi phiếu được xác nhận"
+        description="Lập và theo dõi phiếu nhập"
         actions={headerActions}
       />
 

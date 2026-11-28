@@ -184,10 +184,10 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
       expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('SP002 — Sữa chua uống TH true YOGURT 180ml')).toBeInTheDocument();
+    expect(screen.getByText('SP002 · Sữa chua uống TH true YOGURT 180ml')).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Viết lại từ số liệu bên dưới bởi mô hình ngôn ngữ\. Mọi con số đều lấy nguyên từ kết quả phân tích\./,
+        /Diễn giải do mô hình ngôn ngữ viết từ số liệu bên dưới\./,
       ),
     ).toBeInTheDocument();
 
@@ -195,7 +195,7 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     expect(screen.getByRole('button', { name: 'Phê duyệt' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Từ chối' })).toBeEnabled();
 
-    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    await user.click(screen.getByText('Số liệu dùng để diễn giải'));
     expect(screen.getByText('Phương án được phép')).toBeInTheDocument();
     expect(screen.getByText('Cân nhắc khuyến mãi')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Xem dạng JSON' }));
@@ -207,16 +207,16 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     await waitFor(() => {
       expect(
         screen.getByText(
-          /Dịch vụ diễn giải không phản hồi, nên phần dưới là câu tóm tắt do bộ quy tắc sinh ra\./,
+          /Không thể tải phần diễn giải\. Đang hiển thị tóm tắt nghiệp vụ dự phòng\./,
         ),
       ).toBeInTheDocument();
     });
     expect(postPayloads).toEqual([{ simulateFailure: true }]);
 
-    await user.click(screen.getByRole('button', { name: 'Khôi phục dịch vụ diễn giải' }));
+    await user.click(screen.getByRole('button', { name: 'Khôi phục' }));
     await waitFor(() => {
       expect(
-        screen.getByText(/Viết lại từ số liệu bên dưới bởi mô hình ngôn ngữ/),
+        screen.getByText(/Diễn giải do mô hình ngôn ngữ viết từ số liệu bên dưới/),
       ).toBeInTheDocument();
     });
   });
@@ -248,7 +248,7 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     await waitFor(() => {
       expect(
         screen.getByText(
-          /Phần diễn giải không vượt qua kiểm tra số liệu, nên phần dưới là câu tóm tắt do bộ quy tắc sinh ra\./,
+          /Diễn giải không khớp số liệu\. Đang hiển thị tóm tắt nghiệp vụ dự phòng\./,
         ),
       ).toBeInTheDocument();
     });
@@ -273,10 +273,10 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     expect(
       screen.getByText(/Đề xuất đang chờ quản lý kho xem xét và phê duyệt/i),
     ).toBeInTheDocument();
-    expect(screen.queryByText('Dữ liệu AI đã dùng để giải thích')).not.toBeInTheDocument();
+    expect(screen.queryByText('Số liệu dùng để diễn giải')).not.toBeInTheDocument();
   });
 
-  it('T-023 AC4: chỉ Quản lý kho (proposals.approve) và Admin (users.manage) thấy khối "Dữ liệu AI đã dùng để giải thích"', async () => {
+  it('T-023 AC4: chỉ Quản lý kho (proposals.approve) và Admin (users.manage) thấy khối số liệu dùng để diễn giải', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
@@ -288,7 +288,7 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     await waitFor(() => {
       expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
     });
-    expect(screen.getByText('Dữ liệu AI đã dùng để giải thích')).toBeInTheDocument();
+    expect(screen.getByText('Số liệu dùng để diễn giải')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Phê duyệt' })).not.toBeInTheDocument();
     unmount();
 
@@ -297,7 +297,7 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     await waitFor(() => {
       expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
     });
-    expect(screen.getByText('Dữ liệu AI đã dùng để giải thích')).toBeInTheDocument();
+    expect(screen.getByText('Số liệu dùng để diễn giải')).toBeInTheDocument();
     managerRender.unmount();
 
     // Nhân viên kho: không có proposals.approve và không có users.manage → ẩn hoàn toàn
@@ -305,7 +305,7 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     await waitFor(() => {
       expect(screen.getByText('Lô L26101802')).toBeInTheDocument();
     });
-    expect(screen.queryByText('Dữ liệu AI đã dùng để giải thích')).not.toBeInTheDocument();
+    expect(screen.queryByText('Số liệu dùng để diễn giải')).not.toBeInTheDocument();
   });
 
   it('bắt buộc nhập lý do khi từ chối; phê duyệt mở hộp thoại mockup 25 → chuyển trạng thái đã phê duyệt (mockup 26) + toast', async () => {
@@ -368,7 +368,7 @@ describe('ProposalDetailPage — Diễn giải LLM & Khối Quyết định (T-0
     expect(screen.getByText('Phê duyệt đề xuất này?')).toBeInTheDocument();
     expect(
       screen.getByText(
-        /Quyết định được ghi lại kèm người thực hiện và thời điểm\. Việc này không tạo chứng từ xuất và không trừ tồn kho\./,
+        /Quyết định được ghi lại nhưng không tạo phiếu xuất hoặc trừ tồn kho\./,
       ),
     ).toBeInTheDocument();
 

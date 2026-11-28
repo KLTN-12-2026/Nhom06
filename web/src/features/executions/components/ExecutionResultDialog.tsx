@@ -295,7 +295,7 @@ export function ExecutionResultDialog({
           <DialogHeader>
             <DialogTitle>Ghi kết quả thực hiện</DialogTitle>
             <DialogDescription>
-              Lô {execution.lot.lotCode} · {execution.product.code} — {execution.product.name}
+              Lô {execution.lot.lotCode} · {execution.product.code} · {execution.product.name}
             </DialogDescription>
           </DialogHeader>
 

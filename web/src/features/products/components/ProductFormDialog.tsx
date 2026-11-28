@@ -206,9 +206,7 @@ export function ProductFormDialog({
           <DialogHeader>
             <DialogTitle>{isEditing ? `Sửa sản phẩm ${product?.code}` : 'Thêm sản phẩm'}</DialogTitle>
             <DialogDescription>
-              {isEditing
-                ? 'Mã sản phẩm cố định sau khi tạo để giữ liên kết lịch sử lô và chứng từ.'
-                : 'Tồn kho thực tế của sản phẩm chỉ thay đổi khi xác nhận phiếu nhập, phiếu xuất hoặc kiểm kê.'}
+              {isEditing ? 'Cập nhật thông tin sản phẩm.' : 'Nhập thông tin sản phẩm lưu kho.'}
             </DialogDescription>
           </DialogHeader>
 

@@ -178,7 +178,7 @@ export function StockMovementsPage() {
     <div className="space-y-5">
       <PageHeader
         title="Lịch sử biến động tồn kho"
-        description="Mỗi dòng gắn với một chứng từ đã xác nhận và không thể sửa"
+        description="Tra cứu lịch sử nhập, xuất, điều chỉnh"
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

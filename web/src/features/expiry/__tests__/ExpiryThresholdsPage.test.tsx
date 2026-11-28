@@ -140,7 +140,7 @@ describe('ExpiryThresholdsPage (AC8)', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText('SP002 — Sữa chua uống TH true YOGURT')).toBeInTheDocument();
+      expect(screen.getByText('SP002 · Sữa chua uống TH true YOGURT')).toBeInTheDocument();
     });
 
     expect(screen.getByText('Sữa và chế phẩm từ sữa')).toBeInTheDocument();

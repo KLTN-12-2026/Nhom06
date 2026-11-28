@@ -388,7 +388,7 @@ test.describe.serial('Kịch bản demo KHO-AI 12 bước + ảnh báo cáo', ()
       await expect(targetRow).toBeVisible();
       await targetRow.click();
 
-      const basisDialog = page.getByRole('dialog', { name: /Căn cứ tính — Lô/i });
+      const basisDialog = page.getByRole('dialog', { name: /Căn cứ tính · Lô/i });
       await expect(basisDialog).toBeVisible();
       await expect(basisDialog.getByText('Tồn lúc phân tích').first()).toBeVisible();
       await expect(basisDialog.getByText('Tồn dư ước tính').first()).toBeVisible();
@@ -427,27 +427,27 @@ test.describe.serial('Kịch bản demo KHO-AI 12 bước + ảnh báo cáo', ()
 
       // Xác minh diễn giải LLM mock hợp lệ & mở bảng dữ liệu AI đã dùng
       await expect(
-        page.getByText(/Viết lại từ số liệu bên dưới bởi mô hình ngôn ngữ/),
+        page.getByText(/Diễn giải do mô hình ngôn ngữ viết từ số liệu bên dưới/),
       ).toBeVisible();
-      await page.getByText('Dữ liệu AI đã dùng để giải thích').click();
+      await page.getByText('Số liệu dùng để diễn giải').click();
       await expect(
-        page.getByRole('region', { name: 'Bảng dữ liệu AI đã dùng để giải thích' }),
+        page.getByRole('region', { name: 'Bảng số liệu dùng để diễn giải' }),
       ).toBeVisible();
       await captureScreenshot(page, '07-de-xuat-llm-mock.png');
 
       // Bất biến 7: bấm "Mô phỏng lỗi dịch vụ" → rơi về tóm tắt bộ quy tắc, số liệu giữ nguyên
       await page.getByRole('button', { name: 'Mô phỏng lỗi dịch vụ' }).click();
       await expect(
-        page.getByText(/Dịch vụ diễn giải không phản hồi, nên phần dưới là câu tóm tắt do bộ quy tắc sinh ra/).first(),
+        page.getByText(/Không thể tải phần diễn giải\. Đang hiển thị tóm tắt nghiệp vụ dự phòng/).first(),
       ).toBeVisible();
-      await expect(page.getByText('Nguồn: bộ quy tắc nghiệp vụ').first()).toBeVisible();
+      await expect(page.getByText('Tóm tắt nghiệp vụ dự phòng').first()).toBeVisible();
       await expect(page.getByText('Tồn dư ước tính').first()).toBeVisible();
       await captureScreenshot(page, '07b-de-xuat-llm-fallback.png');
 
       // Khôi phục lại diễn giải LLM mock
-      await page.getByRole('button', { name: 'Khôi phục dịch vụ diễn giải' }).click();
+      await page.getByRole('button', { name: 'Khôi phục' }).click();
       await expect(
-        page.getByText(/Viết lại từ số liệu bên dưới bởi mô hình ngôn ngữ/).first(),
+        page.getByText(/Diễn giải do mô hình ngôn ngữ viết từ số liệu bên dưới/).first(),
       ).toBeVisible();
     });
 
@@ -591,7 +591,7 @@ test.describe.serial('Kịch bản demo KHO-AI 12 bước + ảnh báo cáo', ()
 
       await page.goto('/reports');
       await expect(
-        page.getByRole('heading', { name: 'Báo cáo nhập — xuất — tồn' }),
+        page.getByRole('heading', { name: 'Báo cáo nhập, xuất, tồn' }),
       ).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Tổng hợp theo sản phẩm' })).toBeVisible();
       await expect(page.locator('tbody tr').first()).toBeVisible();

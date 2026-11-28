@@ -68,15 +68,6 @@ export function ForecastPage() {
         actions={headerActions}
       />
 
-      {/* Hộp thông tin giới hạn dữ liệu mô phỏng (mockup 19) */}
-      <div
-        role="note"
-        className="rounded-lg border border-[var(--note-border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]"
-      >
-        Kết quả dự báo là ước lượng, không phải lượng tiêu thụ chắc chắn. Dữ liệu lịch sử là dữ
-        liệu mô phỏng; mọi kết luận đánh giá mô hình đều phải nêu rõ giới hạn này.
-      </div>
-
       {latestQuery.isLoading ? (
         <Card>
           <CardContent className="py-12 text-center text-sm text-[var(--text-muted)]">

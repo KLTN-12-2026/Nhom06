@@ -188,25 +188,23 @@ export function InboundDetailPage() {
       {/* Hộp thông báo trạng thái (Mockup 08 / 10) */}
       {receipt.status === 'draft' && (
         <div className="rounded-md border border-[var(--risk-medium-bar)]/30 bg-[var(--risk-medium-bg)] px-4 py-3 text-sm text-[var(--risk-medium-fg)]">
-          <strong>Phiếu đang ở trạng thái nháp.</strong> Tồn kho chưa thay đổi. Khi xác nhận, hệ
-          thống cộng số lượng vào từng lô và ghi một dòng vào lịch sử biến động, tất cả trong cùng
-          một giao dịch.
+          <strong>Phiếu đang ở trạng thái nháp.</strong> Tồn kho tăng theo từng lô sau khi xác nhận.
           {receipt.notes ? ` Ghi chú: ${receipt.notes}` : ''}
         </div>
       )}
 
       {receipt.status === 'confirmed' && (
         <div className="rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)]">
-          Phiếu đã được <strong>{receipt.confirmer?.fullName ?? '—'}</strong> xác nhận{' '}
-          {formatRelativeTime(receipt.confirmedAt)}. Tồn kho đã cộng{' '}
-          {formatQuantity(receipt.totalQuantity)} đơn vị. Phiếu đã xác nhận không được sửa.
+          Xác nhận bởi <strong>{receipt.confirmer?.fullName ?? 'Chưa rõ'}</strong>{' '}
+          {formatRelativeTime(receipt.confirmedAt)}. Đã nhập {formatQuantity(receipt.totalQuantity)}{' '}
+          đơn vị; phiếu không thể sửa.
         </div>
       )}
 
       {receipt.status === 'cancelled' && (
         <div className="rounded-md border border-[var(--border)] bg-[var(--risk-expired-bg)] px-4 py-3 text-sm text-[var(--risk-expired-fg)]">
-          <strong>Phiếu đã bị hủy.</strong> Tồn kho chưa thay đổi. Phiếu đã hủy không thể chỉnh sửa
-          hoặc xác nhận.
+          <strong>Phiếu đã bị hủy.</strong> Tồn kho không thay đổi; phiếu không thể chỉnh sửa hoặc
+          xác nhận.
         </div>
       )}
 
@@ -316,7 +314,7 @@ export function InboundDetailPage() {
               <div className="grid grid-cols-12 gap-2">
                 <dt className="col-span-5 text-[var(--text-muted)]">Người xác nhận</dt>
                 <dd className="col-span-7 min-w-0 break-words text-[var(--text)]">
-                  {receipt.confirmer ? receipt.confirmer.fullName : '—'}
+                  {receipt.confirmer ? receipt.confirmer.fullName : 'Chưa có'}
                 </dd>
               </div>
               <div className="grid grid-cols-12 gap-2">
@@ -325,7 +323,7 @@ export function InboundDetailPage() {
                   className="col-span-7 min-w-0 text-[var(--text)]"
                   title={receipt.confirmedAt ? formatDateTime(receipt.confirmedAt) : undefined}
                 >
-                  {receipt.confirmedAt ? formatRelativeTime(receipt.confirmedAt) : '—'}
+                  {receipt.confirmedAt ? formatRelativeTime(receipt.confirmedAt) : 'Chưa có'}
                 </dd>
               </div>
               {receipt.status !== 'draft' && receipt.notes && (

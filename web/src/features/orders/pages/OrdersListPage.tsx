@@ -129,7 +129,7 @@ export function OrdersListPage() {
     <div className="space-y-5">
       <PageHeader
         title="Đơn đặt hàng đại lý"
-        description="Tạo đơn không làm giảm tồn kho"
+        description="Lập và theo dõi đơn đại lý"
         actions={headerActions}
       />
 

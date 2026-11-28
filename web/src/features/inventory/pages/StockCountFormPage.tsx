@@ -358,7 +358,7 @@ export function StockCountFormPage({ mode }: StockCountFormPageProps) {
             ? `Sửa phiếu kiểm kê ${existingQuery.data?.countNo ?? ''}`
             : 'Lập phiếu kiểm kê kho'
         }
-        description="Ghi nhận số đếm thực tế từng lô để đối chiếu với tồn hệ thống"
+        description="Đối chiếu số đếm với tồn theo lô"
         actions={
           <>
             <Button type="button" variant="outline" asChild>
@@ -379,8 +379,7 @@ export function StockCountFormPage({ mode }: StockCountFormPageProps) {
         role="note"
         className="rounded-lg border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm text-[var(--text)]"
       >
-        Phiếu kiểm kê chưa duyệt không làm thay đổi tồn kho. Tồn kho chỉ được cập nhật sau khi
-        gửi duyệt và được quản lý phê duyệt điều chỉnh.
+        Tồn kho được cập nhật theo số đếm sau khi duyệt.
       </div>
 
       {submitError && (
@@ -512,7 +511,7 @@ export function StockCountFormPage({ mode }: StockCountFormPageProps) {
                                 value={lot.lotId}
                                 disabled={usedInOtherRow}
                               >
-                                {lot.product.code} — {lot.lotCode} (HSD {formatDate(lot.expiryDate)}
+                                {lot.product.code} · {lot.lotCode} (HSD {formatDate(lot.expiryDate)}
                                 {' · '}Tồn {formatQuantity(lot.onHandQty)} {lot.product.unit})
                               </option>
                             );

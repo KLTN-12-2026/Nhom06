@@ -158,7 +158,7 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     expect(details).not.toBeNull();
     expect(details?.hasAttribute('open')).toBe(false);
 
-    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    await user.click(screen.getByText('Số liệu dùng để diễn giải'));
     expect(details?.hasAttribute('open')).toBe(true);
 
     const table = screen.getByRole('table');
@@ -195,7 +195,7 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     const user = userEvent.setup();
     const { rerender } = render(<LlmInputPanel llmInput={null} />);
 
-    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    await user.click(screen.getByText('Số liệu dùng để diễn giải'));
     expect(screen.getByText('Chưa có dữ liệu')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
 
@@ -226,7 +226,7 @@ describe('LlmInputPanel (T-023 AC1–AC3)', () => {
     const user = userEvent.setup();
     render(<LlmInputPanel llmInput={makeLlmInput()} />);
 
-    await user.click(screen.getByText('Dữ liệu AI đã dùng để giải thích'));
+    await user.click(screen.getByText('Số liệu dùng để diễn giải'));
 
     const toggleBtn = screen.getByRole('button', { name: 'Xem dạng JSON' });
     expect(toggleBtn).toHaveAttribute('aria-expanded', 'false');

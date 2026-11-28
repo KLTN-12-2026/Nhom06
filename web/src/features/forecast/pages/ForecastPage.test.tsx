@@ -146,21 +146,20 @@ describe('ForecastPage (T-012 AC8)', () => {
     localStorage.clear();
   });
 
-  it('hiển thị đầy đủ hộp cảnh báo mô phỏng, biểu đồ, thông tin lượt chạy và bảng 20 sản phẩm cho quản lý', async () => {
+  it('hiển thị nhãn dữ liệu mô phỏng, biểu đồ, thông tin lượt chạy và bảng 20 sản phẩm cho quản lý', async () => {
     renderForecastPage(MANAGER_USER);
 
     await waitFor(() => {
       expect(screen.getByText('SP001')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText(/Kết quả dự báo là ước lượng, không phải lượng tiêu thụ chắc chắn/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Dữ liệu mô phỏng · 01/12/2024–23/09/2026')).toBeInTheDocument();
     expect(screen.getByText('Nhu cầu thực tế 90 ngày gần nhất')).toBeInTheDocument();
     expect(screen.getByTestId('demand-history-chart')).toBeInTheDocument();
     expect(screen.getByText('Thông tin lượt chạy')).toBeInTheDocument();
     expect(screen.getByText('rf-v1')).toBeInTheDocument();
     expect(screen.getByText('5,38 (baseline 6,65)')).toBeInTheDocument();
+    expect(screen.getByText(/RMSE: 8,06/)).toBeInTheDocument();
 
     expect(screen.getByText('SP020')).toBeInTheDocument();
     expect(screen.getByText('1.322')).toBeInTheDocument();

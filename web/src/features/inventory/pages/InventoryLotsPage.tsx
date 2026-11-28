@@ -225,7 +225,7 @@ export function InventoryLotsPage() {
     <div className="space-y-5">
       <PageHeader
         title="Tồn kho theo lô"
-        description="Số tồn chỉ thay đổi qua phiếu nhập, phiếu xuất hoặc phiếu kiểm kê đã xác nhận"
+        description="Theo dõi số lượng tồn theo từng lô"
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">

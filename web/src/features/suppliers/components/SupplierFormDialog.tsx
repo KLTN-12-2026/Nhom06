@@ -182,10 +182,7 @@ export function SupplierFormDialog({
             <DialogTitle>
               {isEditing ? `Sửa nhà cung cấp ${supplier?.code}` : 'Thêm nhà cung cấp'}
             </DialogTitle>
-            <DialogDescription>
-              Nhà cung cấp không có tài khoản đăng nhập. Thông tin dùng để lập phiếu nhập và theo
-              dõi nguồn gốc lô hàng.
-            </DialogDescription>
+            <DialogDescription>Nhập thông tin nguồn cung lô hàng.</DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-3.5">
@@ -216,7 +213,7 @@ export function SupplierFormDialog({
               <Label htmlFor="supplier-name">Tên nhà cung cấp</Label>
               <Input
                 id="supplier-name"
-                placeholder="Công ty CP Sữa Việt Nam — CN Đà Nẵng"
+                placeholder="Công ty CP Sữa Việt Nam, CN Đà Nẵng"
                 {...register('name')}
               />
               {errors.name && (

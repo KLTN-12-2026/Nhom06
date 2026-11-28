@@ -109,7 +109,7 @@ describe('ProposalsListPage (T-014 AC8, mockup 21)', () => {
     localStorage.clear();
   });
 
-  it('hiển thị đúng tiêu đề, phụ đề số chờ duyệt, hộp ghi chú xanh và đầy đủ cột bảng mockup 21', async () => {
+  it('hiển thị đúng tiêu đề, phụ đề số chờ duyệt và đầy đủ cột bảng mockup 21', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       status: 200,
@@ -124,12 +124,6 @@ describe('ProposalsListPage (T-014 AC8, mockup 21)', () => {
 
     expect(screen.getByText('Đề xuất xử lý hàng cận hạn')).toBeInTheDocument();
     expect(screen.getByText('8 đề xuất chờ quyết định')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /Phương án do bộ quy tắc nghiệp vụ sinh ra từ kết quả phân tích\. Mô hình ngôn ngữ chỉ viết phần diễn giải\./,
-      ),
-    ).toBeInTheDocument();
-
     const table = screen.getByRole('table');
     expect(within(table).getByText('Loại bỏ và lập biên bản huỷ')).toBeInTheDocument();
     expect(within(table).getByText('Liên hệ đại lý đẩy hàng')).toBeInTheDocument();

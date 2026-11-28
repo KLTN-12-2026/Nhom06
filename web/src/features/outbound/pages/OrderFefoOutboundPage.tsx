@@ -278,7 +278,7 @@ export function OrderFefoOutboundPage() {
         : 'Không thể tải kế hoạch phân bổ FEFO cho đơn hàng này.';
     return (
       <div className="space-y-5">
-        <PageHeader title="Lập phiếu xuất kho" description="Không thể tạo bản phân bổ FEFO" />
+        <PageHeader title="Lập phiếu xuất kho" description="Không thể tạo phân bổ FEFO" />
         <div
           role="alert"
           className="rounded-md border border-[var(--risk-critical-fg)] bg-[var(--risk-critical-bg)] p-4 text-sm text-[var(--risk-critical-fg)]"
@@ -326,10 +326,7 @@ export function OrderFefoOutboundPage() {
 
       {/* Hộp ghi chú xanh giải thích lọc trước khi xếp FEFO (Mockup 15) */}
       <div className="rounded-md border border-[var(--note-border)] bg-[var(--note-bg)] px-4 py-3 text-sm text-[var(--text)]">
-        Hệ thống loại các lô đã hết hạn và các lô còn dưới{' '}
-        <strong>{plan.minDeliveryDays} ngày</strong> hạn dùng, rồi mới xếp phần còn lại theo hạn sử
-        dụng tăng dần và rót lần lượt. Đây mới là <strong>bản phân bổ dự kiến</strong> — tồn kho
-        chưa thay đổi cho đến khi bạn xác nhận.
+        Đây là phân bổ dự kiến. Tồn kho chỉ trừ khi xác nhận xuất.
       </div>
 
       {actionError && (
@@ -355,7 +352,7 @@ export function OrderFefoOutboundPage() {
             <Card key={item.orderItemId}>
               <CardHeader className="flex flex-col gap-1 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="text-base font-semibold text-[var(--text)]">
-                  {item.product.code} — {item.product.name}
+                  {item.product.code} · {item.product.name}
                 </CardTitle>
                 <div className="text-sm text-[var(--text-muted)]">
                   {Number(item.fulfilledQty) > 0 ? (
@@ -552,8 +549,7 @@ export function OrderFefoOutboundPage() {
             </div>
 
             <div className="flex-1 rounded-md border border-[var(--border)] border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-4 py-3 text-sm text-[var(--text)] lg:max-w-lg">
-              Khi xác nhận, hệ thống kiểm tra lại tồn ngay tại thời điểm đó trước khi trừ, để tránh
-              hai người cùng xuất một lô.
+              Tồn kho được kiểm tra lại trước khi xác nhận xuất.
             </div>
 
             {canConfirm && (

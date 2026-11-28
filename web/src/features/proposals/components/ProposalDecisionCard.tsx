@@ -210,8 +210,7 @@ export function ProposalDecisionCard({
               role="note"
               className="rounded-md border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-3.5 py-3 text-xs leading-relaxed text-[var(--text)]"
             >
-              Phê duyệt chỉ ghi nhận quyết định. Tồn kho không thay đổi cho đến khi phương án được
-              thực hiện bằng một phiếu xuất thật.
+              Phê duyệt không tạo phiếu xuất hoặc thay đổi tồn kho.
             </div>
           </>
         ) : (
@@ -225,8 +224,7 @@ export function ProposalDecisionCard({
               role="note"
               className="rounded-md border border-border border-l-4 border-l-[var(--info)] bg-[var(--surface-muted)] px-3.5 py-3 text-xs leading-relaxed text-[var(--text)]"
             >
-              Phê duyệt chỉ ghi nhận quyết định. Tồn kho không thay đổi cho đến khi phương án được
-              thực hiện bằng một phiếu xuất thật.
+              Phê duyệt không tạo phiếu xuất hoặc thay đổi tồn kho.
             </div>
           </>
         )}
@@ -240,7 +238,7 @@ export function ProposalDecisionCard({
           }
         }}
         title="Phê duyệt đề xuất này?"
-        description="Quyết định được ghi lại kèm người thực hiện và thời điểm. Việc này không tạo chứng từ xuất và không trừ tồn kho."
+        description="Quyết định được ghi lại nhưng không tạo phiếu xuất hoặc trừ tồn kho."
         confirmLabel="Phê duyệt"
         cancelLabel="Quay lại"
         variant="default"
@@ -256,7 +254,7 @@ export function ProposalDecisionCard({
           }
         }}
         title="Từ chối đề xuất này?"
-        description="Quyết định từ chối kèm lý do sẽ được ghi lại cùng người thực hiện và thời điểm. Việc này không tạo chứng từ xuất và không thay đổi tồn kho."
+        description="Lý do từ chối được ghi lại; tồn kho không thay đổi."
         confirmLabel="Từ chối"
         cancelLabel="Quay lại"
         variant="destructive"
