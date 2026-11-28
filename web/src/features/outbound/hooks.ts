@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   confirmOrderOutbound,
   fetchOrderFefoPlan,
@@ -40,6 +40,7 @@ export function useOutboundReceiptsQuery(
     queryKey: ['outbound-receipts', params],
     queryFn: () => fetchOutboundReceipts(params),
     enabled: options?.enabled,
+    placeholderData: keepPreviousData,
   });
 }
 

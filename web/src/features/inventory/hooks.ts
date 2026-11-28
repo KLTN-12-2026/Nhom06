@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   approveStockCount,
   cancelStockCount,
@@ -27,6 +27,7 @@ export function useInventoryLotsQuery(params: ListInventoryLotsParams, enabled =
     queryKey: ['inventory-lots', params],
     queryFn: () => fetchInventoryLots(params),
     enabled,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -57,6 +58,7 @@ export function useStockMovementsQuery(params: ListStockMovementsParams) {
   return useQuery({
     queryKey: ['stock-movements', params],
     queryFn: () => fetchStockMovements(params),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -64,6 +66,7 @@ export function useStockCountsQuery(params: ListStockCountsParams) {
   return useQuery({
     queryKey: ['stock-counts', params],
     queryFn: () => fetchStockCounts(params),
+    placeholderData: keepPreviousData,
   });
 }
 

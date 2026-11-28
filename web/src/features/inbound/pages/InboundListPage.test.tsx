@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '@/components/common/ToastProvider';
@@ -186,5 +187,60 @@ describe('InboundListPage (AC10)', () => {
 
     expect(screen.queryByRole('columnheader', { name: 'Giá trị' })).not.toBeInTheDocument();
     expect(screen.queryByText('—')).not.toBeInTheDocument();
+  });
+
+  it('chuyển sang trang 2 và quay về trang 1 khi đổi bộ lọc', async () => {
+    const managerUser: AuthUser = {
+      id: 'u-mgr',
+      username: 'quanly',
+      fullName: 'Nguyễn Văn Dương',
+      role: { code: 'WAREHOUSE_MANAGER', name: 'Quản lý kho' },
+      permissions: ['inbound.read', 'inbound.confirm', 'catalog.read', 'reports.read'],
+    };
+    const requestedUrls: string[] = [];
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/auth/me')) {
+        return { ok: true, status: 200, json: async () => managerUser } as Response;
+      }
+      if (url.includes('/suppliers')) {
+        return { ok: true, status: 200, json: async () => [] } as Response;
+      }
+      if (url.includes('/inbound-receipts')) {
+        requestedUrls.push(url);
+        const requestedPage = new URL(url, 'http://localhost').searchParams.get('page');
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ ...MOCK_LIST, total: 90, page: Number(requestedPage) }),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+
+    const user = userEvent.setup();
+    renderListPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Trang 1 / 2 (90 dòng)')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Trang sau' }));
+    await waitFor(() => {
+      expect(
+        requestedUrls.some((url) => url.includes('page=2&pageSize=50')),
+      ).toBe(true);
+    });
+
+    await user.selectOptions(screen.getByLabelText('Lọc theo trạng thái'), 'draft');
+    await waitFor(() => {
+      expect(
+        requestedUrls.some(
+          (url) => url.includes('status=draft') && url.includes('page=1&pageSize=50'),
+        ),
+      ).toBe(true);
+    });
+    expect(screen.getByText('Trang 1 / 2 (90 dòng)')).toBeInTheDocument();
   });
 });
