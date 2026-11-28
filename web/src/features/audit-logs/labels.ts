@@ -10,6 +10,8 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   USER_PASSWORD_CHANGED: 'Đổi mật khẩu',
   USER_PASSWORD_RESET: 'Đặt lại mật khẩu',
   AUTH_LOGIN_LOCKED: 'Đăng nhập tài khoản bị khóa',
+  AUTH_LOGIN_SUCCESS: 'Đăng nhập',
+  AUTH_LOGIN_FAILED: 'Đăng nhập sai',
   ROLE_PERMISSIONS_UPDATED: 'Cập nhật quyền vai trò',
 
   // Nhập kho
@@ -106,6 +108,7 @@ export function getEventTone(eventType: string): StatusTone {
   if (
     eventType.endsWith('_CHANGED') ||
     eventType.endsWith('_RESET') ||
+    eventType.endsWith('_FAILED') ||
     eventType.endsWith('_UPDATED') ||
     eventType.endsWith('_SUBMITTED')
   ) {

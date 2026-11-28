@@ -1,4 +1,5 @@
 const ACCESS_TOKEN_KEY = 'kho_ai_access_token';
+const SESSION_EXPIRED_KEY = 'kho_ai_session_expired';
 
 type UnauthorizedListener = () => void;
 
@@ -35,8 +36,35 @@ export function onUnauthorized(listener: UnauthorizedListener): () => void {
   };
 }
 
+// Cờ trong sessionStorage để trang đăng nhập biết người dùng bị đưa về do phiên hết hạn hoặc bị thu hồi,
+// không phải do tự bấm đăng xuất
+export function isSessionExpiredFlagged(): boolean {
+  try {
+    return sessionStorage.getItem(SESSION_EXPIRED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function clearSessionExpiredFlag(): void {
+  try {
+    sessionStorage.removeItem(SESSION_EXPIRED_KEY);
+  } catch {
+    // Bỏ qua nếu môi trường không có sessionStorage
+  }
+}
+
+function flagSessionExpired(): void {
+  try {
+    sessionStorage.setItem(SESSION_EXPIRED_KEY, '1');
+  } catch {
+    // Bỏ qua nếu môi trường không có sessionStorage
+  }
+}
+
 export function notifyUnauthorized(): void {
   clearAccessToken();
+  flagSessionExpired();
   for (const listener of unauthorizedListeners) {
     listener();
   }
