@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PaginationBar } from '@/components/common/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -12,6 +13,8 @@ import { formatCurrency, formatDate, formatQuantity } from '@/lib/format';
 import { InboundStatusBadge } from '../components/InboundStatusBadge';
 import { useInboundReceiptsQuery } from '../hooks';
 import { type InboundReceiptSummary } from '../types';
+
+const PAGE_SIZE = 50;
 
 export function InboundListPage() {
   const { hasPermission } = useAuth();
@@ -23,6 +26,7 @@ export function InboundListPage() {
   const [supplierId, setSupplierId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [page, setPage] = useState(1);
 
   const suppliersQuery = useSuppliersQuery({});
   const receiptsQuery = useInboundReceiptsQuery({
@@ -31,6 +35,8 @@ export function InboundListPage() {
     supplierId,
     from,
     to,
+    page,
+    pageSize: PAGE_SIZE,
   });
 
   const hasFilters = Boolean(search.trim() || status || supplierId || from || to);
@@ -141,7 +147,10 @@ export function InboundListPage() {
           <FilterBar>
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Tìm theo số phiếu hoặc nhà cung cấp"
               aria-label="Tìm theo số phiếu hoặc nhà cung cấp"
               autoCorrect="off"
@@ -151,7 +160,10 @@ export function InboundListPage() {
             />
             <Select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
               aria-label="Lọc theo trạng thái"
               className="h-10 w-full sm:w-44"
             >
@@ -162,7 +174,10 @@ export function InboundListPage() {
             </Select>
             <Select
               value={supplierId}
-              onChange={(e) => setSupplierId(e.target.value)}
+              onChange={(e) => {
+                setSupplierId(e.target.value);
+                setPage(1);
+              }}
               aria-label="Lọc theo nhà cung cấp"
               className="h-10 w-full sm:w-56"
             >
@@ -176,7 +191,10 @@ export function InboundListPage() {
             <Input
               type="date"
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
               aria-label="Từ ngày"
               title="Từ ngày chứng từ"
               className="h-10 w-full sm:w-40"
@@ -184,7 +202,10 @@ export function InboundListPage() {
             <Input
               type="date"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
               aria-label="Đến ngày"
               title="Đến ngày chứng từ"
               className="h-10 w-full sm:w-40"
@@ -210,6 +231,13 @@ export function InboundListPage() {
             : 'Chưa có phiếu nhập nào. Lập phiếu nhập đầu tiên.'
         }
         errorText="Không thể tải danh sách phiếu nhập."
+      />
+
+      <PaginationBar
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
       />
     </div>
   );

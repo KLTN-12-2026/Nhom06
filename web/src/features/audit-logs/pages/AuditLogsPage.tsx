@@ -1,6 +1,7 @@
 import { Fragment, useState } from 'react';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PaginationBar } from '@/components/common/PaginationBar';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -86,7 +87,6 @@ export function AuditLogsPage() {
 
   const items = logsQuery.data?.items ?? [];
   const total = logsQuery.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-5">
@@ -362,33 +362,12 @@ export function AuditLogsPage() {
         </CardContent>
       </Card>
 
-      {total > PAGE_SIZE && (
-        <div className="flex items-center justify-between gap-3 text-sm text-[var(--text-muted)]">
-          <span className="tabular-nums">
-            Trang {page} / {totalPages} ({formatQuantity(total)} dòng)
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Trang trước
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Trang sau
-            </Button>
-          </div>
-        </div>
-      )}
+      <PaginationBar
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

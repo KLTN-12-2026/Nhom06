@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   cancelInboundReceipt,
   confirmInboundReceipt,
@@ -13,6 +13,7 @@ export function useInboundReceiptsQuery(params: ListInboundReceiptsParams) {
   return useQuery({
     queryKey: ['inbound-receipts', params],
     queryFn: () => fetchInboundReceipts(params),
+    placeholderData: keepPreviousData,
   });
 }
 

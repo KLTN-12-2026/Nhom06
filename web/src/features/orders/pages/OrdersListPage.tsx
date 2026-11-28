@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PaginationBar } from '@/components/common/PaginationBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -12,6 +13,8 @@ import { formatDate, formatQuantity } from '@/lib/format';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { useOrdersQuery } from '../hooks';
 import { type AgencyOrderSummary } from '../types';
+
+const PAGE_SIZE = 50;
 
 export function OrdersListPage() {
   const { hasPermission } = useAuth();
@@ -24,6 +27,7 @@ export function OrdersListPage() {
   const [agencyId, setAgencyId] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [page, setPage] = useState(1);
 
   const agenciesQuery = useAgenciesQuery({});
   const ordersQuery = useOrdersQuery({
@@ -32,6 +36,8 @@ export function OrdersListPage() {
     agencyId,
     from,
     to,
+    page,
+    pageSize: PAGE_SIZE,
   });
 
   const hasFilters = Boolean(search.trim() || status || agencyId || from || to);
@@ -138,7 +144,10 @@ export function OrdersListPage() {
           <FilterBar>
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Tìm theo số đơn hoặc đại lý"
               aria-label="Tìm theo số đơn hoặc đại lý"
               autoCorrect="off"
@@ -148,7 +157,10 @@ export function OrdersListPage() {
             />
             <Select
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={(e) => {
+                setStatus(e.target.value);
+                setPage(1);
+              }}
               aria-label="Lọc theo trạng thái"
               className="h-10 w-full sm:w-44"
             >
@@ -160,7 +172,10 @@ export function OrdersListPage() {
             </Select>
             <Select
               value={agencyId}
-              onChange={(e) => setAgencyId(e.target.value)}
+              onChange={(e) => {
+                setAgencyId(e.target.value);
+                setPage(1);
+              }}
               aria-label="Lọc theo đại lý"
               className="h-10 w-full sm:w-56"
             >
@@ -174,7 +189,10 @@ export function OrdersListPage() {
             <Input
               type="date"
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
               aria-label="Từ ngày đặt"
               title="Từ ngày đặt"
               className="h-10 w-full sm:w-40"
@@ -182,7 +200,10 @@ export function OrdersListPage() {
             <Input
               type="date"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
               aria-label="Đến ngày đặt"
               title="Đến ngày đặt"
               className="h-10 w-full sm:w-40"
@@ -208,6 +229,13 @@ export function OrdersListPage() {
             : 'Chưa có đơn đặt hàng nào. Tạo đơn đại lý đầu tiên.'
         }
         errorText="Không thể tải danh sách đơn đặt hàng đại lý."
+      />
+
+      <PaginationBar
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={ordersQuery.data?.total ?? 0}
+        onPageChange={setPage}
       />
     </div>
   );

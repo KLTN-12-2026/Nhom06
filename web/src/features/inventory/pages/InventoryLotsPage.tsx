@@ -4,6 +4,7 @@ import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { ExpiryBar } from '@/components/common/ExpiryBar';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PaginationBar } from '@/components/common/PaginationBar';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
@@ -222,7 +223,6 @@ export function InventoryLotsPage() {
 
   const summary = summaryQuery.data;
   const total = lotsQuery.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="space-y-5">
@@ -363,33 +363,12 @@ export function InventoryLotsPage() {
         errorText="Không thể tải danh sách tồn kho theo lô."
       />
 
-      {total > PAGE_SIZE && (
-        <div className="flex items-center justify-between gap-3 text-sm text-[var(--text-muted)]">
-          <span className="tabular-nums">
-            Trang {page} / {totalPages} ({formatQuantity(total)} lô)
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              Trang trước
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Trang sau
-            </Button>
-          </div>
-        </div>
-      )}
+      <PaginationBar
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
+      />
 
       <LotStatusDialog
         lot={selectedLot}

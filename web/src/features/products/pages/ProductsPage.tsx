@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PaginationBar } from '@/components/common/PaginationBar';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { useToast } from '@/components/common/toast-context';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,8 @@ import { ProductGroupsDialog } from '../components/ProductGroupsDialog';
 import { useProductGroupsQuery, useProductsQuery } from '../hooks';
 import { type ProductItem } from '../types';
 
+const PAGE_SIZE = 50;
+
 export function ProductsPage() {
   const { hasPermission } = useAuth();
   const { showToast } = useToast();
@@ -21,6 +24,7 @@ export function ProductsPage() {
   const [search, setSearch] = useState('');
   const [groupId, setGroupId] = useState('');
   const [status, setStatus] = useState('active');
+  const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [groupsOpen, setGroupsOpen] = useState(false);
@@ -28,7 +32,13 @@ export function ProductsPage() {
   const canManage = hasPermission('catalog.manage');
 
   const groupsQuery = useProductGroupsQuery();
-  const productsQuery = useProductsQuery({ search, groupId, status });
+  const productsQuery = useProductsQuery({
+    search,
+    groupId,
+    status,
+    page,
+    pageSize: PAGE_SIZE,
+  });
 
   const openCreate = () => {
     setEditingProduct(null);
@@ -146,14 +156,20 @@ export function ProductsPage() {
       <FilterBar>
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           placeholder="Tìm theo mã hoặc tên sản phẩm"
           aria-label="Tìm theo mã hoặc tên sản phẩm"
           className="h-10 w-full sm:w-72"
         />
         <Select
           value={groupId}
-          onChange={(e) => setGroupId(e.target.value)}
+          onChange={(e) => {
+            setGroupId(e.target.value);
+            setPage(1);
+          }}
           aria-label="Lọc theo nhóm hàng"
           className="h-10 w-full sm:w-52"
         >
@@ -166,7 +182,10 @@ export function ProductsPage() {
         </Select>
         <Select
           value={status}
-          onChange={(e) => setStatus(e.target.value)}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
           aria-label="Lọc theo trạng thái"
           className="h-10 w-full sm:w-48"
         >
@@ -186,6 +205,13 @@ export function ProductsPage() {
         loadingText="Đang tải danh sách sản phẩm..."
         emptyText="Không có kết quả phù hợp"
         errorText="Không thể tải danh sách sản phẩm."
+      />
+
+      <PaginationBar
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={totalCount}
+        onPageChange={setPage}
       />
 
       <ProductFormDialog

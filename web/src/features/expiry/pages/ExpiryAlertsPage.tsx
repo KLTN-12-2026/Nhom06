@@ -4,6 +4,7 @@ import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { ExpiryBar } from '@/components/common/ExpiryBar';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PaginationBar } from '@/components/common/PaginationBar';
 import { ExpirySeverityBadge } from '@/components/common/RiskStatusBadge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +25,8 @@ import {
 } from '../hooks';
 import { type ExpiryAlertItem, type ExpiryAlertSeverity } from '../types';
 
+const PAGE_SIZE = 50;
+
 export function ExpiryAlertsPage() {
   const { hasPermission } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -41,6 +44,7 @@ export function ExpiryAlertsPage() {
   const [expiryTo, setExpiryTo] = useState('');
   const [maxDaysRemaining, setMaxDaysRemaining] = useState('');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
   const canReadProducts = hasPermission('catalog.read');
   const canReadProposals = hasPermission('proposals.read');
@@ -56,6 +60,8 @@ export function ExpiryAlertsPage() {
     expiryTo,
     maxDaysRemaining,
     search,
+    page,
+    pageSize: PAGE_SIZE,
   });
 
   const evaluationDateLabel = formatDateVi(
@@ -80,6 +86,7 @@ export function ExpiryAlertsPage() {
     setExpiryTo('');
     setMaxDaysRemaining('');
     setSearch('');
+    setPage(1);
     if (searchParams.size > 0) {
       setSearchParams({});
     }
@@ -239,7 +246,10 @@ export function ExpiryAlertsPage() {
       <FilterBar>
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           placeholder="Tìm theo mã lô hoặc sản phẩm"
           aria-label="Tìm theo mã lô hoặc sản phẩm"
           className="h-10 w-full sm:w-60"
@@ -247,7 +257,10 @@ export function ExpiryAlertsPage() {
 
         <Select
           value={severity}
-          onChange={(e) => setSeverity(e.target.value as ExpiryAlertSeverity | '')}
+          onChange={(e) => {
+            setSeverity(e.target.value as ExpiryAlertSeverity | '');
+            setPage(1);
+          }}
           aria-label="Lọc theo tình trạng"
           className="h-10 w-full sm:w-44"
         >
@@ -260,7 +273,10 @@ export function ExpiryAlertsPage() {
         {canReadProducts && (
           <Select
             value={productId}
-            onChange={(e) => setProductId(e.target.value)}
+            onChange={(e) => {
+              setProductId(e.target.value);
+              setPage(1);
+            }}
             aria-label="Lọc theo sản phẩm"
             className="h-10 w-full sm:w-56"
           >
@@ -276,7 +292,10 @@ export function ExpiryAlertsPage() {
         <Input
           type="date"
           value={expiryFrom}
-          onChange={(e) => setExpiryFrom(e.target.value)}
+          onChange={(e) => {
+            setExpiryFrom(e.target.value);
+            setPage(1);
+          }}
           aria-label="Hạn sử dụng từ ngày"
           title="Hạn sử dụng từ ngày"
           className="h-10 w-full sm:w-40"
@@ -285,7 +304,10 @@ export function ExpiryAlertsPage() {
         <Input
           type="date"
           value={expiryTo}
-          onChange={(e) => setExpiryTo(e.target.value)}
+          onChange={(e) => {
+            setExpiryTo(e.target.value);
+            setPage(1);
+          }}
           aria-label="Hạn sử dụng đến ngày"
           title="Hạn sử dụng đến ngày"
           className="h-10 w-full sm:w-40"
@@ -294,7 +316,10 @@ export function ExpiryAlertsPage() {
         <Input
           type="number"
           value={maxDaysRemaining}
-          onChange={(e) => setMaxDaysRemaining(e.target.value)}
+          onChange={(e) => {
+            setMaxDaysRemaining(e.target.value);
+            setPage(1);
+          }}
           placeholder="Còn tối đa (ngày)"
           aria-label="Số ngày còn lại tối đa"
           className="h-10 w-full tabular-nums sm:w-40"
@@ -303,7 +328,10 @@ export function ExpiryAlertsPage() {
         <Input
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => {
+            setDate(e.target.value);
+            setPage(1);
+          }}
           aria-label="Ngày đánh giá"
           title="Ngày đánh giá"
           className="h-10 w-full sm:w-40"
@@ -329,6 +357,13 @@ export function ExpiryAlertsPage() {
         loadingText="Đang tải danh sách cảnh báo hàng cận hạn..."
         emptyText="Không có kết quả phù hợp"
         errorText="Không thể tải danh sách cảnh báo hàng cận hạn."
+      />
+
+      <PaginationBar
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={alertsQuery.data?.total ?? 0}
+        onPageChange={setPage}
       />
     </div>
   );

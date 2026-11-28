@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchProductGroups, fetchProducts } from '@/features/products/api';
 import {
   createOverrideThreshold,
@@ -94,6 +94,7 @@ export function useExpiryAlertsQuery(params: ExpiryAlertsFilterParams) {
   return useQuery({
     queryKey: expiryKeys.alertsList(params),
     queryFn: () => fetchExpiryAlerts(params),
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '@/components/common/DataTable';
 import { FilterBar } from '@/components/common/FilterBar';
 import { PageHeader } from '@/components/common/PageHeader';
+import { PaginationBar } from '@/components/common/PaginationBar';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { formatDateTime, formatQuantity } from '@/lib/format';
@@ -10,17 +11,22 @@ import { OutboundStatusBadge, OutboundTypeBadge } from '../components/OutboundTy
 import { useOutboundReceiptsQuery } from '../hooks';
 import { type OutboundReceiptSummary } from '../types';
 
+const PAGE_SIZE = 50;
+
 export function OutboundListPage() {
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [page, setPage] = useState(1);
 
   const receiptsQuery = useOutboundReceiptsQuery({
     search,
     type,
     from,
     to,
+    page,
+    pageSize: PAGE_SIZE,
   });
 
   const hasFilters = Boolean(search.trim() || type || from || to);
@@ -110,7 +116,10 @@ export function OutboundListPage() {
           <FilterBar>
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Tìm theo số phiếu xuất, số đơn hoặc đại lý"
               aria-label="Tìm theo số phiếu xuất, số đơn hoặc đại lý"
               autoCorrect="off"
@@ -120,7 +129,10 @@ export function OutboundListPage() {
             />
             <Select
               value={type}
-              onChange={(e) => setType(e.target.value)}
+              onChange={(e) => {
+                setType(e.target.value);
+                setPage(1);
+              }}
               aria-label="Lọc theo loại xuất"
               className="h-10 w-full sm:w-44"
             >
@@ -133,7 +145,10 @@ export function OutboundListPage() {
             <Input
               type="date"
               value={from}
-              onChange={(e) => setFrom(e.target.value)}
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
               aria-label="Từ ngày xuất"
               title="Từ ngày xuất"
               className="h-10 w-full sm:w-40"
@@ -141,7 +156,10 @@ export function OutboundListPage() {
             <Input
               type="date"
               value={to}
-              onChange={(e) => setTo(e.target.value)}
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
               aria-label="Đến ngày xuất"
               title="Đến ngày xuất"
               className="h-10 w-full sm:w-40"
@@ -167,6 +185,13 @@ export function OutboundListPage() {
             : 'Chưa có phiếu xuất kho nào được xác nhận.'
         }
         errorText="Không thể tải danh sách phiếu xuất kho."
+      />
+
+      <PaginationBar
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+        onPageChange={setPage}
       />
     </div>
   );
